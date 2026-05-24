@@ -59,37 +59,61 @@
     }
   };
 
-  /* ── Sign in — รองรับทั้ง http/https และ file:// protocol ── */
+  /* ── Sign in — รองรับ GitHub Pages / Netlify / localhost ── */
   window._signInGoogle = function() {
-    // ตรวจสอบ protocol ก่อน
     const proto = window.location.protocol;
     if (proto === 'file:') {
-      // file:// ไม่รองรับ Firebase Auth popup/redirect
-      // แจ้งให้ user เปิดไฟล์ผ่าน HTTP server แทน
-      const msg = 'กรุณาเปิดไฟล์ผ่าน Web Server (http://) แทนการเปิดตรงจาก File\n\n' +
-                  'วิธีแก้ไข:\n' +
-                  '1. ใช้ VS Code + Live Server extension แล้วคลิก "Go Live"\n' +
-                  '2. หรือ upload ไฟล์ขึ้น Netlify / GitHub Pages\n' +
-                  '3. หรือใช้คำสั่ง: python -m http.server 8080\n\n' +
-                  'Firebase Auth ต้องการ http:// หรือ https:// เท่านั้น';
-      alert(msg);
+      alert('กรุณาเปิดผ่าน Web Server (http://) หรืออัปโหลดขึ้น GitHub Pages / Netlify');
       return;
     }
-    // ลอง popup (ทำงานได้บน http/https)
     _auth.signInWithPopup(_provider).catch(function(e) {
-      // ถ้า popup ถูก block → ใช้ redirect
-      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      console.warn('Google popup error:', e.code);
+      if (e.code === 'auth/unauthorized-domain') {
+        const domain = window.location.hostname;
+        const msg = 'Domain "' + domain + '" ยังไม่ได้ authorize ใน Firebase\n\n' +
+          'วิธีแก้ (ทำครั้งเดียว):\n' +
+          '1. ไป https://console.firebase.google.com\n' +
+          '2. เลือกโปรเจกต์ fastquiz-game-7115b\n' +
+          '3. Authentication → Settings → Authorized domains\n' +
+          '4. คลิก Add domain → ใส่: ' + domain + '\n\n' +
+          'ตอนนี้จะ login แบบชั่วคราวให้ก่อน (ไม่บันทึกประวัติ)';
+        alert(msg);
+        _auth.signInAnonymously().catch(function(e2) {
+          console.error('Anonymous sign-in failed:', e2);
+        });
+      } else if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
         _auth.signInWithRedirect(_provider).catch(function(e2) {
-          console.error('Google redirect login error:', e2);
-          alert('Login ไม่สำเร็จ: ' + e2.message);
+          if (e2.code === 'auth/unauthorized-domain') {
+            alert('กรุณาเพิ่ม ' + window.location.hostname + ' ใน Firebase Console → Authentication → Authorized domains');
+          } else {
+            alert('Login ไม่สำเร็จ: ' + e2.message);
+          }
         });
       } else if (e.code === 'auth/operation-not-supported-in-this-environment') {
-        alert('Login ไม่สำเร็จ: กรุณาเปิดหน้าเว็บผ่าน http:// หรือ https:// (ไม่ใช่ file://)');
+        alert('Login ไม่สำเร็จ: กรุณาเปิดผ่าน http:// หรือ https://');
       } else {
         console.error('Google login error:', e);
         alert('Login ไม่สำเร็จ: ' + e.message);
       }
     });
+  };
+
+  /* ── Anonymous login สำหรับ join ห้องโดยไม่ต้อง Google account ── */
+  window._signInAnonymousForJoin = async function(nickname) {
+    try {
+      const cred = await _auth.signInAnonymously();
+      const uid = cred.user.uid;
+      window._currentUser = cred.user;
+      window._userProfile = {
+        uid, email: '', displayName: nickname, avatar: '⚡',
+        nickname: nickname, friends: [], gameHistory: [], isAnonymous: true
+      };
+      await _db.collection('users').doc(uid).set(window._userProfile).catch(() => {});
+      return true;
+    } catch(e) {
+      console.error('Anonymous sign-in error:', e);
+      return false;
+    }
   };
 
   /* ── รับผล redirect กลับมา ── */
@@ -3729,6 +3753,15 @@ body::after {
       <span>เข้าสู่ระบบด้วย Google</span>
     </button>
     <div style="margin-top:20px;font-family:var(--font-th);font-size:12px;color:var(--text2);opacity:0.6;">ข้อมูลของคุณจะถูกเก็บอย่างปลอดภัย</div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:10px;width:100%;max-width:300px;">
+      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
+      <div style="font-family:var(--font-th);font-size:12px;color:var(--text2);opacity:0.5;">หรือ</div>
+      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
+    </div>
+    <button onclick="playAnonymous()" style="margin-top:12px;width:100%;max-width:300px;padding:12px 20px;background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.35);border-radius:12px;color:rgba(0,200,255,0.9);font-family:var(--font-th);font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,180,255,0.2)'" onmouseout="this.style.background='rgba(0,180,255,0.1)'">
+      ⚡ เล่นโดยไม่ต้อง Google login
+    </button>
+    <div style="margin-top:6px;font-family:var(--font-th);font-size:11px;color:var(--text2);opacity:0.45;">(ไม่บันทึกประวัติ — เล่นได้ทันที)</div>
     <!-- แสดง warning เมื่อเปิดจาก file:// -->
     <div id="fileProtocolWarning" style="display:none;margin-top:16px;padding:12px 16px;background:rgba(255,100,0,0.12);border:1px solid rgba(255,150,0,0.5);border-radius:8px;font-family:var(--font-th);font-size:12px;color:#FFB347;line-height:1.7;max-width:320px;text-align:left;">
       ⚠️ <strong>ต้องเปิดผ่าน Web Server</strong><br>
@@ -5973,9 +6006,17 @@ async function joinRoom() {
 
   if (code.length !== 4) { showNotif('⚠️ กรอกรหัส 4 หลัก (ตัวเลข)'); return; }
 
-  const name = (window._userProfile && window._userProfile.nickname) || (window._currentUser && window._currentUser.email) || '';
-  if (!name) { showNotif('⚠️ กรุณาตั้งชื่อในโปรไฟล์ก่อน'); return; }
-  if (!window._currentUser) { showNotif('⚠️ กรุณาเข้าสู่ระบบก่อน'); return; }
+  let name = (window._userProfile && window._userProfile.nickname) || (window._currentUser && window._currentUser.email) || '';
+
+  // ถ้ายังไม่ได้ login — ให้ใส่ชื่อแล้วเข้าแบบ anonymous
+  if (!window._currentUser || !name) {
+    const inputName = prompt('ใส่ชื่อของคุณ (ชื่อที่จะแสดงในห้องเกม):');
+    if (!inputName || !inputName.trim()) { showNotif('⚠️ กรุณาใส่ชื่อก่อนเข้าห้อง'); return; }
+    showNotif('⏳ กำลัง login...');
+    const ok = await window._signInAnonymousForJoin(inputName.trim());
+    if (!ok) { showNotif('❌ Login ไม่สำเร็จ ลองใหม่อีกครั้ง'); return; }
+    name = inputName.trim();
+  }
 
   // ล้าง state เก่า
   G.roomCode = '';
@@ -7870,6 +7911,19 @@ function showGameOver(total) {
 /* ============================================================
    FIREBASE AUTH + PROFILE FLOW
    ============================================================ */
+async function playAnonymous() {
+  const inputName = prompt('ใส่ชื่อของคุณ (ชื่อที่จะแสดงในห้องเกม):');
+  if (!inputName || !inputName.trim()) return;
+  const nick = inputName.trim().slice(0, 20);
+  const ok = await window._signInAnonymousForJoin(nick);
+  if (!ok) { alert('ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่'); return; }
+  // ข้ามหน้า profile setup — ไปหน้า home เลย
+  const ls = document.getElementById('login-screen');
+  if (ls) { ls.style.opacity = '0'; ls.style.transform = 'scale(1.05)'; setTimeout(() => { ls.style.display = 'none'; }, 700); }
+  updateUserPill();
+  showScreen('home');
+}
+
 function showLoginScreen() {
   const ls = document.getElementById('login-screen');
   if (ls) { ls.style.display = 'flex'; ls.style.opacity = '1'; ls.style.transform = 'scale(1)'; }
