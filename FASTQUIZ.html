@@ -5867,7 +5867,7 @@ async function createRoom() {
   // ===== Sync Firestore ใน background =====
   if (window._db) {
     const mcPlayer = G.players[0];
-    // ลบห้องเก่าแล้วสร้างใหม่
+    // สร้างห้องใน Firestore — รอให้เสร็จก่อนถึงจะยืนยัน
     _db.collection('rooms').doc(code).set({
       code: String(code),
       players: [mcPlayer],
@@ -5879,8 +5879,14 @@ async function createRoom() {
       ownerName: mcName
     }).then(() => {
       console.log('[FASTQUIZ] Room', code, 'created in Firestore OK');
+      showNotif('✅ ห้อง ' + code + ' พร้อมแล้ว! ผู้เล่นจากทุก device เข้าได้เลย');
     }).catch(e => {
-      console.warn('[FASTQUIZ] createRoom Firestore error:', e);
+      console.warn('[FASTQUIZ] createRoom Firestore error:', e.code, e.message);
+      if (e.code === 'permission-denied') {
+        showNotif('⚠️ Firestore Rules ปิดกั้น! ผู้เล่น device อื่นเข้าไม่ได้ — แก้ Rules เป็น: allow read, write: if true;');
+      } else {
+        showNotif('⚠️ Firestore error: ' + e.code + ' — ผู้เล่น device อื่นอาจเข้าไม่ได้');
+      }
     });
   }
 
@@ -6027,30 +6033,52 @@ async function joinRoom() {
 
   showNotif('⏳ กำลังค้นหาห้อง...');
 
-  // ===== หาห้องจาก Firestore =====
+  // ===== หาห้องจาก Firestore (retry หลายรอบ รองรับ cross-device/cross-browser) =====
   let foundRoom = null;
   let fromFirestore = false;
 
   if (window._db) {
-    try {
-      const snap = await _db.collection('rooms').doc(code).get();
-      if (snap.exists) {
-        const d = snap.data();
-        if (d.expiresAt && Date.now() > d.expiresAt) {
-          showNotif('❌ รหัสห้องหมดอายุแล้ว'); return;
-        }
-        if (d.phase && d.phase !== 'lobby') {
-          showNotif('❌ เกมเริ่มไปแล้ว ไม่สามารถเข้าร่วมได้'); return;
-        }
-        foundRoom = d;
-        fromFirestore = true;
+    // retry delays: 0ms, 800ms, 1200ms, 1500ms, 2000ms = รวม ~5.5 วิ
+    const retryDelays = [0, 800, 1200, 1500, 2000];
+    for (let attempt = 0; attempt < retryDelays.length; attempt++) {
+      if (retryDelays[attempt] > 0) {
+        await new Promise(r => setTimeout(r, retryDelays[attempt]));
       }
-    } catch(e) {
-      console.warn('joinRoom: Firestore get error', e);
+      try {
+        // บังคับดึงจาก server โดยตรง (ไม่ใช้ cache) เพื่อให้เห็นห้องจาก browser อื่น
+        const snap = await _db.collection('rooms').doc(code).get({ source: 'server' });
+        if (snap.exists) {
+          const d = snap.data();
+          if (d.expiresAt && Date.now() > d.expiresAt) {
+            showNotif('❌ รหัสห้องหมดอายุแล้ว'); return;
+          }
+          if (d.phase && d.phase !== 'lobby') {
+            showNotif('❌ เกมเริ่มไปแล้ว ไม่สามารถเข้าร่วมได้'); return;
+          }
+          foundRoom = d;
+          fromFirestore = true;
+          break; // เจอแล้ว ออกจาก loop
+        } else if (attempt < retryDelays.length - 1) {
+          showNotif('⏳ กำลังค้นหาห้อง... (' + (attempt + 1) + ')');
+        }
+      } catch(e) {
+        console.warn('joinRoom: Firestore get error (attempt ' + attempt + '):', e.code, e.message);
+        if (e.code === 'permission-denied') {
+          if (!window._currentUser) {
+            showNotif('⏳ กำลัง login อัตโนมัติ...');
+            await window._signInAnonymousForJoin(name || 'Guest').catch(() => {});
+            await new Promise(r => setTimeout(r, 800));
+          } else {
+            showNotif('❌ Firestore Rules ปิดกั้น — แก้ Rules เป็น: allow read, write: if true;');
+            break;
+          }
+        }
+        // error อื่น → retry ต่อ
+      }
     }
   }
 
-  // fallback: localStorage (same-device)
+  // fallback: localStorage (same-device same-browser เท่านั้น)
   if (!foundRoom) {
     const lsRoom = getRoom();
     if (lsRoom && String(lsRoom.code) === String(code)) {
