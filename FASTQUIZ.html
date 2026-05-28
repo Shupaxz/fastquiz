@@ -4660,17 +4660,23 @@ function setRoom(d) {
 }
 
 function broadcastEvent(type, data) {
-  const ev = { type, data, ts: Date.now() };
-  localStorage.removeItem(LS_EVENT);
-  setTimeout(() => localStorage.setItem(LS_EVENT, JSON.stringify(ev)), 10);
-  // Also broadcast via Firestore for cross-device sync
+  const ts = Date.now();
+  const ev = { type, data, ts };
+
+  // PRIMARY: Firestore — cross-browser, cross-device
   if (G.roomCode && window._db) {
     try {
       _db.collection('rooms').doc(G.roomCode).update({
-        lastEvent: { type, data, ts: Date.now() }
-      }).catch(() => {});
+        lastEvent: { type, data, ts }
+      }).catch(e => console.warn('broadcastEvent Firestore error:', e));
     } catch(e) {}
   }
+
+  // SECONDARY: localStorage — same-browser fallback (multi-tab)
+  try {
+    localStorage.removeItem(LS_EVENT);
+    setTimeout(() => localStorage.setItem(LS_EVENT, JSON.stringify(ev)), 10);
+  } catch(e) {}
 }
 
 window.addEventListener('storage', (e) => {
@@ -4690,6 +4696,9 @@ let _lastFsEventTs = 0;
 function startFirestoreRoomListener(code) {
   if (_firestoreRoomUnsub) { _firestoreRoomUnsub(); _firestoreRoomUnsub = null; }
   if (!window._db || !code) return;
+  // Reset to 0 so we don't miss events that arrived just before listener started
+  // We guard against replaying old events by checking age (> 30s old = skip)
+  const listenStart = Date.now();
   _firestoreRoomUnsub = _db.collection('rooms').doc(code).onSnapshot(snap => {
     if (!snap.exists) return;
     const fsRoom = snap.data();
@@ -4743,7 +4752,8 @@ function startFirestoreRoomListener(code) {
     // ทั้ง MC และ Player รับ lastEvent จาก Firestore (cross-device)
     if (fsRoom.lastEvent) {
       const ev = fsRoom.lastEvent;
-      if (ev.ts && ev.ts > _lastFsEventTs) {
+      // รับ event ที่ ts > lastFsEventTs และไม่เก่าเกิน 30 วินาที
+      if (ev.ts && ev.ts > _lastFsEventTs && (Date.now() - ev.ts) < 30000) {
         _lastFsEventTs = ev.ts;
         routeEvent(ev.type, ev.data);
       }
@@ -4838,7 +4848,7 @@ setInterval(() => {
 }, 150);
 
 function routeEvent(type, data) {
-  if (!G.roomCode) return;
+  // ยอมให้ route ได้แม้ G.roomCode ยังไม่ set (เช่น ตอนรับ game_started บน join-screen)
   if (G.isMC) handleEventMC(type, data);
   else         handleEventPlayer(type, data);
 }
@@ -5861,7 +5871,7 @@ async function createRoom() {
   showNotif('✅ สร้างห้องสำเร็จ! รหัส: ' + code);
 
   // เริ่ม listen
-  _lastFsEventTs = Date.now();
+  _lastFsEventTs = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(code);
 
   // ===== Sync Firestore ใน background =====
@@ -5876,7 +5886,16 @@ async function createRoom() {
       createdAt: Date.now(),
       expiresAt: Date.now() + (6 * 60 * 60 * 1000),
       ownerUid: (window._currentUser && window._currentUser.uid) || '',
-      ownerName: mcName
+      ownerName: mcName,
+      // เก็บ categories ไว้ด้วยเพื่อให้ player cross-device โหลดได้ก่อน game start
+      categoriesCompact: G.categories.map(c => ({
+        name: c.name,
+        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
+      })),
+      bonusCategoriesCompact: (G.bonusCategories || []).map(c => ({
+        name: c.name,
+        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
+      }))
     }).then(() => {
       console.log('[FASTQUIZ] Room', code, 'created in Firestore OK');
       showNotif('✅ ห้อง ' + code + ' พร้อมแล้ว! ผู้เล่นจากทุก device เข้าได้เลย');
@@ -6098,8 +6117,9 @@ async function joinRoom() {
   G.roomCode = code;
   G.myPlayerName = name;
   G.myPlayerIndex = 1;
-  G.categories = foundRoom.categories || [];
-  G.bonusCategories = foundRoom.bonusCategories || [];
+  // โหลด categories จาก Firestore ก่อน (cross-device)
+  G.categories = foundRoom.categoriesCompact || foundRoom.categories || [];
+  G.bonusCategories = foundRoom.bonusCategoriesCompact || foundRoom.bonusCategories || [];
 
   const myAvatar = (window._userProfile && window._userProfile.avatar) || '';
   const player = { name, id: Date.now(), avatar: myAvatar, isOwner: false };
@@ -6138,7 +6158,7 @@ async function joinRoom() {
   }
 
   // เริ่ม listen Firestore
-  _lastFsEventTs = Date.now();
+  _lastFsEventTs = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(code);
 
   // Broadcast player_joined
@@ -8712,7 +8732,7 @@ async function acceptInvite(inviteId, roomCode, fromName, fromAvatar) {
   }, 100);
 
   // เริ่ม listen Firestore เพื่อรับ game_started
-  _lastFsEventTs = Date.now();
+  _lastFsEventTs = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(roomCode);
 
   // fetch inviter avatar ถ้าไม่มี
