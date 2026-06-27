@@ -143,9 +143,10 @@
 
   window._saveGameHistory = async function(entry) {
     if (!window._currentUser) return;
-    await _db.collection('users').doc(window._currentUser.uid).update({
+    // ใช้ set merge เผื่อ doc ยังไม่มี field gameHistory (กัน error)
+    await _db.collection('users').doc(window._currentUser.uid).set({
       gameHistory: firebase.firestore.FieldValue.arrayUnion(entry)
-    });
+    }, { merge: true });
   };
 
   window._searchUser = async function(q) {
@@ -4563,6 +4564,7 @@ const G = {
 
 /* จำนวนผู้เล่นที่ "ตอบคำถาม" จริง (ไม่นับ MC/owner)
    เกมนี้ MC เป็นพิธีกร ไม่ใช่ผู้ตอบ → ใช้ค่านี้แทน G.players.length ในการตัดสิน mode */
+let _historySavedForGame = false;
 function answererCount() {
   return (G.players || []).filter(p => p && !p.isOwner).length;
 }
@@ -6598,6 +6600,7 @@ setInterval(() => {
 function startGame() {
   G.currentQ = 0; G.totalMoney = 0; G.savedMoney = [];
   G.missCount = 0; G.lifelineUsed = [false, false]; G.money = 20000;
+  _historySavedForGame = false; // เริ่มเกมใหม่ → อนุญาตให้บันทึกประวัติได้อีกครั้ง
 
   const room = getRoom();
   room.players = G.players;
@@ -7041,6 +7044,7 @@ function closeLadderMC() {
    ============================================================ */
 function showGamePlayerPhase() {
   G.currentQ = 0; G.totalMoney = 0; G.savedMoney = []; G.missCount = 0;
+  _historySavedForGame = false; // เกมใหม่ → บันทึกประวัติได้
   showScreen('game-player');
   renderPlayerWaiting();
   updateQStatusBar('player');
@@ -7351,11 +7355,13 @@ function playerStopSlot() {
   // Window height = 100px, item height = 100px → top of item should be at translateY = targetPos
   const allCatNames = G.categories.filter(c => c.name.trim()).map(c => c.name);
   const itemH = 100;
+  // ★ ล็อก roundCats ไว้ตอนนี้ กันถูกเขียนทับระหว่าง animation (ทำให้ช่อง≠ปุ่ม)
+  const lockedCats = G.roundCats.slice();
 
   [0,1].forEach(idx => {
     const reel = $(`slotReel${idx}`);
     if (!reel) return;
-    const catName = G.roundCats[idx];
+    const catName = lockedCats[idx];
     const catIdx = allCatNames.indexOf(catName);
     const safeCatIdx = catIdx >= 0 ? catIdx : 0;
     // Land on copy #3 (index 2) for safe range
@@ -7374,10 +7380,10 @@ function playerStopSlot() {
   });
 
   // Broadcast stop to MC so it syncs (MC will snap its reels too)
-  broadcastEvent('slot_stopped', { cats: G.roundCats });
+  broadcastEvent('slot_stopped', { cats: lockedCats });
   // In 2p mode: also broadcast to partner with final positions
   if (answererCount() >= 2) {
-    broadcastEvent('slot_stopped_sync', { cats: G.roundCats, pos: [spinPositions[0], spinPositions[1]] });
+    broadcastEvent('slot_stopped_sync', { cats: lockedCats, pos: [spinPositions[0], spinPositions[1]] });
   }
 
   // Flash and show category buttons after 3.5s animation
@@ -7387,10 +7393,14 @@ function playerStopSlot() {
       if (frame) frame.classList.add('stopped');
       const reel = $(`slotReel${idx}`);
       if (reel) {
+        // ★ บังคับ snap ตำแหน่งสุดท้ายให้ตรงเป๊ะกับ lockedCats (กัน animation คลาดเคลื่อน)
+        const catIdx = allCatNames.indexOf(lockedCats[idx]);
+        const safeCatIdx = catIdx >= 0 ? catIdx : 0;
+        const finalPos = (allCatNames.length * 3 + safeCatIdx) * itemH;
+        reel.style.transition = 'none';
+        reel.style.transform = `translateY(-${finalPos}px)`;
         Array.from(reel.children).forEach(c => c.classList.remove('highlight'));
-        const allCatN = G.categories.filter(c=>c.name.trim()).map(c=>c.name);
-        const catIdx = allCatN.indexOf(G.roundCats[idx]);
-        const targetItemIdx = allCatN.length * 3 + catIdx;
+        const targetItemIdx = allCatNames.length * 3 + safeCatIdx;
         if (reel.children[targetItemIdx]) reel.children[targetItemIdx].classList.add('highlight');
       }
     });
@@ -7401,7 +7411,7 @@ function playerStopSlot() {
       btnArea.style.display = 'flex';
       const btns = $('catBtns');
       btns.innerHTML = '';
-      G.roundCats.forEach(catName => {
+      lockedCats.forEach(catName => {
         const btn = document.createElement('button');
         btn.className = 'cat-btn-cyber';
         btn.textContent = catName;
@@ -8327,6 +8337,38 @@ function showFinalScreen(total) {
   setTimeout(launchConfetti, 600);
   setTimeout(launchConfetti, 1200);
   setTimeout(launchConfetti, 2000);
+
+  // ===== บันทึกประวัติการเล่นลงบัญชีของผู้ใช้คนนี้ (ทั้ง MC และผู้เล่น) =====
+  saveMyGameHistory(total);
+}
+
+let _historySavedForGameUnused; // (ตัวจริงประกาศไว้ด้านบนแล้ว)
+function saveMyGameHistory(total) {
+  if (_historySavedForGame) return; // กันบันทึกซ้ำ
+  if (!window._saveGameHistory || !window._currentUser) return;
+  _historySavedForGame = true;
+
+  const correct = (G.savedMoney || []).filter(m => m > 0).length;
+  const answered = Math.max(G.currentQ + 1, correct); // จำนวนข้อที่เล่นไป
+  const wrong = Math.max(0, answered - correct);
+  const totalQ = (correct + wrong) || 1;
+  const entry = {
+    date: new Date().toLocaleDateString('th-TH'),
+    ts: Date.now(),
+    correct: correct,
+    wrong: wrong,
+    correctPct: Math.round(correct / totalQ * 100),
+    wrongPct: Math.round(wrong / totalQ * 100),
+    prize: total || 0
+  };
+  window._saveGameHistory(entry).then(() => {
+    if (typeof dbg === 'function') dbg('history saved: ' + JSON.stringify(entry));
+    // อัปเดต local profile ทันทีเพื่อให้หน้า history เห็นเลย
+    if (window._userProfile) {
+      window._userProfile.gameHistory = window._userProfile.gameHistory || [];
+      window._userProfile.gameHistory.push(entry);
+    }
+  }).catch(e => { if (typeof dbg === 'function') dbg('history save ERR: ' + (e.code||e.message)); });
 }
 
 function restartGame() {
@@ -9283,22 +9325,7 @@ function lightningTransition(target) {
 }
 
 /* HOME PARTICLE CANVAS — removed */
-const _origShowFinalScreen = showFinalScreen;
-window.showFinalScreen = function(total) {
-  _origShowFinalScreen(total);
-  if (window._saveGameHistory && window._currentUser) {
-    const correct = G.savedMoney.filter(m => m > 0).length;
-    const wrong = G.currentQ - correct;
-    const total2 = correct + wrong || 1;
-    window._saveGameHistory({
-      date: new Date().toLocaleDateString('th-TH'),
-      correct, wrong,
-      correctPct: Math.round(correct / total2 * 100),
-      wrongPct: Math.round(wrong / total2 * 100),
-      prize: total
-    });
-  }
-};
+/* (history saving ย้ายไปอยู่ใน showFinalScreen โดยตรงแล้ว) */
 
 /* ============================================================
    CONFETTI
