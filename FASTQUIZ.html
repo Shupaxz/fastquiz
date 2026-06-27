@@ -5481,6 +5481,27 @@ function handleEventPlayer(type, data) {
    HELPERS
    ============================================================ */
 function $(id) { return document.getElementById(id); }
+
+/* ลบค่า undefined ออกจาก object/array ก่อนเขียนลง Firestore
+   (Firestore โยน error invalid-argument ถ้ามีฟิลด์ใดเป็น undefined) */
+function sanitizeForFirestore(val) {
+  if (val === undefined) return null;
+  if (val === null) return null;
+  if (Array.isArray(val)) {
+    return val.map(v => sanitizeForFirestore(v)).filter(v => v !== undefined);
+  }
+  if (typeof val === 'object') {
+    const out = {};
+    for (const k in val) {
+      if (!Object.prototype.hasOwnProperty.call(val, k)) continue;
+      const sv = sanitizeForFirestore(val[k]);
+      if (sv !== undefined) out[k] = sv; // ตัด key ที่เป็น undefined ทิ้ง
+    }
+    return out;
+  }
+  // primitive (string/number/boolean) — ส่งกลับตามเดิม
+  return val;
+}
 function fmt(n) { return Math.floor(n).toLocaleString('th-TH'); }
 
 /* Update join screen slot 1 when a player enters */
@@ -6008,8 +6029,17 @@ async function createRoom() {
 
   // ===== Sync Firestore ใน background =====
   if (window._db) {
-    const mcPlayer = G.players[0];
-    const roomData = {
+    const mcPlayer = sanitizeForFirestore(G.players[0]);
+    // map categories โดยกันค่า undefined ทุกฟิลด์ (สาเหตุ error invalid-argument)
+    const mapCats = (cats) => (cats || []).map(c => ({
+      name: c && c.name != null ? String(c.name) : '',
+      questions: ((c && c.questions) || []).map(q => ({
+        q: (q && q.q != null) ? String(q.q) : '',
+        a: (q && q.a != null) ? String(q.a) : '',
+        choices: (q && Array.isArray(q.choices)) ? q.choices.map(ch => ch != null ? String(ch) : '') : []
+      }))
+    }));
+    const roomData = sanitizeForFirestore({
       code: String(code),
       players: [mcPlayer],
       phase: 'lobby',
@@ -6017,17 +6047,10 @@ async function createRoom() {
       createdAt: Date.now(),
       expiresAt: Date.now() + (6 * 60 * 60 * 1000),
       ownerUid: (window._currentUser && window._currentUser.uid) || '',
-      ownerName: mcName,
-      // เก็บ categories ไว้ด้วยเพื่อให้ player cross-device โหลดได้ก่อน game start
-      categoriesCompact: G.categories.map(c => ({
-        name: c.name,
-        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
-      })),
-      bonusCategoriesCompact: (G.bonusCategories || []).map(c => ({
-        name: c.name,
-        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
-      }))
-    };
+      ownerName: mcName || 'MC',
+      categoriesCompact: mapCats(G.categories),
+      bonusCategoriesCompact: mapCats(G.bonusCategories)
+    });
 
     (async () => {
       try {
@@ -6336,7 +6359,7 @@ async function joinRoom() {
   const myAvatarRaw = (window._userProfile && window._userProfile.avatar) || '⚡';
   // ถ้า avatar เป็นรูป base64 ขนาดใหญ่ อย่าเขียนลง players array (เสี่ยงเกิน document limit → write fail → ชื่อไม่ขึ้น)
   const myAvatar = (typeof myAvatarRaw === 'string' && myAvatarRaw.startsWith('data:')) ? '⚡' : myAvatarRaw;
-  const player = { name, id: Date.now(), avatar: myAvatar, isOwner: false };
+  const player = sanitizeForFirestore({ name: name || 'Player', id: Date.now(), avatar: myAvatar || '⚡', isOwner: false });
 
   // ===== ไปหน้า join-screen ทันทีเลย =====
   hideBanner(); // เจอห้องแล้ว = เชื่อมต่อได้ ลบแถบ error ถ้ามี
