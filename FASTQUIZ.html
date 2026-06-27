@@ -4773,6 +4773,8 @@ function syncMcPlayersFromRoom(fsRoom) {
   const newNames = G.players.map(p => p.name).sort().join('|');
   const changed = prevNames !== newNames;
 
+  if (changed) dbg('MC sync: players now = [' + newNames.replace(/\|/g, ', ') + ']');
+
   updateMcLobbyPlayers();
   renderLobby();
   updateStartGameButton();
@@ -5604,6 +5606,60 @@ function showBanner(html, type) {
 }
 function hideBanner() { const b = document.getElementById('fqStatusBanner'); if (b) b.remove(); }
 
+/* ============================================================
+   DEBUG LOG OVERLAY — ช่วยวินิจฉัยบัค (เปิด/ปิดด้วยปุ่ม 🐞 มุมขวาล่าง)
+   ============================================================ */
+const _fqDebug = { lines: [], on: false };
+function dbg(msg, obj) {
+  const t = new Date().toLocaleTimeString();
+  let line = '[' + t + '] ' + msg;
+  if (obj !== undefined) {
+    try { line += ' ' + (typeof obj === 'string' ? obj : JSON.stringify(obj)); } catch(e) { line += ' [obj]'; }
+  }
+  _fqDebug.lines.push(line);
+  if (_fqDebug.lines.length > 200) _fqDebug.lines.shift();
+  console.log('[FQDBG]', msg, obj !== undefined ? obj : '');
+  const body = document.getElementById('fqDbgBody');
+  if (body) { body.textContent = _fqDebug.lines.join('\n'); body.scrollTop = body.scrollHeight; }
+}
+function ensureDebugUI() {
+  if (document.getElementById('fqDbgBtn')) return;
+  const btn = document.createElement('div');
+  btn.id = 'fqDbgBtn';
+  btn.textContent = '🐞';
+  btn.title = 'Debug log';
+  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:100000;width:44px;height:44px;border-radius:50%;background:#111a;border:1px solid #0af;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;backdrop-filter:blur(4px);';
+  btn.onclick = () => {
+    const p = document.getElementById('fqDbgPanel');
+    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
+    const body = document.getElementById('fqDbgBody');
+    if (body) { body.textContent = _fqDebug.lines.join('\n'); body.scrollTop = body.scrollHeight; }
+  };
+  const panel = document.createElement('div');
+  panel.id = 'fqDbgPanel';
+  panel.style.cssText = 'position:fixed;right:14px;bottom:66px;z-index:100000;width:min(92vw,420px);height:min(60vh,360px);background:#000d;border:1px solid #0af;border-radius:10px;display:none;flex-direction:column;font-family:monospace;font-size:11px;color:#9fe;overflow:hidden;';
+  const head = document.createElement('div');
+  head.style.cssText = 'padding:6px 8px;background:#0af2;display:flex;gap:8px;align-items:center;';
+  head.innerHTML = '<b style="flex:1;">FASTQUIZ DEBUG</b>';
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;';
+  copyBtn.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(_fqDebug.lines.join('\n')); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy',1200); };
+  const clrBtn = document.createElement('button');
+  clrBtn.textContent = 'Clear';
+  clrBtn.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;';
+  clrBtn.onclick = () => { _fqDebug.lines = []; document.getElementById('fqDbgBody').textContent=''; };
+  head.appendChild(copyBtn); head.appendChild(clrBtn);
+  const body = document.createElement('div');
+  body.id = 'fqDbgBody';
+  body.style.cssText = 'flex:1;padding:8px;overflow:auto;white-space:pre-wrap;word-break:break-all;';
+  panel.appendChild(head); panel.appendChild(body);
+  document.body.appendChild(btn);
+  document.body.appendChild(panel);
+}
+document.addEventListener('DOMContentLoaded', ensureDebugUI);
+setTimeout(ensureDebugUI, 1500);
+
 const RULES_HELP_HTML =
   '<b>⚠️ Firestore Rules ปิดกั้นการเชื่อมต่อ</b> — ผู้เล่นต่าง account/browser จึงเข้าห้องกันไม่ได้<br>' +
   'วิธีแก้ (ทำครั้งเดียว ~1 นาที):<br>' +
@@ -5967,26 +6023,31 @@ async function createRoom() {
 
     (async () => {
       try {
+        dbg('createRoom: writing room', { code, uid: (_auth.currentUser&&_auth.currentUser.uid)||'none', size: JSON.stringify(roomData).length });
         // 1) ให้แน่ใจว่ามี auth token ที่ใช้งานได้ก่อนเขียน
         if (_auth.currentUser) { await _auth.currentUser.getIdToken(true).catch(() => {}); }
         // 2) เขียนห้องลง Firestore แล้วรอให้เสร็จจริง
         await _db.collection('rooms').doc(code).set(roomData);
+        dbg('createRoom: set() OK, verifying from server...');
         // 3) ★ สำคัญ: อ่านกลับจาก SERVER เพื่อยืนยันว่าเครื่องอื่นจะเห็นห้องนี้จริง
         const verify = await _db.collection('rooms').doc(code).get({ source: 'server' });
         if (verify.exists) {
+          dbg('createRoom: VERIFIED on server ✓ room=' + code);
           console.log('[FASTQUIZ] Room', code, 'created & verified on server OK');
           showNotif('✅ ห้อง ' + code + ' พร้อมแล้ว! ผู้เล่นทุก device/account เข้าได้เลย');
           hideBanner();
         } else {
+          dbg('createRoom: write OK but NOT visible on server ✗');
           console.warn('[FASTQUIZ] Room write reported OK but not visible on server');
           showBanner(RULES_HELP_HTML, 'error');
         }
       } catch(e) {
+        dbg('createRoom ERROR: code=' + (e.code||'?') + ' msg=' + (e.message||e));
         console.warn('[FASTQUIZ] createRoom Firestore error:', e.code, e.message);
         if (e.code === 'permission-denied') {
           showBanner(RULES_HELP_HTML, 'error');
         } else {
-          showNotif('⚠️ Firestore error: ' + (e.code || e.message) + ' — ผู้เล่น device อื่นอาจเข้าไม่ได้');
+          showBanner('<b>❌ สร้างห้องลง Firestore ไม่สำเร็จ</b><br>error: <b>' + (e.code || e.message) + '</b><br>ผู้เล่นเครื่องอื่นจะเข้าไม่ได้ — กดปุ่ม 🐞 มุมขวาล่างเพื่อดู log', 'error');
         }
       }
     })();
@@ -6112,6 +6173,8 @@ async function joinRoom() {
   const rawCode = ($('joinCode').value || '').trim();
   const code = rawCode.replace(/[^0-9]/g, '');
 
+  dbg('joinRoom: clicked. raw="' + rawCode + '" code="' + code + '"');
+
   if (code.length !== 4) { showNotif('⚠️ กรอกรหัส 4 หลัก (ตัวเลข)'); return; }
 
   let name = (window._userProfile && window._userProfile.nickname) || (window._currentUser && window._currentUser.email) || '';
@@ -6159,6 +6222,7 @@ async function joinRoom() {
   const roomRef = window._db ? _db.collection('rooms').doc(code) : null;
 
   if (roomRef) {
+    dbg('joinRoom: searching room=' + code + ' uid=' + ((_auth.currentUser&&_auth.currentUser.uid)||'none'));
     const retryDelays = [0, 700, 1000, 1300, 1600, 2000, 2500];
     let permissionBlocked = false;
     for (let attempt = 0; attempt < retryDelays.length; attempt++) {
@@ -6174,8 +6238,10 @@ async function joinRoom() {
           if (serverErr.code === 'permission-denied') throw serverErr;
           snap = await roomRef.get();
         }
+        dbg('joinRoom: attempt ' + attempt + ' exists=' + snap.exists);
         if (snap.exists) {
           const d = snap.data();
+          dbg('joinRoom: room found! phase=' + d.phase + ' players=' + ((d.players||[]).length));
           if (d.expiresAt && Date.now() > d.expiresAt) {
             showNotif('❌ รหัสห้องหมดอายุแล้ว'); return;
           }
@@ -6189,6 +6255,7 @@ async function joinRoom() {
           showNotif('⏳ กำลังค้นหาห้อง... (' + (attempt + 1) + ')');
         }
       } catch(e) {
+        dbg('joinRoom: get error attempt ' + attempt + ' code=' + (e.code||'?'));
         console.warn('joinRoom: Firestore get error (attempt ' + attempt + '):', e.code, e.message);
         if (e.code === 'permission-denied') {
           // token อาจยังไม่พร้อม → refresh แล้ว retry ต่อ (ไม่ break)
@@ -6199,8 +6266,11 @@ async function joinRoom() {
       }
     }
     if (!foundRoom && permissionBlocked) {
+      dbg('joinRoom: FAILED - permission blocked');
       showBanner(RULES_HELP_HTML, 'error');
       showNotif('⚠️ เชื่อมต่อฐานข้อมูลไม่ได้ (ดูแถบด้านบน)');
+    } else if (!foundRoom) {
+      dbg('joinRoom: FAILED - room ' + code + ' not found after all retries (read OK but empty)');
     }
   }
 
@@ -6218,10 +6288,20 @@ async function joinRoom() {
     if (window._db) {
       try {
         // ลองอ่าน collection rooms ดูว่าเข้าถึงได้ไหม (ถ้าโดนบล็อกจะ throw permission-denied)
-        await _db.collection('rooms').limit(1).get({ source: 'server' });
+        const allRooms = await _db.collection('rooms').limit(20).get({ source: 'server' });
+        const codes = [];
+        allRooms.forEach(d => codes.push(d.id));
+        dbg('joinRoom: rooms visible to me = [' + codes.join(',') + '] (looking for ' + code + ')');
         // อ่านได้ปกติ แต่ไม่เจอห้องนี้ = รหัสผิด/ห้องถูกปิดจริง
-        showNotif('❌ ไม่พบห้องรหัส ' + code + ' — ตรวจสอบรหัสกับ MC อีกครั้ง');
+        if (codes.length === 0) {
+          showNotif('❌ ไม่มีห้องใดในระบบเลย — MC อาจสร้างห้องไม่สำเร็จ (ดู 🐞)');
+        } else if (codes.indexOf(code) === -1) {
+          showNotif('❌ ไม่พบห้อง ' + code + ' — มีห้อง: ' + codes.join(', '));
+        } else {
+          showNotif('❌ พบห้องในรายการแต่อ่านตรง ๆ ไม่ได้ — ลองอีกครั้ง');
+        }
       } catch(probeErr) {
+        dbg('joinRoom: probe error code=' + (probeErr.code||'?'));
         if (probeErr.code === 'permission-denied') {
           showBanner(RULES_HELP_HTML, 'error');
           showNotif('⚠️ ฐานข้อมูลถูกปิดกั้น (ดูแถบด้านบน)');
@@ -6234,6 +6314,7 @@ async function joinRoom() {
     }
     return;
   }
+  dbg('joinRoom: SUCCESS entering room ' + code + ' as "' + name + '"');
 
   // ===== เข้าห้องสำเร็จ =====
   G.isMC = false;
@@ -8171,7 +8252,7 @@ function showLoginToHome() {
 
 /* ตรวจว่า account นี้อ่าน/เขียน Firestore ได้จริงไหม (รากของบัค cross-account เข้าห้องไม่ได้) */
 async function runFirestoreAccessCheck() {
-  if (!window._db || !_auth.currentUser) return;
+  if (!window._db || !_auth.currentUser) { dbg('accessCheck: skipped (no db/user)'); return; }
   try {
     await _auth.currentUser.getIdToken(true).catch(() => {});
     const ref = _db.collection('_access_check').doc(_auth.currentUser.uid);
@@ -8179,8 +8260,10 @@ async function runFirestoreAccessCheck() {
     await ref.get({ source: 'server' });           // ทดสอบอ่านจาก server
     await ref.delete().catch(() => {});
     hideBanner();
+    dbg('accessCheck: OK uid=' + _auth.currentUser.uid + ' anon=' + _auth.currentUser.isAnonymous);
     console.log('[FASTQUIZ] Firestore access OK for', _auth.currentUser.uid);
   } catch(e) {
+    dbg('accessCheck: FAILED code=' + (e.code||'?') + ' ' + (e.message||''));
     console.warn('[FASTQUIZ] Firestore access check failed:', e.code, e.message);
     if (e.code === 'permission-denied') {
       showBanner(RULES_HELP_HTML, 'error');
