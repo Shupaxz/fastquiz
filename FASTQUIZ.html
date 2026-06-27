@@ -25,6 +25,14 @@
   const _db   = firebase.firestore();
   const _provider = new firebase.auth.GoogleAuthProvider();
 
+  // ★★★ สำคัญมาก: เปิดเผย _db / _auth ออกสู่ window ★★★
+  // โค้ดทั้งระบบเช็ค `if (window._db)` ก่อนทำงานกับ Firestore
+  // ถ้าไม่ได้ assign ตรงนี้ window._db จะเป็น undefined → ข้าม Firestore ทั้งหมด
+  // → ห้องไม่ถูกเขียนลง cloud → คนละเครื่อง/account เข้าห้องกันไม่ได้ + ไม่เห็นชื่อ
+  window._db = _db;
+  window._auth = _auth;
+  window._provider = _provider;
+
   /* ── Firestore connection diagnostic ── */
   window._testFirestore = async function() {
     try {
