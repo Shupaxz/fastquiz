@@ -241,23 +241,49 @@
   };
 
   /* ---- Get friends statuses ---- */
+  window._friendsStatusUnsubs = [];
+  window._friendsStatusCallbacks = [];
+  window._friendsStatusLastUids = '';
   window._listenFriendsStatus = function(callback) {
     if (!window._currentUser || !window._userProfile) return;
+    // เก็บ callback (ไม่ซ้ำ)
+    if (callback && window._friendsStatusCallbacks.indexOf(callback) === -1) {
+      window._friendsStatusCallbacks.push(callback);
+    }
     const friends = window._userProfile.friends || [];
-    if (friends.length === 0) { callback([]); return; }
     const uids = friends.map(f => f.uid);
-    // Listen to all friends docs (batch by 10)
+    const uidKey = uids.slice().sort().join(',');
+
+    // ถ้ารายชื่อเพื่อนเหมือนเดิม และมี listener อยู่แล้ว → ไม่ต้องสร้างใหม่ (แค่ยิง callback ด้วยค่าปัจจุบัน)
+    if (uidKey === window._friendsStatusLastUids && window._friendsStatusUnsubs.length) {
+      if (window._friendStatuses) { try { callback(window._friendStatuses); } catch(e){} }
+      return;
+    }
+    window._friendsStatusLastUids = uidKey;
+
+    // ยกเลิก listener เก่า
+    window._friendsStatusUnsubs.forEach(u => { try { u(); } catch(e){} });
+    window._friendsStatusUnsubs = [];
+
+    if (uids.length === 0) {
+      window._friendStatuses = {};
+      window._friendsStatusCallbacks.forEach(cb => { try { cb({}); } catch(e){} });
+      return;
+    }
     const chunks = [];
     for (let i=0; i<uids.length; i+=10) chunks.push(uids.slice(i,i+10));
     let allStatuses = {};
     chunks.forEach(chunk => {
-      _db.collection('users').where('uid','in',chunk).onSnapshot(snap => {
+      const unsub = _db.collection('users').where('uid','in',chunk).onSnapshot(snap => {
         snap.forEach(doc => {
           const d = doc.data();
           allStatuses[d.uid] = { status: d.status || 'offline', lastSeen: d.lastSeen || 0 };
         });
-        callback(allStatuses);
+        window._friendStatuses = allStatuses;
+        // ยิงทุก callback ที่ลงทะเบียนไว้
+        window._friendsStatusCallbacks.forEach(cb => { try { cb(allStatuses); } catch(e){} });
       });
+      window._friendsStatusUnsubs.push(unsub);
     });
   };
 
@@ -8893,7 +8919,7 @@ function renderFriendsList() {
       else if (st.status === 'afk') { statusClass = 'status-afk'; statusLabel = 'AFK'; }
     }
     const av = f.avatar || '👾';
-    const avHTML = av.startsWith('data:') ? `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : av;
+    const avHTML = (typeof av === 'string' && av.startsWith('data:')) ? `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : av;
     return `
     <div class="friend-item clickable ${statusClass}" onclick="openFriendActionModal(${i})">
       <div class="friend-avatar">${avHTML}<div class="friend-avatar-status"></div></div>
@@ -8910,14 +8936,51 @@ function renderFriendsList() {
     </div>`;
   }).join('');
 
-  // Load friend statuses
+  // subscribe สถานะเพื่อน (listener จัดการ dedup callback เองแล้ว ไม่เกิด loop)
   if (window._listenFriendsStatus) {
-    window._listenFriendsStatus((statuses) => {
-      window._friendStatuses = statuses;
-      renderFriendsList();
-      renderJoinFriendPanel();
-    });
+    window._listenFriendsStatus(_friendStatusRenderCb);
   }
+}
+function _friendStatusRenderCb(statuses) {
+  window._friendStatuses = statuses;
+  const screen = document.querySelector('.screen.active');
+  if (screen && screen.id === 'profile-page') renderFriendsListRows();
+  if (typeof renderJoinFriendPanel === 'function') renderJoinFriendPanel();
+}
+
+/* render เฉพาะแถวเพื่อน (ไม่ subscribe ใหม่) — ใช้ตอน status update */
+function renderFriendsListRows() {
+  const list = $('friendsList');
+  if (!list || !window._userProfile) return;
+  const friends = window._userProfile.friends || [];
+  if (friends.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:30px;font-family:var(--font-th);">ยังไม่มีเพื่อน เพิ่มเพื่อนด้านบน</div>';
+    return;
+  }
+  list.innerHTML = friends.map((f, i) => {
+    const st = window._friendStatuses && window._friendStatuses[f.uid];
+    let statusClass = 'status-offline', statusLabel = 'OFFLINE';
+    if (st) {
+      if (st.status === 'online') { statusClass = 'status-online'; statusLabel = 'ONLINE'; }
+      else if (st.status === 'afk') { statusClass = 'status-afk'; statusLabel = 'AFK'; }
+    }
+    const av = f.avatar || '👾';
+    const avHTML = (typeof av === 'string' && av.startsWith('data:')) ? `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : av;
+    return `
+    <div class="friend-item clickable ${statusClass}" onclick="openFriendActionModal(${i})">
+      <div class="friend-avatar">${avHTML}<div class="friend-avatar-status"></div></div>
+      <div>
+        <div class="friend-name">${f.customName || f.nickname || f.uid}</div>
+        <div class="friend-nick">@${f.nickname || f.uid}</div>
+        <div class="friend-status-label">${statusLabel}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-direction:column;" onclick="event.stopPropagation()">
+        <input class="cyber-input" placeholder="ชื่อเล่น" value="${f.customName||''}" style="padding:6px 10px;font-size:12px;width:90px;"
+          onchange="setFriendCustomName(${i}, this.value)">
+        <button class="btn-xs bx-cyan" style="font-size:11px;width:90px;" onclick="inviteFriend('${f.uid}')">📨 ชวน</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function showFriendContextMenu(e, friendIdx) {
@@ -9635,135 +9698,97 @@ function lightningTransition(target) {
 
   // ธีมสีตามปุ่ม: CREATE = ทอง/ส้ม, JOIN = ฟ้า/ม่วง
   const theme = target === 'create'
-    ? { core:'#FFF6CC', glow:'#FFD700', glow2:'#FF8800', flash:'255,200,0', ring:'#FFCC33' }
-    : { core:'#DFFCFF', glow:'#00E5FF', glow2:'#7A5CFF', flash:'0,200,255', ring:'#33E0FF' };
+    ? { core:'#FFF3C8', glow:'#FFC83D', flash:'255,190,40', ring:'#FFD24D' }
+    : { core:'#D8FBFF', glow:'#2FD8FF', flash:'40,200,255', ring:'#46E0FF' };
 
-  // SFX ฟ้าผ่า
+  // เสียงฟ้าผ่าเบา ๆ นุ่ม ๆ (ไม่แสบหู)
   try {
     const ac = new (window.AudioContext||window.webkitAudioContext)();
-    const noise = ac.createBufferSource();
-    const buf = ac.createBuffer(1, ac.sampleRate*0.4, ac.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2.2);
-    noise.buffer = buf;
-    const bp = ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1400; bp.Q.value=0.6;
+    const o = ac.createOscillator(); o.type='sine'; o.frequency.value=180;
+    o.frequency.exponentialRampToValueAtTime(60, ac.currentTime+0.4);
     const g = ac.createGain(); g.gain.value=0.0001;
-    g.gain.exponentialRampToValueAtTime(0.5, ac.currentTime+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.5);
-    noise.connect(bp); bp.connect(g); g.connect(ac.destination);
-    noise.start();
-    // เสียง rumble ต่ำ
-    const o = ac.createOscillator(); o.type='sawtooth'; o.frequency.value=70;
-    const og = ac.createGain(); og.gain.value=0.0001;
-    og.gain.exponentialRampToValueAtTime(0.25, ac.currentTime+0.05);
-    og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.6);
-    o.connect(og); og.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.6);
+    g.gain.exponentialRampToValueAtTime(0.18, ac.currentTime+0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.55);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.55);
   } catch(e) {}
 
-  function bolt(x1,y1,x2,y2,rough,depth,segs) {
-    // สร้างเส้นแตกแบบ midpoint-displacement ทั้งเส้นแล้ววาดทีเดียว (ลื่นกว่า)
-    let pts = [{x:x1,y:y1},{x:x2,y:y2}];
-    for (let d=0; d<depth; d++) {
-      const next = [];
-      for (let i=0;i<pts.length-1;i++) {
-        const a=pts[i], b=pts[i+1];
-        const mx=(a.x+b.x)/2 + (Math.random()-0.5)*rough;
-        const my=(a.y+b.y)/2 + (Math.random()-0.5)*rough;
-        next.push(a, {x:mx,y:my});
-      }
-      next.push(pts[pts.length-1]);
-      pts = next; rough *= 0.5;
+  const cx = W/2;
+
+  // สร้างเส้นสายฟ้าไว้ล่วงหน้า "ครั้งเดียว" (ไม่สุ่มใหม่ทุกเฟรม → ลื่น ไม่แลค ไม่กระพริบมั่ว)
+  function makeBolt(startX) {
+    const pts = [{x:startX, y:-30}];
+    const segments = 9;
+    for (let i=1;i<=segments;i++) {
+      const t = i/segments;
+      const targetX = cx + (startX - cx) * (1 - t) * 0.3; // เอนเข้ากลางจอเล็กน้อย
+      pts.push({
+        x: targetX + (Math.random()-0.5) * 90 * (1-t*0.3),
+        y: (H+30) * t
+      });
     }
+    return pts;
+  }
+  // 2 เส้นหลัก กำลังดี ไม่รก
+  const bolts = [ makeBolt(W*0.42), makeBolt(W*0.58) ];
+
+  function strokeBolt(pts) {
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.stroke();
-    // แตกกิ่ง
-    if (segs) {
-      for (let k=0;k<segs;k++){
-        const i = 2 + Math.floor(Math.random()*(pts.length-4));
-        if (!pts[i]) continue;
-        const len = 60 + Math.random()*120;
-        const ang = Math.atan2(pts[i+1]?pts[i+1].y-pts[i].y:0, pts[i+1]?pts[i+1].x-pts[i].x:1) + (Math.random()-0.5)*1.6;
-        ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y);
-        ctx.lineTo(pts[i].x+Math.cos(ang)*len, pts[i].y+Math.sin(ang)*len);
-        ctx.stroke();
-      }
-    }
   }
 
   let frame = 0;
-  const TOTAL = 56;
-  const cx = W/2, cy = H/2;
+  const TOTAL = 42; // สั้น กระชับ
 
   function animate() {
     ctx.clearRect(0,0,W,H);
     const p = frame / TOTAL;
+    const ease = Math.sin(p * Math.PI); // นุ่มขึ้น-ลง
 
-    // ── Stage 1: charge-up (0–0.35): vignette เรืองแสงจากกลางจอ ──
-    if (p < 0.4) {
-      const c = p/0.4;
-      const r = Math.max(W,H) * (0.2 + c*0.5);
-      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,r);
-      grad.addColorStop(0, `rgba(${theme.flash},${0.15+c*0.25})`);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+    // ── flash เรืองนุ่มจากกลางจอ (radial — สบายตา) ──
+    const grad = ctx.createRadialGradient(cx, H/2, 0, cx, H/2, Math.max(W,H)*0.75);
+    grad.addColorStop(0, `rgba(${theme.flash},${ease*0.22})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+    // ── สายฟ้า: โผล่ช่วงกลาง fade in/out นุ่ม ๆ ──
+    if (p > 0.12 && p < 0.72) {
+      const bp = Math.sin(((p-0.12)/0.6) * Math.PI); // 0→1→0
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      bolts.forEach(pts => {
+        // glow ชั้นนอก (นุ่ม)
+        ctx.strokeStyle = `rgba(${theme.flash},${bp*0.4})`;
+        ctx.lineWidth = 7; ctx.shadowBlur = 22; ctx.shadowColor = theme.glow;
+        strokeBolt(pts);
+        // แกนสว่าง
+        ctx.strokeStyle = `rgba(255,255,255,${bp*0.95})`;
+        ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = theme.core;
+        strokeBolt(pts);
+      });
+      ctx.shadowBlur = 0;
     }
 
-    // ── Stage 2: main strike (0.25–0.7): ฟ้าผ่าหลายเส้น + flash ──
-    if (p >= 0.22 && p < 0.78) {
-      const sp = (p-0.22)/0.56;
-      const intensity = Math.sin(sp*Math.PI);
-      // flash เต็มจอ
-      ctx.fillStyle = `rgba(${theme.flash},${intensity*0.45})`;
-      ctx.fillRect(0,0,W,H);
-
-      const numBolts = 3 + Math.floor(Math.random()*3);
-      for (let i=0;i<numBolts;i++) {
-        const startX = W*(0.2+Math.random()*0.6);
-        const endX = cx + (Math.random()-0.5)*W*0.4;
-        // outer glow
-        ctx.strokeStyle = `rgba(${theme.flash},${intensity*0.35})`;
-        ctx.lineWidth = 9; ctx.shadowBlur = 45; ctx.shadowColor = theme.glow;
-        ctx.lineCap='round';
-        bolt(startX,-20, endX, H+20, 160, 6, 3);
-        // mid
-        ctx.strokeStyle = theme.glow; ctx.lineWidth = 4; ctx.shadowBlur=28; ctx.shadowColor=theme.glow2;
-        bolt(startX,-20, endX, H+20, 110, 6, 0);
-        // core
-        ctx.strokeStyle = theme.core; ctx.lineWidth = 1.6; ctx.shadowBlur=14; ctx.shadowColor='#fff';
-        bolt(startX,-20, endX, H+20, 80, 6, 0);
-      }
-    }
-
-    // ── Stage 3: shockwave ring (0.5–1): วงคลื่นกระจายจากกลาง ──
-    if (p >= 0.5) {
-      const sw = (p-0.5)/0.5;
-      const r = sw * Math.max(W,H) * 0.9;
+    // ── shockwave ring บาง ๆ วงเดียว (เรียบหรู) ──
+    if (p >= 0.45) {
+      const sw = (p-0.45)/0.55;
       ctx.beginPath();
-      ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.arc(cx, H/2, sw*Math.max(W,H)*0.6, 0, Math.PI*2);
       ctx.strokeStyle = theme.ring;
-      ctx.globalAlpha = (1-sw)*0.9;
-      ctx.lineWidth = 6 + (1-sw)*10;
-      ctx.shadowBlur = 30; ctx.shadowColor = theme.ring;
-      ctx.stroke();
-      // วงที่สอง
-      ctx.beginPath();
-      ctx.arc(cx,cy,r*0.7,0,Math.PI*2);
       ctx.globalAlpha = (1-sw)*0.5;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3 + (1-sw)*5;
+      ctx.shadowBlur = 16; ctx.shadowColor = theme.ring;
       ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
 
-    // ── Stage 4: fade to white flash ก่อนสลับหน้า ──
-    if (p > 0.82) {
-      const f = (p-0.82)/0.18;
-      ctx.fillStyle = `rgba(${theme.flash},${f*0.55})`;
+    // ── fade ปิดท้ายนุ่ม ๆ ──
+    if (p > 0.8) {
+      const f = (p-0.8)/0.2;
+      ctx.fillStyle = `rgba(${theme.flash},${f*0.3})`;
       ctx.fillRect(0,0,W,H);
     }
 
-    ctx.shadowBlur = 0;
     frame++;
     if (frame < TOTAL) {
       requestAnimationFrame(animate);
