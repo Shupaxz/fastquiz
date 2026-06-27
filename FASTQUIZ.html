@@ -3232,6 +3232,7 @@ body::after {
 .btn-profile-action:hover { transform: translateY(-3px) scale(1.05); }
 .bpa-back { background: linear-gradient(135deg, #1a2a4a, #2a3a5a); color: var(--text2); border: 1px solid var(--border2); }
 .bpa-switch { background: linear-gradient(135deg, #003366, #0055aa); color: var(--cyan); border: 1px solid rgba(0,200,255,0.4); box-shadow: 0 4px 0 #001a44, 0 0 15px rgba(0,150,255,0.2); }
+.bpa-edit { background: linear-gradient(135deg, #1a4a1a, #2a7a2a); color: var(--neon); border: 1px solid rgba(57,255,20,0.4); box-shadow: 0 4px 0 #0a2a0a, 0 0 15px rgba(57,255,20,0.2); }
 .bpa-delete { background: linear-gradient(135deg, #3a0000, #660000); color: var(--red); border: 1px solid rgba(255,23,68,0.4); box-shadow: 0 4px 0 #1a0000, 0 0 15px rgba(255,23,68,0.15); }
 .bpa-logout { background: linear-gradient(135deg, #660020, #aa0035); color: #ff6688; border: 1px solid rgba(255,23,68,0.5); box-shadow: 0 4px 0 #330010, 0 0 15px rgba(255,0,80,0.2); }
 
@@ -3381,6 +3382,117 @@ body::after {
 }
 .ctx-menu-item:hover { background: rgba(0,200,255,0.08); color: var(--cyan); }
 .ctx-menu-item.danger:hover { background: rgba(255,23,68,0.1); color: var(--red); }
+
+/* ---- Friend row: stronger interactive hover ---- */
+.friend-item.clickable { cursor: pointer; }
+.friend-item.clickable:hover {
+  border-color: var(--cyan);
+  transform: translateX(6px) scale(1.012);
+  box-shadow: 0 0 28px rgba(0,200,255,0.22), inset 0 0 30px rgba(0,150,255,0.06);
+}
+.friend-item.clickable::after {
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
+  background: linear-gradient(90deg, transparent, rgba(0,220,255,0.10), transparent);
+  transition: opacity 0.3s;
+}
+.friend-item.clickable:hover::after { opacity:1; }
+
+/* ---- Friend ACTION modal (centered, animated block) ---- */
+.friend-action-overlay {
+  position: fixed; inset: 0; z-index: 30000;
+  background: rgba(2,6,16,0.78); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: faOverlayIn 0.25s ease both;
+}
+@keyframes faOverlayIn { from{opacity:0} to{opacity:1} }
+.friend-action-card {
+  width: min(92vw, 380px);
+  background: linear-gradient(165deg, rgba(8,18,38,0.99), rgba(3,9,22,0.99));
+  border: 1px solid var(--border2); border-radius: 20px;
+  padding: 0 0 18px; position: relative; overflow: hidden;
+  box-shadow: 0 0 50px rgba(0,120,255,0.3), 0 24px 60px rgba(0,0,0,0.85);
+  animation: faCardIn 0.42s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes faCardIn {
+  from { opacity:0; transform: translateY(30px) scale(0.85); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+.friend-action-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), var(--cyan), transparent);
+}
+.fa-header {
+  display:flex; align-items:center; gap:14px; padding: 22px 22px 18px;
+  background: linear-gradient(180deg, rgba(0,120,255,0.10), transparent);
+  border-bottom: 1px solid var(--border);
+}
+.fa-avatar {
+  width:58px; height:58px; border-radius:50%; flex-shrink:0;
+  border:2px solid var(--cyan); display:flex; align-items:center; justify-content:center;
+  font-size:30px; background: linear-gradient(160deg, rgba(0,30,70,0.9), rgba(0,15,40,0.95));
+  box-shadow: 0 0 18px rgba(0,200,255,0.3); overflow:hidden;
+}
+.fa-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.fa-name { font-family: var(--font-th); font-size:19px; font-weight:800; color:var(--text); }
+.fa-nick { font-family: var(--font-th); font-size:12px; color:var(--text2); margin-top:2px; }
+.fa-badge {
+  font-family: var(--font-en); font-size:8px; font-weight:700; letter-spacing:2px;
+  padding:2px 8px; border-radius:8px; margin-top:5px; display:inline-block;
+}
+.fa-actions { display:flex; flex-direction:column; gap:10px; padding: 18px 20px 4px; }
+.fa-btn {
+  display:flex; align-items:center; gap:14px;
+  padding: 14px 18px; border-radius:13px; cursor:pointer;
+  font-family: var(--font-th); font-size:15px; font-weight:700;
+  border:1px solid var(--border2); background: rgba(0,20,50,0.5);
+  color: var(--text); transition: all 0.2s; position:relative; overflow:hidden;
+  opacity:0; transform: translateX(-16px);
+  animation: faBtnIn 0.4s ease forwards;
+}
+@keyframes faBtnIn { to{opacity:1; transform:translateX(0);} }
+.fa-btn:nth-child(1){animation-delay:0.10s}
+.fa-btn:nth-child(2){animation-delay:0.18s}
+.fa-btn:nth-child(3){animation-delay:0.26s}
+.fa-btn:nth-child(4){animation-delay:0.34s}
+.fa-btn .fa-ic { font-size:20px; width:26px; text-align:center; }
+.fa-btn:hover { transform: translateX(4px); border-color: var(--cyan); box-shadow: 0 0 22px rgba(0,200,255,0.25); }
+.fa-btn.fa-chat:hover   { border-color: var(--cyan);  box-shadow: 0 0 22px rgba(0,200,255,0.3); color: var(--cyan); }
+.fa-btn.fa-history:hover{ border-color: var(--gold);  box-shadow: 0 0 22px rgba(255,200,0,0.25); color: var(--gold); }
+.fa-btn.fa-invite:hover { border-color: var(--neon);  box-shadow: 0 0 22px rgba(57,255,20,0.25); color: var(--neon); }
+.fa-btn.fa-remove:hover { border-color: var(--red);   box-shadow: 0 0 22px rgba(255,40,80,0.25); color: var(--red); }
+.fa-close {
+  position:absolute; top:14px; right:16px; cursor:pointer; font-size:20px;
+  color: var(--text2); transition: all 0.2s; z-index:2;
+}
+.fa-close:hover { color: var(--red); transform: rotate(90deg); }
+
+/* ---- Friend CHAT panel ---- */
+.fa-chat-panel { display:flex; flex-direction:column; padding: 14px 18px 4px; }
+.fa-chat-msgs {
+  height: 240px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+  padding: 10px; border:1px solid var(--border); border-radius:12px;
+  background: rgba(0,10,28,0.5); margin-bottom:12px;
+}
+.fa-chat-bubble {
+  max-width:78%; padding:9px 13px; border-radius:14px; font-family:var(--font-th);
+  font-size:14px; line-height:1.4; word-break:break-word; animation: faBubbleIn 0.25s ease both;
+}
+@keyframes faBubbleIn { from{opacity:0; transform:translateY(6px) scale(0.96)} to{opacity:1; transform:translateY(0) scale(1)} }
+.fa-chat-bubble.me   { align-self:flex-end; background: linear-gradient(135deg, var(--cyan), #0088cc); color:#001018; border-bottom-right-radius:4px; }
+.fa-chat-bubble.them { align-self:flex-start; background: rgba(255,255,255,0.07); color: var(--text); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.fa-chat-time { font-size:9px; opacity:0.6; margin-top:3px; }
+.fa-chat-input-row { display:flex; gap:8px; padding-bottom:8px; }
+.fa-chat-input-row input { flex:1; }
+.fa-chat-empty { text-align:center; color:var(--text2); font-family:var(--font-th); font-size:13px; padding:40px 10px; }
+
+/* edit profile avatar options */
+.edit-av-opt {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  font-size:20px; border-radius:10px; cursor:pointer;
+  border:1px solid var(--border); background: rgba(0,15,40,0.6); transition: all 0.15s;
+}
+.edit-av-opt:hover { border-color: var(--cyan); transform: scale(1.12); background: rgba(0,30,70,0.7); }
+.edit-av-opt.selected { border-color: var(--neon); box-shadow: 0 0 12px rgba(57,255,20,0.4); background: rgba(57,255,20,0.1); }
 
 /* Friend profile view modal */
 .friend-profile-modal {
@@ -3835,6 +3947,7 @@ body::after {
       </div>
       <div class="profile-hero-actions">
         <button class="btn-profile-action bpa-back" onclick="closeProfilePage()">← กลับหน้าหลัก</button>
+        <button class="btn-profile-action bpa-edit" onclick="openEditProfile()">✏️ แก้ไขโปรไฟล์</button>
         <button class="btn-profile-action bpa-switch" onclick="doSwitchAccount()">🔄 เปลี่ยนบัญชี</button>
         <button class="btn-profile-action bpa-delete" onclick="showDeleteModal()">🗑 ลบบัญชี</button>
         <button class="btn-profile-action bpa-logout" onclick="doSignOut()">⏻ ออกจากระบบ</button>
@@ -8583,6 +8696,101 @@ function handleAvatarUpload(e) {
   reader.readAsDataURL(file);
 }
 
+/* ===== แก้ไขโปรไฟล์ (ชื่อ + avatar) จากหน้า profile-page ===== */
+function openEditProfile() {
+  if (!window._userProfile) return;
+  closeFriendActionModal();
+  const cur = window._userProfile;
+  window._editSelectedAvatar = cur.avatar || AVATAR_EMOJIS[0];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'friend-action-overlay';
+  overlay.id = 'friendActionOverlay';
+  overlay.onclick = (ev) => { if (ev.target === overlay) closeFriendActionModal(); };
+
+  const curAvIsImg = typeof cur.avatar === 'string' && cur.avatar.startsWith('data:');
+  const avGrid = AVATAR_EMOJIS.map(em =>
+    `<div class="edit-av-opt ${(!curAvIsImg && cur.avatar===em)?'selected':''}" onclick="pickEditAvatar('${em}',this)">${em}</div>`
+  ).join('');
+
+  overlay.innerHTML = `
+    <div class="friend-action-card" style="width:min(94vw,460px);">
+      <div class="fa-close" onclick="closeFriendActionModal()">✕</div>
+      <div class="fa-header">
+        <div class="fa-avatar" id="editAvPreview">${curAvIsImg?`<img src="${cur.avatar}">`:(cur.avatar||'👾')}</div>
+        <div><div class="fa-name">✏️ แก้ไขโปรไฟล์</div><div class="fa-nick">${cur.email||''}</div></div>
+      </div>
+      <div style="padding:18px 20px 6px;">
+        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:6px;">ชื่อในเกม</label>
+        <input class="cyber-input" id="editNickname" maxlength="20" value="${(cur.nickname||'').replace(/"/g,'&quot;')}" style="width:100%;margin-bottom:16px;">
+
+        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">เลือก Avatar</label>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:150px;overflow-y:auto;margin-bottom:14px;" id="editAvGrid">${avGrid}</div>
+
+        <label style="font-family:var(--font-th);font-size:12px;color:var(--text2);display:block;margin-bottom:8px;">หรืออัปโหลดรูปเอง</label>
+        <input type="file" accept="image/*" id="editAvUpload" onchange="handleEditAvatarUpload(event)" style="font-family:var(--font-th);font-size:12px;color:var(--text2);margin-bottom:8px;">
+
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button class="btn-big bb-cyan" style="flex:1;padding:12px;font-size:14px;" onclick="saveEditProfile()">💾 บันทึก</button>
+          <button class="btn-big bb-gray" style="padding:12px 20px;font-size:14px;" onclick="closeFriendActionModal()">ยกเลิก</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function pickEditAvatar(em, el) {
+  window._editSelectedAvatar = em;
+  document.querySelectorAll('.edit-av-opt').forEach(a => a.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  const prev = $('editAvPreview');
+  if (prev) prev.innerHTML = em;
+}
+
+function handleEditAvatarUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 150; canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, size, size);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      window._editSelectedAvatar = dataUrl;
+      document.querySelectorAll('.edit-av-opt').forEach(a => a.classList.remove('selected'));
+      const prev = $('editAvPreview');
+      if (prev) prev.innerHTML = `<img src="${dataUrl}">`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveEditProfile() {
+  const nickname = ($('editNickname').value || '').trim();
+  if (!nickname) { showNotif('⚠️ กรุณาตั้งชื่อในเกม'); return; }
+  const avatar = window._editSelectedAvatar || (window._userProfile && window._userProfile.avatar) || AVATAR_EMOJIS[0];
+  if (!window._saveProfile) { showNotif('⚠️ Firebase ยังไม่พร้อม'); return; }
+  showNotif('⏳ กำลังบันทึก...');
+  try {
+    await window._saveProfile({ nickname, avatar });
+    if (window._userProfile) { window._userProfile.nickname = nickname; window._userProfile.avatar = avatar; }
+    closeFriendActionModal();
+    showNotif('✅ บันทึกโปรไฟล์สำเร็จ!');
+    updateUserPill();
+    // refresh หน้าโปรไฟล์
+    const nameEl = $('profilePageName'); if (nameEl) nameEl.textContent = nickname;
+    const bigAv = $('profileBigAvatar');
+    if (bigAv) bigAv.innerHTML = (typeof avatar==='string'&&avatar.startsWith('data:')) ? `<img src="${avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : avatar;
+  } catch(e) {
+    showNotif('❌ บันทึกไม่สำเร็จ ลองใหม่');
+  }
+}
+
 async function saveProfileSetup() {
   const nickname = ($('profileNickname').value || '').trim();
   if (!nickname) { showNotif('⚠️ กรุณาตั้งชื่อในเกม'); return; }
@@ -8687,7 +8895,7 @@ function renderFriendsList() {
     const av = f.avatar || '👾';
     const avHTML = av.startsWith('data:') ? `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : av;
     return `
-    <div class="friend-item ${statusClass}" style="cursor:pointer;" onclick="showFriendContextMenu(event,${i})">
+    <div class="friend-item clickable ${statusClass}" onclick="openFriendActionModal(${i})">
       <div class="friend-avatar">${avHTML}<div class="friend-avatar-status"></div></div>
       <div>
         <div class="friend-name">${f.customName || f.nickname || f.uid}</div>
@@ -8713,51 +8921,212 @@ function renderFriendsList() {
 }
 
 function showFriendContextMenu(e, friendIdx) {
-  e.stopPropagation();
-  // Remove any existing context menu
-  closeFriendContextMenu();
+  if (e) e.stopPropagation();
+  openFriendActionModal(friendIdx);
+}
+
+function openFriendActionModal(friendIdx) {
+  closeFriendActionModal();
   const f = (window._userProfile.friends || [])[friendIdx];
   if (!f) return;
 
-  const menu = document.createElement('div');
-  menu.className = 'friend-ctx-menu';
-  menu.id = 'friendCtxMenu';
-
+  const st = window._friendStatuses && window._friendStatuses[f.uid];
+  let statusLabel = 'OFFLINE', statusColor = '#667', statusBg = 'rgba(100,100,150,0.12)';
+  if (st) {
+    if (st.status === 'online') { statusLabel='ONLINE'; statusColor='var(--neon)'; statusBg='rgba(57,255,20,0.14)'; }
+    else if (st.status === 'afk') { statusLabel='AFK'; statusColor='var(--gold)'; statusBg='rgba(255,215,0,0.14)'; }
+  }
   const av = f.avatar || '👾';
-  const avHTML = av.startsWith('data:') ? `<img src="${av}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">` : `<span style="font-size:18px;">${av}</span>`;
+  const avHTML = (typeof av === 'string' && av.startsWith('data:')) ? `<img src="${av}" alt="">` : av;
+  const displayName = f.customName || f.nickname || f.uid;
 
-  menu.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px 12px;border-bottom:1px solid var(--border);margin-bottom:4px;">
-      ${avHTML}
-      <div>
-        <div style="font-family:var(--font-th);font-size:14px;font-weight:700;color:var(--text);">${f.customName || f.nickname || f.uid}</div>
-        <div style="font-family:var(--font-th);font-size:11px;color:var(--text2);">@${f.nickname || f.uid}</div>
+  const overlay = document.createElement('div');
+  overlay.className = 'friend-action-overlay';
+  overlay.id = 'friendActionOverlay';
+  overlay.onclick = (ev) => { if (ev.target === overlay) closeFriendActionModal(); };
+
+  overlay.innerHTML = `
+    <div class="friend-action-card">
+      <div class="fa-close" onclick="closeFriendActionModal()">✕</div>
+      <div class="fa-header">
+        <div class="fa-avatar">${avHTML}</div>
+        <div>
+          <div class="fa-name">${displayName}</div>
+          <div class="fa-nick">@${f.nickname || f.uid}</div>
+          <div class="fa-badge" style="background:${statusBg};color:${statusColor};border:1px solid ${statusColor};">● ${statusLabel}</div>
+        </div>
       </div>
-    </div>
-    <div class="ctx-menu-item" onclick="viewFriendProfile(${friendIdx});closeFriendContextMenu()">
-      <span>👤</span><span>ดูโปรไฟล์</span>
-    </div>
-    <div class="ctx-menu-item danger" onclick="removeFriend(${friendIdx});closeFriendContextMenu()">
-      <span>🗑</span><span>ลบเพื่อน</span>
-    </div>
-  `;
-
-  // Position near click
-  document.body.appendChild(menu);
-  const rect = menu.getBoundingClientRect();
-  let x = e.clientX, y = e.clientY;
-  if (x + rect.width > window.innerWidth - 10) x = window.innerWidth - rect.width - 10;
-  if (y + rect.height > window.innerHeight - 10) y = window.innerHeight - rect.height - 10;
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-
-  // Close on outside click
-  setTimeout(() => { document.addEventListener('click', closeFriendContextMenu, { once: true }); }, 0);
+      <div class="fa-actions">
+        <div class="fa-btn fa-chat" onclick="openFriendChat(${friendIdx})">
+          <span class="fa-ic">💬</span><span>แชทคุยกับเพื่อน</span>
+        </div>
+        <div class="fa-btn fa-history" onclick="viewFriendHistory(${friendIdx})">
+          <span class="fa-ic">📜</span><span>ดูประวัติเพื่อน</span>
+        </div>
+        <div class="fa-btn fa-invite" onclick="inviteFriend('${f.uid}');closeFriendActionModal()">
+          <span class="fa-ic">📨</span><span>ชวนเล่นเกม</span>
+        </div>
+        <div class="fa-btn fa-remove" onclick="removeFriend(${friendIdx});closeFriendActionModal()">
+          <span class="fa-ic">🗑</span><span>ลบเพื่อน</span>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
-function closeFriendContextMenu() {
-  const m = $('friendCtxMenu');
+function closeFriendActionModal() {
+  const m = $('friendActionOverlay');
   if (m) m.remove();
+}
+// เก็บ alias เดิมไว้ กันโค้ดอื่นเรียก
+function closeFriendContextMenu() { closeFriendActionModal(); }
+
+/* ===== ดูประวัติเพื่อน ===== */
+async function viewFriendHistory(friendIdx) {
+  const f = (window._userProfile.friends || [])[friendIdx];
+  if (!f) return;
+  closeFriendActionModal();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'friend-action-overlay';
+  overlay.id = 'friendActionOverlay';
+  overlay.onclick = (ev) => { if (ev.target === overlay) closeFriendActionModal(); };
+  overlay.innerHTML = `
+    <div class="friend-action-card" style="width:min(94vw,520px);">
+      <div class="fa-close" onclick="closeFriendActionModal()">✕</div>
+      <div class="fa-header">
+        <div class="fa-avatar">${(f.avatar||'👾').startsWith && (f.avatar||'👾').startsWith('data:') ? `<img src="${f.avatar}">` : (f.avatar||'👾')}</div>
+        <div><div class="fa-name">📜 ประวัติของ ${f.customName||f.nickname||''}</div><div class="fa-nick">@${f.nickname||f.uid}</div></div>
+      </div>
+      <div style="padding:16px 18px;" id="faHistoryBody">
+        <div class="fa-chat-empty">⏳ กำลังโหลด...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  try {
+    const snap = await _db.collection('users').doc(f.uid).get();
+    const body = $('faHistoryBody');
+    if (!snap.exists) { if (body) body.innerHTML = '<div class="fa-chat-empty">ไม่พบข้อมูล</div>'; return; }
+    const data = snap.data();
+    const hist = data.gameHistory || [];
+    const games = hist.length;
+    const totalCorrect = hist.reduce((s,h)=>s+(h.correct||0),0);
+    const totalWrong = hist.reduce((s,h)=>s+(h.wrong||0),0);
+    const totalQ = totalCorrect+totalWrong || 1;
+    const best = hist.reduce((m,h)=>Math.max(m,h.prize||0),0);
+    if (!body) return;
+    if (games === 0) {
+      body.innerHTML = '<div class="fa-chat-empty">เพื่อนคนนี้ยังไม่มีประวัติการเล่น</div>';
+      return;
+    }
+    const rows = hist.slice().reverse().slice(0,12).map((h,i)=>`
+      <div class="history-row">
+        <div style="color:var(--gold);font-weight:700;">${i+1}</div>
+        <div style="color:var(--text2);font-size:12px;">${h.date||'—'}</div>
+        <div style="color:var(--neon);font-weight:700;">${h.correct||0}</div>
+        <div style="color:var(--red);font-weight:700;">${h.wrong||0}</div>
+        <div style="color:var(--neon);">${h.correctPct||0}%</div>
+        <div style="color:var(--gold);font-weight:700;">฿${fmt(h.prize||0)}</div>
+      </div>`).join('');
+    body.innerHTML = `
+      <div style="display:flex;gap:10px;justify-content:space-around;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--cyan);font-family:var(--font-en);">${games}</div><div style="font-size:11px;color:var(--text2);font-family:var(--font-th);">เกม</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--neon);font-family:var(--font-en);">${totalCorrect}</div><div style="font-size:11px;color:var(--text2);font-family:var(--font-th);">ตอบถูก</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--cyan);font-family:var(--font-en);">${Math.round(totalCorrect/totalQ*100)}%</div><div style="font-size:11px;color:var(--text2);font-family:var(--font-th);">% ถูก</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--gold);font-family:var(--font-en);">฿${fmt(best)}</div><div style="font-size:11px;color:var(--text2);font-family:var(--font-th);">สูงสุด</div></div>
+      </div>
+      <div style="max-height:260px;overflow-y:auto;">
+        <div class="history-row history-head"><div>#</div><div>วันที่</div><div>ถูก</div><div>ผิด</div><div>%ถูก</div><div>รางวัล</div></div>
+        ${rows}
+      </div>`;
+  } catch(err) {
+    const body = $('faHistoryBody');
+    if (body) body.innerHTML = '<div class="fa-chat-empty">โหลดประวัติไม่สำเร็จ</div>';
+  }
+}
+
+/* ===== แชทกับเพื่อน ===== */
+function chatThreadId(uidA, uidB) {
+  return [uidA, uidB].sort().join('__');
+}
+let _chatUnsub = null;
+function openFriendChat(friendIdx) {
+  const f = (window._userProfile.friends || [])[friendIdx];
+  if (!f || !window._currentUser) return;
+  closeFriendActionModal();
+
+  const myUid = window._currentUser.uid;
+  const threadId = chatThreadId(myUid, f.uid);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'friend-action-overlay';
+  overlay.id = 'friendActionOverlay';
+  overlay.onclick = (ev) => { if (ev.target === overlay) { closeFriendChat(); } };
+  overlay.innerHTML = `
+    <div class="friend-action-card" style="width:min(94vw,440px);">
+      <div class="fa-close" onclick="closeFriendChat()">✕</div>
+      <div class="fa-header">
+        <div class="fa-avatar">${(typeof f.avatar==='string'&&f.avatar.startsWith('data:'))?`<img src="${f.avatar}">`:(f.avatar||'👾')}</div>
+        <div><div class="fa-name">💬 ${f.customName||f.nickname||''}</div><div class="fa-nick">@${f.nickname||f.uid}</div></div>
+      </div>
+      <div class="fa-chat-panel">
+        <div class="fa-chat-msgs" id="faChatMsgs"><div class="fa-chat-empty">⏳ กำลังโหลด...</div></div>
+        <div class="fa-chat-input-row">
+          <input class="cyber-input" id="faChatInput" placeholder="พิมพ์ข้อความ..." maxlength="300"
+            onkeydown="if(event.key==='Enter'){sendFriendChat('${threadId}','${f.uid}')}">
+          <button class="btn-big bb-cyan" style="padding:10px 16px;font-size:13px;" onclick="sendFriendChat('${threadId}','${f.uid}')">ส่ง</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  // Realtime listen
+  if (_chatUnsub) { _chatUnsub(); _chatUnsub = null; }
+  _chatUnsub = _db.collection('chats').doc(threadId).collection('messages')
+    .orderBy('ts', 'asc').limitToLast(50)
+    .onSnapshot(snap => {
+      const box = $('faChatMsgs');
+      if (!box) return;
+      if (snap.empty) { box.innerHTML = '<div class="fa-chat-empty">ยังไม่มีข้อความ — เริ่มทักได้เลย!</div>'; return; }
+      box.innerHTML = '';
+      snap.forEach(doc => {
+        const m = doc.data();
+        const mine = m.from === myUid;
+        const div = document.createElement('div');
+        div.className = 'fa-chat-bubble ' + (mine ? 'me' : 'them');
+        const time = m.ts ? new Date(m.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+        div.innerHTML = `${(m.text||'').replace(/</g,'&lt;')}<div class="fa-chat-time">${time}</div>`;
+        box.appendChild(div);
+      });
+      box.scrollTop = box.scrollHeight;
+    }, err => {
+      const box = $('faChatMsgs');
+      if (box) box.innerHTML = '<div class="fa-chat-empty">โหลดแชทไม่ได้</div>';
+    });
+}
+
+async function sendFriendChat(threadId, friendUid) {
+  const input = $('faChatInput');
+  if (!input || !input.value.trim() || !window._currentUser) return;
+  const text = input.value.trim();
+  input.value = '';
+  try {
+    await _db.collection('chats').doc(threadId).collection('messages').add({
+      from: window._currentUser.uid,
+      to: friendUid,
+      text: text,
+      ts: Date.now()
+    });
+  } catch(e) {
+    showNotif('ส่งข้อความไม่สำเร็จ');
+    input.value = text;
+  }
+}
+
+function closeFriendChat() {
+  if (_chatUnsub) { _chatUnsub(); _chatUnsub = null; }
+  closeFriendActionModal();
 }
 
 async function removeFriend(idx) {
