@@ -4547,6 +4547,7 @@ const G = {
   judging: false,
   lifelineUsed: [false, false],
   lifelinePending: [false, false],
+  inputEnabled: false,
   barOpen: false,
   qOpen: false,
   bonusTimer: 120,
@@ -4693,41 +4694,68 @@ function setRoom(d) {
 }
 
 let _broadcastSeq = 0;
+// event ความถี่สูง (ยิงถี่ ๆ) — ใช้ lastEvent อย่างเดียว (เขียนทับ) + throttle
+// ไม่เข้า queue เพราะจะทำให้ document บวมและ Firestore rate-limit → player_submit ไม่ไป + error
+const HIGH_FREQ_EVENTS = new Set(['money_update', 'player_answer', 'slot_tick_sync', 'bonus_typing', 'bonus_partner_typing']);
+let _lastHighFreqWrite = 0;
+let _pendingHighFreq = null;
+let _highFreqTimer = null;
+
+function _flushHighFreq() {
+  if (!_pendingHighFreq) return;
+  const payload = _pendingHighFreq;
+  _pendingHighFreq = null;
+  _lastHighFreqWrite = Date.now();
+  if (G.roomCode && window._db) {
+    _db.collection('rooms').doc(G.roomCode).update({ lastEvent: payload }).catch(() => {});
+  }
+}
+
 function broadcastEvent(type, data) {
   const ts = Date.now();
   _broadcastSeq++;
-  // seq เพิ่มความไม่ซ้ำ กันกรณี event หลายตัวเกิดใน ms เดียวกัน
   const seq = ts * 1000 + (_broadcastSeq % 1000);
   const safeData = sanitizeForFirestore(data === undefined ? null : data);
   const ev = { type, data: safeData, ts, seq };
 
-  // PRIMARY: Firestore — ใช้ "คิว" (eventQueue) แทน lastEvent ตัวเดียว
-  // เพื่อไม่ให้ event ที่ยิงติด ๆ กัน (game_started → round_cats) ทับกันหาย
-  if (G.roomCode && window._db) {
-    try {
-      _db.collection('rooms').doc(G.roomCode).update({
-        eventQueue: firebase.firestore.FieldValue.arrayUnion(ev),
-        lastEvent: { type, data: safeData, ts, seq } // เก็บไว้เผื่อ compat
-      }).catch(e => {
-        console.warn('broadcastEvent Firestore error:', e.code, e.message);
-        if (typeof dbg === 'function') dbg('broadcast ' + type + ' ERR: ' + (e.code||e.message));
-      });
-    } catch(e) {}
-  }
-
-  // SECONDARY: localStorage — same-browser fallback (multi-tab)
+  // ── localStorage fallback (same-browser) ทำเสมอ ──
   try {
     localStorage.removeItem(LS_EVENT);
     setTimeout(() => localStorage.setItem(LS_EVENT, JSON.stringify(ev)), 10);
   } catch(e) {}
 
-  // ตัดคิวให้สั้นเป็นระยะ (กัน document โตเกิน 1MB) — เฉพาะ MC ที่เป็นเจ้าของห้อง
-  if (G.isMC && G.roomCode && window._db && (_broadcastSeq % 25 === 0)) {
+  if (!(G.roomCode && window._db)) return;
+
+  if (HIGH_FREQ_EVENTS.has(type)) {
+    // ── ความถี่สูง: throttle ~200ms, เขียนทับ lastEvent (ไม่เข้า queue) ──
+    _pendingHighFreq = { type, data: safeData, ts, seq };
+    const elapsed = Date.now() - _lastHighFreqWrite;
+    if (elapsed >= 200) {
+      _flushHighFreq();
+    } else if (!_highFreqTimer) {
+      _highFreqTimer = setTimeout(() => { _highFreqTimer = null; _flushHighFreq(); }, 200 - elapsed);
+    }
+    return;
+  }
+
+  // ── event สำคัญ (discrete): เข้า queue เพื่อไม่ให้ตกหล่น ──
+  try {
+    _db.collection('rooms').doc(G.roomCode).update({
+      eventQueue: firebase.firestore.FieldValue.arrayUnion(ev),
+      lastEvent: ev
+    }).catch(e => {
+      console.warn('broadcastEvent Firestore error:', e.code, e.message);
+      if (typeof dbg === 'function') dbg('broadcast ' + type + ' ERR: ' + (e.code||e.message));
+    });
+  } catch(e) {}
+
+  // ตัดคิวให้สั้นเป็นระยะ (กัน document โตเกิน 1MB) — เฉพาะ MC
+  if (G.isMC && (_broadcastSeq % 15 === 0)) {
     _db.collection('rooms').doc(G.roomCode).get().then(snap => {
       if (!snap.exists) return;
       const q = snap.data().eventQueue;
-      if (Array.isArray(q) && q.length > 50) {
-        const trimmed = q.slice(-30); // เก็บ 30 ตัวล่าสุด
+      if (Array.isArray(q) && q.length > 40) {
+        const trimmed = q.slice(-20);
         _db.collection('rooms').doc(G.roomCode).update({ eventQueue: trimmed }).catch(() => {});
       }
     }).catch(() => {});
@@ -4748,6 +4776,7 @@ window.addEventListener('storage', (e) => {
 let _firestoreRoomUnsub = null;
 let _lastFsEventTs = 0;
 let _lastFsEventSeq = 0;
+let _lastHfSeq = 0;
 
 function startFirestoreRoomListener(code) {
   if (_firestoreRoomUnsub) { _firestoreRoomUnsub(); _firestoreRoomUnsub = null; }
@@ -4786,26 +4815,30 @@ function startFirestoreRoomListener(code) {
     }
 
     // === ROUTE CROSS-DEVICE EVENTS ===
-    // ใช้ eventQueue (คิว) เป็นหลัก — process ทุก event ที่ยังไม่เคยเห็น ตามลำดับ seq
+    // 1) queue (discrete events) — process ทุกตัวที่ยังไม่เห็น ตามลำดับ seq
     if (Array.isArray(fsRoom.eventQueue) && fsRoom.eventQueue.length) {
-      const total = fsRoom.eventQueue.length;
       const fresh = fsRoom.eventQueue
         .filter(ev => ev && ev.seq && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 60000)
         .sort((a, b) => a.seq - b.seq);
-      if (fresh.length) dbg('listener: queue total=' + total + ' fresh=' + fresh.length + ' types=[' + fresh.map(e=>e.type).join(',') + '] isMC=' + G.isMC);
+      if (fresh.length) dbg('listener: queue fresh=' + fresh.length + ' [' + fresh.map(e=>e.type).join(',') + '] isMC=' + G.isMC);
       fresh.forEach(ev => {
         _lastFsEventSeq = Math.max(_lastFsEventSeq, ev.seq);
         if (ev.ts) _lastFsEventTs = Math.max(_lastFsEventTs, ev.ts);
         routeEvent(ev.type, ev.data);
       });
-    } else if (fsRoom.lastEvent) {
-      // fallback: ระบบเก่าที่ใช้ lastEvent ตัวเดียว
+    }
+    // 2) lastEvent (high-freq events เช่น money_update) — track แยกด้วย _lastHfSeq
+    if (fsRoom.lastEvent && fsRoom.lastEvent.seq) {
       const ev = fsRoom.lastEvent;
-      const evSeq = ev.seq || (ev.ts ? ev.ts * 1000 : 0);
-      if (evSeq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 30000) {
-        _lastFsEventSeq = evSeq;
+      // process เฉพาะ high-freq ที่ยังไม่เห็น (discrete ถูกจัดการโดย queue แล้ว)
+      const isHF = HIGH_FREQ_EVENTS.has(ev.type);
+      if (isHF && ev.seq > _lastHfSeq && (Date.now() - (ev.ts||0)) < 15000) {
+        _lastHfSeq = ev.seq;
+        routeEvent(ev.type, ev.data);
+      } else if (!isHF && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 30000) {
+        // เผื่อกรณีไม่มี queue (compat เก่า)
+        _lastFsEventSeq = ev.seq;
         if (ev.ts) _lastFsEventTs = ev.ts;
-        dbg('listener: lastEvent ' + ev.type + ' isMC=' + G.isMC);
         routeEvent(ev.type, ev.data);
       }
     }
@@ -5294,9 +5327,13 @@ function handleEventPlayer(type, data) {
     case 'timer_start':
       G.answerSubmitted = false; // reset for this question
       playerEnableInput();
-      document.querySelectorAll('.choice-opt:not(.wrong-choice)').forEach(el => {
-        el.style.pointerEvents = '';
-        el.style.opacity = '';
+      // ปลดล็อกช้อยส์ทั้งหมด (เอา class choice-locked ออก เพราะ !important บัง inline style ไม่ได้)
+      document.querySelectorAll('.choice-opt').forEach(el => {
+        if (!el.classList.contains('wrong-choice')) {
+          el.classList.remove('choice-locked');
+          el.style.pointerEvents = '';
+          el.style.opacity = '';
+        }
       });
       break;
     case 'lifeline_visibility':
@@ -6088,7 +6125,7 @@ async function createRoom() {
   showNotif('✅ สร้างห้องสำเร็จ! รหัส: ' + code);
 
   // เริ่ม listen
-  _lastFsEventTs = 0; _lastFsEventSeq = 0; // reset so listener catches all fresh events
+  _lastFsEventTs = 0; _lastFsEventSeq = 0; _lastHfSeq = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(code);
   startMcRoomPoll(code); // poll สำรอง การันตีชื่อผู้เล่นขึ้นบนจอ MC
 
@@ -6445,7 +6482,7 @@ async function joinRoom() {
   updateStartGameButton();
 
   // เริ่ม listen Firestore ก่อน เพื่อรับ game_started/อัปเดตทันที
-  _lastFsEventTs = 0; _lastFsEventSeq = 0;
+  _lastFsEventTs = 0; _lastFsEventSeq = 0; _lastHfSeq = 0;
   startFirestoreRoomListener(code);
 
   // ===== ลงทะเบียนผู้เล่นเข้า Firestore — ต้องสำเร็จเพื่อให้ชื่อขึ้นบนจอ MC =====
@@ -7472,6 +7509,7 @@ function updatePlayerMoney(m) {
 }
 
 function renderPlayerQuestion(q, cat, img) {
+  G.inputEnabled = false; // คำถามใหม่ → ยังตอบไม่ได้จนกว่า MC เริ่มจับเวลา
   // Restore image from localStorage (shared across tabs, unlike sessionStorage)
   if (img === '__qimg__') {
     img = localStorage.getItem('fq_qimg') || '';
@@ -7508,6 +7546,7 @@ function renderPlayerQuestion(q, cat, img) {
 }
 
 function playerEnableInput() {
+  G.inputEnabled = true; // จำว่าตอบได้แล้ว (timer เริ่มแล้ว)
   const area = $('playerAnswerArea');
   if (area) area.style.display = 'flex';
   const input = $('playerAnswerInput');
@@ -7589,6 +7628,7 @@ function handleJudgeResult(correct, money) {
     }
     if (money >= 100) {
       setTimeout(() => {
+        G.answerSubmitted = false; // ให้ตอบใหม่ได้
         const input = $('playerAnswerInput');
         if (input) { input.value = ''; input.disabled = false; }
         const btn = $('pSubmitBtn');
@@ -7676,14 +7716,15 @@ function handleLifelineGranted(idx, newQ, choices, img) {
     const area = $('playerChoicesArea');
     if (area) {
       area.style.display = 'block';
-      // Choices are locked until MC starts timer (pointer-events:none initially)
+      // ถ้า timer เริ่มแล้ว (ตอบได้แล้ว) → ช้อยส์ปลดล็อกทันที; ถ้ายัง → ล็อกไว้ก่อน
+      const startLocked = !G.inputEnabled;
       area.innerHTML = `<div style="font-family:'Orbitron';font-size:10px;color:#446;letter-spacing:2px;margin-bottom:8px;">6 ช้อยส์:</div><div class="choices-grid" id="choicesGrid6"></div>`;
       const grid = area.querySelector('#choicesGrid6');
       choices.forEach((c, i) => {
         const el = document.createElement('div');
-        el.className = 'choice-opt choice-locked';
+        el.className = 'choice-opt' + (startLocked ? ' choice-locked' : '');
         el.textContent = c;
-        el.onclick = () => pickChoice(c);
+        el.onclick = () => { if (!el.classList.contains('choice-locked') && !el.classList.contains('wrong-choice')) pickChoice(c); };
         el.style.cssText = `
           opacity: 0;
           transform: translateY(22px) skewX(-6deg) scale(0.88);
@@ -9132,7 +9173,7 @@ async function acceptInvite(inviteId, roomCode, fromName, fromAvatar) {
   }, 100);
 
   // เริ่ม listen Firestore เพื่อรับ game_started
-  _lastFsEventTs = 0; _lastFsEventSeq = 0; // reset so listener catches all fresh events
+  _lastFsEventTs = 0; _lastFsEventSeq = 0; _lastHfSeq = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(roomCode);
 
   // fetch inviter avatar ถ้าไม่มี
