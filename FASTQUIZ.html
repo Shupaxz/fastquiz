@@ -4709,22 +4709,27 @@ function startFirestoreRoomListener(code) {
     const onMcLobby = activeScreen && activeScreen.id === 'mc-lobby-screen';
 
     if (fsRoom.players && Array.isArray(fsRoom.players)) {
-      // อัปเดต G.players สำหรับ MC
+      // อัปเดต G.players สำหรับ MC — reconcile เต็มรูปแบบจาก Firestore (แหล่งข้อมูลจริง)
       if (G.isMC) {
-        let changed = false;
+        const ownerLocal = (G.players || []).find(p => p.isOwner);
+        const prevNames = (G.players || []).map(p => p.name).sort().join('|');
+
+        const merged = [];
+        const seen = new Set();
+        const fsOwner = fsRoom.players.find(p => p.isOwner) || ownerLocal;
+        if (fsOwner) { merged.push(fsOwner); seen.add(fsOwner.name); }
         fsRoom.players.forEach(p => {
-          if (!G.players.find(x => x.name === p.name)) {
-            G.players.push(p);
-            changed = true;
-          }
+          if (!seen.has(p.name)) { merged.push(p); seen.add(p.name); }
         });
-        // อัปเดต mc-lobby-screen เสมอทุกครั้งที่ Firestore อัปเดต (ไม่ว่า changed หรือไม่)
+        G.players = merged;
+
+        const newNames = G.players.map(p => p.name).sort().join('|');
+        const changed = prevNames !== newNames;
+
+        // อัปเดต mc-lobby-screen เสมอทุกครั้งที่ Firestore อัปเดต
         updateMcLobbyPlayers();
-        if (changed) {
-          renderLobby();
-          updateStartGameButton(); // อัปเดตปุ่มเริ่มเกมเสมอเมื่อมีผู้เล่นใหม่
-        }
-        // ถ้า players เปลี่ยน และอยู่หน้า join-screen ให้อัปเดตปุ่มเริ่มเกม
+        renderLobby();
+        updateStartGameButton();
         if (changed && onJoinScreen) {
           updateStartGameButton();
         }
@@ -6043,6 +6048,24 @@ async function joinRoom() {
     name = inputName.trim();
   }
 
+  // ===== สำคัญ: รอให้ auth token พร้อมก่อน query Firestore =====
+  // หลัง signInAnonymously token อาจยังไม่ propagate → ทำให้ get() เด้ง permission-denied
+  // (นี่คือสาเหตุหลักของบัค "เข้าห้องไม่ได้")
+  try {
+    if (_auth.currentUser) {
+      await _auth.currentUser.getIdToken(true);
+      window._currentUser = _auth.currentUser;
+    } else {
+      for (let w = 0; w < 15 && !_auth.currentUser; w++) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      if (_auth.currentUser) {
+        await _auth.currentUser.getIdToken(true).catch(() => {});
+        window._currentUser = _auth.currentUser;
+      }
+    }
+  } catch(e) { console.warn('joinRoom: token refresh warn', e && e.message); }
+
   // ล้าง state เก่า
   G.roomCode = '';
   G.isMC = false;
@@ -6055,17 +6078,24 @@ async function joinRoom() {
   // ===== หาห้องจาก Firestore (retry หลายรอบ รองรับ cross-device/cross-browser) =====
   let foundRoom = null;
   let fromFirestore = false;
+  const roomRef = window._db ? _db.collection('rooms').doc(code) : null;
 
-  if (window._db) {
-    // retry delays: 0ms, 800ms, 1200ms, 1500ms, 2000ms = รวม ~5.5 วิ
-    const retryDelays = [0, 800, 1200, 1500, 2000];
+  if (roomRef) {
+    const retryDelays = [0, 700, 1000, 1300, 1600, 2000, 2500];
+    let permissionBlocked = false;
     for (let attempt = 0; attempt < retryDelays.length; attempt++) {
       if (retryDelays[attempt] > 0) {
         await new Promise(r => setTimeout(r, retryDelays[attempt]));
       }
       try {
-        // บังคับดึงจาก server โดยตรง (ไม่ใช้ cache) เพื่อให้เห็นห้องจาก browser อื่น
-        const snap = await _db.collection('rooms').doc(code).get({ source: 'server' });
+        // พยายามดึงจาก server ก่อน; ถ้าพลาด (network) ให้ใช้ get() ปกติ
+        let snap;
+        try {
+          snap = await roomRef.get({ source: 'server' });
+        } catch(serverErr) {
+          if (serverErr.code === 'permission-denied') throw serverErr;
+          snap = await roomRef.get();
+        }
         if (snap.exists) {
           const d = snap.data();
           if (d.expiresAt && Date.now() > d.expiresAt) {
@@ -6076,24 +6106,22 @@ async function joinRoom() {
           }
           foundRoom = d;
           fromFirestore = true;
-          break; // เจอแล้ว ออกจาก loop
+          break;
         } else if (attempt < retryDelays.length - 1) {
           showNotif('⏳ กำลังค้นหาห้อง... (' + (attempt + 1) + ')');
         }
       } catch(e) {
         console.warn('joinRoom: Firestore get error (attempt ' + attempt + '):', e.code, e.message);
         if (e.code === 'permission-denied') {
-          if (!window._currentUser) {
-            showNotif('⏳ กำลัง login อัตโนมัติ...');
-            await window._signInAnonymousForJoin(name || 'Guest').catch(() => {});
-            await new Promise(r => setTimeout(r, 800));
-          } else {
-            showNotif('❌ Firestore Rules ปิดกั้น — แก้ Rules เป็น: allow read, write: if true;');
-            break;
-          }
+          // token อาจยังไม่พร้อม → refresh แล้ว retry ต่อ (ไม่ break)
+          try { if (_auth.currentUser) await _auth.currentUser.getIdToken(true); } catch(_) {}
+          await new Promise(r => setTimeout(r, 600));
+          permissionBlocked = true;
         }
-        // error อื่น → retry ต่อ
       }
+    }
+    if (!foundRoom && permissionBlocked) {
+      showNotif('⚠️ เชื่อมต่อฐานข้อมูลไม่ได้ — ตรวจ Firestore Rules (allow read, write: if true;)');
     }
   }
 
@@ -6117,11 +6145,10 @@ async function joinRoom() {
   G.roomCode = code;
   G.myPlayerName = name;
   G.myPlayerIndex = 1;
-  // โหลด categories จาก Firestore ก่อน (cross-device)
   G.categories = foundRoom.categoriesCompact || foundRoom.categories || [];
   G.bonusCategories = foundRoom.bonusCategoriesCompact || foundRoom.bonusCategories || [];
 
-  const myAvatar = (window._userProfile && window._userProfile.avatar) || '';
+  const myAvatar = (window._userProfile && window._userProfile.avatar) || '⚡';
   const player = { name, id: Date.now(), avatar: myAvatar, isOwner: false };
 
   // ===== ไปหน้า join-screen ทันทีเลย =====
@@ -6131,25 +6158,36 @@ async function joinRoom() {
   const jc = $('joinCode');
   if (jc) jc.value = code;
   updateStartGameButton();
-  showNotif('✅ เข้าห้อง ' + code + ' สำเร็จ! รอ MC กดเริ่มเกม');
 
-  // ===== Sync Firestore ใน background (ไม่ block UI) =====
-  if (window._db && fromFirestore) {
-    _db.collection('rooms').doc(code).update({
-      players: firebase.firestore.FieldValue.arrayUnion(player)
-    }).catch(e => {
-      console.warn('joinRoom: bg update error', e);
-      // fallback: overwrite players array
-      _db.collection('rooms').doc(code).get().then(s => {
-        if (!s.exists) return;
-        const existing = s.data().players || [];
-        if (!existing.find(p => p.name === name)) {
-          existing.push(player);
-          _db.collection('rooms').doc(code).update({ players: existing }).catch(() => {});
+  // เริ่ม listen Firestore ก่อน เพื่อรับ game_started/อัปเดตทันที
+  _lastFsEventTs = 0;
+  startFirestoreRoomListener(code);
+
+  // ===== ลงทะเบียนผู้เล่นเข้า Firestore — ต้องสำเร็จเพื่อให้ชื่อขึ้นบนจอ MC =====
+  let registered = false;
+  if (roomRef && fromFirestore) {
+    for (let tries = 0; tries < 4 && !registered; tries++) {
+      try {
+        const s = await roomRef.get({ source: 'server' }).catch(() => roomRef.get());
+        if (!s.exists) { await new Promise(r => setTimeout(r, 600)); continue; }
+        const existing = (s.data().players || []).slice();
+        if (existing.find(p => p.name === name)) { registered = true; break; }
+        existing.push(player);
+        await roomRef.update({ players: existing });
+        registered = true;
+      } catch(err) {
+        console.warn('joinRoom: register attempt', tries, 'failed:', err.code, err.message);
+        try {
+          await roomRef.update({ players: firebase.firestore.FieldValue.arrayUnion(player) });
+          registered = true;
+        } catch(_) {
+          await new Promise(r => setTimeout(r, 700));
         }
-      }).catch(() => {});
-    });
-  } else if (!fromFirestore) {
+      }
+    }
+  }
+
+  if (!fromFirestore) {
     foundRoom.players = foundRoom.players || [];
     if (!foundRoom.players.find(p => p.name === name)) {
       foundRoom.players.push(player);
@@ -6157,18 +6195,26 @@ async function joinRoom() {
     }
   }
 
-  // เริ่ม listen Firestore
-  _lastFsEventTs = 0; // reset so listener catches all fresh events
-  startFirestoreRoomListener(code);
+  if (registered || !fromFirestore) {
+    showNotif('✅ เข้าห้อง ' + code + ' สำเร็จ! รอ MC กดเริ่มเกม');
+  } else {
+    showNotif('⚠️ เข้าห้องแล้ว กำลังส่งชื่อให้ MC...');
+    setTimeout(() => {
+      if (roomRef) roomRef.update({
+        players: firebase.firestore.FieldValue.arrayUnion(player)
+      }).then(() => broadcastEvent('player_joined', { name, avatar: myAvatar, id: player.id, idx: 1 }))
+        .catch(() => {});
+    }, 1500);
+  }
 
-  // Broadcast player_joined
+  // Broadcast player_joined (cross-device ผ่าน lastEvent + localStorage)
   broadcastEvent('player_joined', { name, avatar: myAvatar, id: player.id, idx: 1 });
 
   // แสดง MC ใน slot 1
   setTimeout(() => {
-    if (window._db) {
-      _db.collection('rooms').doc(code).get().then(snap => {
-        if (!snap.exists) return;
+    if (roomRef) {
+      roomRef.get({ source: 'server' }).catch(() => roomRef.get()).then(snap => {
+        if (!snap || !snap.exists) return;
         const fsRoom = snap.data();
         const others = (fsRoom.players || []).filter(p => p.name !== G.myPlayerName);
         if (others.length > 0) {
@@ -6176,18 +6222,22 @@ async function joinRoom() {
         }
       }).catch(() => {});
     }
-  }, 500);
+  }, 600);
 }
 /* ============================================================
    LOBBY
    ============================================================ */
 function renderLobby() {
+  const list = $('lobbyPlayerList');
+  // หน้าจอ mc-lobby-screen ไม่มี element เหล่านี้ → ออกเงียบ ๆ กัน crash
+  // (ถ้า crash ที่นี่ จะทำให้ Firestore listener พังและชื่อผู้เล่นไม่ขึ้นบนจอ MC)
+  if (!list) return;
+
   const room = getRoom() || { players: [] };
   (room.players || []).forEach(p => {
     if (!G.players.find(x => x.name === p.name)) G.players.push(p);
   });
 
-  const list = $('lobbyPlayerList');
   list.innerHTML = '';
   G.players.forEach(p => {
     const d = document.createElement('div');
@@ -6197,8 +6247,8 @@ function renderLobby() {
   });
 
   const hasPlayers = G.players.length >= 1;
-  $('startGameBtn').style.display  = hasPlayers ? 'block' : 'none';
-  $('waitingMsg').style.display    = hasPlayers ? 'none' : 'block';
+  const sgBtn = $('startGameBtn'); if (sgBtn) sgBtn.style.display = hasPlayers ? 'block' : 'none';
+  const wMsg = $('waitingMsg');    if (wMsg)  wMsg.style.display  = hasPlayers ? 'none' : 'block';
 }
 
 setInterval(() => {
