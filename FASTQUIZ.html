@@ -4560,6 +4560,12 @@ const G = {
   flashInterval: null,
 };
 
+/* จำนวนผู้เล่นที่ "ตอบคำถาม" จริง (ไม่นับ MC/owner)
+   เกมนี้ MC เป็นพิธีกร ไม่ใช่ผู้ตอบ → ใช้ค่านี้แทน G.players.length ในการตัดสิน mode */
+function answererCount() {
+  return (G.players || []).filter(p => p && !p.isOwner).length;
+}
+
 /* ============================================================
    SOUND EFFECTS
    ============================================================ */
@@ -4782,9 +4788,11 @@ function startFirestoreRoomListener(code) {
     // === ROUTE CROSS-DEVICE EVENTS ===
     // ใช้ eventQueue (คิว) เป็นหลัก — process ทุก event ที่ยังไม่เคยเห็น ตามลำดับ seq
     if (Array.isArray(fsRoom.eventQueue) && fsRoom.eventQueue.length) {
+      const total = fsRoom.eventQueue.length;
       const fresh = fsRoom.eventQueue
         .filter(ev => ev && ev.seq && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 60000)
         .sort((a, b) => a.seq - b.seq);
+      if (fresh.length) dbg('listener: queue total=' + total + ' fresh=' + fresh.length + ' types=[' + fresh.map(e=>e.type).join(',') + '] isMC=' + G.isMC);
       fresh.forEach(ev => {
         _lastFsEventSeq = Math.max(_lastFsEventSeq, ev.seq);
         if (ev.ts) _lastFsEventTs = Math.max(_lastFsEventTs, ev.ts);
@@ -4797,10 +4805,11 @@ function startFirestoreRoomListener(code) {
       if (evSeq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 30000) {
         _lastFsEventSeq = evSeq;
         if (ev.ts) _lastFsEventTs = ev.ts;
+        dbg('listener: lastEvent ' + ev.type + ' isMC=' + G.isMC);
         routeEvent(ev.type, ev.data);
       }
     }
-  }, err => console.warn('Firestore room listener error:', err));
+  }, err => { console.warn('Firestore room listener error:', err); dbg('listener ERROR: ' + (err.code||err.message)); });
 }
 
 function stopFirestoreRoomListener() {
@@ -4988,7 +4997,7 @@ function handleEventMC(type, data) {
       if (data.idx === 1) $('btnLL2').disabled = false;
       break;
     case 'bonus_typing':
-      if (G.players.length >= 2 && data.playerIdx !== undefined) {
+      if (answererCount() >= 2 && data.playerIdx !== undefined) {
         const tEl = $('bonusTypingMC_' + data.playerIdx);
         if (tEl) tEl.textContent = data.text || '—';
       } else {
@@ -4996,7 +5005,7 @@ function handleEventMC(type, data) {
       }
       break;
     case 'bonus_submit':
-      if (G.players.length >= 2 && data.playerIdx !== undefined) {
+      if (answererCount() >= 2 && data.playerIdx !== undefined) {
         const tEl2 = $('bonusTypingMC_' + data.playerIdx);
         if (tEl2) tEl2.textContent = data.text;
         G.bonusPendingText = G.bonusPendingText || [null, null];
@@ -5220,10 +5229,11 @@ function handleEventPlayer(type, data) {
       if (room2 && room2.categories && room2.categories.length > 0) {
         G.categories = room2.categories; G.bonusCategories = room2.bonusCategories;
       }
-      // Re-confirm player index from players list
+      // Re-confirm player index — นับเฉพาะกลุ่มผู้ตอบ (ไม่นับ MC/owner)
       if (G.myPlayerName) {
-        const foundIdx = G.players.findIndex(p => p.name === G.myPlayerName);
-        if (foundIdx >= 0) G.myPlayerIndex = foundIdx;
+        const answerersList = (G.players || []).filter(p => p && !p.isOwner);
+        const foundIdx = answerersList.findIndex(p => p.name === G.myPlayerName);
+        G.myPlayerIndex = foundIdx >= 0 ? foundIdx : 0;
       }
       // แสดงหน้าเกมทันที (ไม่รอ fetch — กัน race กับ round_cats)
       showGamePlayerPhase();
@@ -5254,16 +5264,21 @@ function handleEventPlayer(type, data) {
       }
       stopPlayerFlash();
       updateQStatusBar('player');
-      if (G.players.length >= 2) {
-        // 2-player mode: spinner alternates; round 0,2,4 = player0; round 1,3 = player1
+      // ★ ผู้เล่นที่ตอบ = guest (ไม่นับ MC/owner) — MC ไม่ใช่คนสุ่มหมวด
+      const answerers = (G.players || []).filter(p => p && !p.isOwner);
+      dbg('round_cats: q=' + data.q + ' answerers=' + answerers.length + ' me=' + G.myPlayerName);
+      if (answerers.length >= 2) {
+        // 2 คนตอบ → สลับกันสุ่ม (รอบคู่=คนแรก, รอบคี่=คนสอง)
         const spinnerIdx = data.q % 2 === 0 ? 0 : 1;
-        if (G.myPlayerIndex === spinnerIdx) {
-          renderPlayerCatSelect(); // I get to spin
+        const myAnswererIdx = answerers.findIndex(p => p.name === G.myPlayerName);
+        if (myAnswererIdx === spinnerIdx) {
+          renderPlayerCatSelect(); // ฉันได้สุ่ม
         } else {
-          const spinnerName = G.players[spinnerIdx] ? G.players[spinnerIdx].name : 'อีกคน';
+          const spinnerName = answerers[spinnerIdx] ? answerers[spinnerIdx].name : 'อีกคน';
           renderPlayerWaitSpin(spinnerName);
         }
       } else {
+        // 1 คนตอบ (เล่นเดี่ยว/ทีม) → guest คนนั้นสุ่มเสมอ
         renderPlayerCatSelect();
       }
       break;
@@ -5342,7 +5357,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'slot_spin_started':
       // Non-spinner now sees slot spinning in real-time
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const spinnerIdx2 = G.currentQ % 2 === 0 ? 0 : 1;
         if (G.myPlayerIndex !== spinnerIdx2) {
           renderPlayerCatSelectSpectator(data.cats);
@@ -5351,7 +5366,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'slot_tick_sync':
       // Non-spinner: gently correct drift only (local RAF handles actual animation)
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const spinnerIdx3 = G.currentQ % 2 === 0 ? 0 : 1;
         if (G.myPlayerIndex !== spinnerIdx3 && data.pos) {
           if (window._spectatorSpinPos) {
@@ -5368,7 +5383,7 @@ function handleEventPlayer(type, data) {
       window._syncRAFRunning = false;
       window._syncTargetPos = null;
       window._syncCurrentPos = null;
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const spinnerIdx4 = G.currentQ % 2 === 0 ? 0 : 1;
         if (G.myPlayerIndex !== spinnerIdx4) {
           G.roundCats = data.cats;
@@ -5379,7 +5394,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'cat_chosen_sync':
       // The spinner picked a cat — non-spinner side: show waiting for MC
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const spinnerIdx5 = G.currentQ % 2 === 0 ? 0 : 1;
         if (G.myPlayerIndex !== spinnerIdx5) {
           $('playerMain').innerHTML = '<div style="text-align:center;"><div class="cat-badge">' + data.cat + '</div><div class="tag-waiting" style="margin-top:16px;">รอพิธีกรเปิดคำถาม...</div></div>';
@@ -5445,7 +5460,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'bonus_partner_typing':
       // Show partner's real-time typing on my screen
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const partnerIdx2 = data.playerIdx;
         if (partnerIdx2 !== G.myPlayerIndex) {
           const ptEl = $('bonusPartnerTyping');
@@ -5455,7 +5470,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'bonus_partner_submitted':
       // Partner submitted — show on my screen
-      if (G.players.length >= 2) {
+      if (answererCount() >= 2) {
         const partnerIdx3 = data.playerIdx;
         if (partnerIdx3 !== G.myPlayerIndex) {
           const ptEl2 = $('bonusPartnerTyping');
@@ -5494,7 +5509,7 @@ function handleEventPlayer(type, data) {
       break;
     case 'partner_submitted':
       // Partner sent answer first — sync to my input box if I haven't submitted yet
-      if (G.players.length >= 2 && !G.answerSubmitted) {
+      if (answererCount() >= 2 && !G.answerSubmitted) {
         const partnerInput = $('playerAnswerInput');
         if (partnerInput && !partnerInput.disabled) {
           partnerInput.value = data.text;
@@ -6411,7 +6426,7 @@ async function joinRoom() {
   G.isRoomOwner = false;
   G.roomCode = code;
   G.myPlayerName = name;
-  G.myPlayerIndex = 1;
+  G.myPlayerIndex = 0; // guest เป็นผู้ตอบคนเดียว → index 0 ในกลุ่มผู้ตอบ
   G.categories = foundRoom.categoriesCompact || foundRoom.categories || [];
   G.bonusCategories = foundRoom.bonusCategoriesCompact || foundRoom.bonusCategories || [];
 
@@ -7212,7 +7227,7 @@ function playerStartSlot() {
   const area = $('slotMachineArea');
   area.style.display = 'flex';
   // In 2p mode: broadcast to partner so they can see slot
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     const allCatN = G.categories.filter(c => c.name.trim()).map(c => c.name);
     broadcastEvent('slot_spin_started', { cats: allCatN });
   }
@@ -7276,7 +7291,7 @@ function spinReel(idx, allNames) {
     reel.style.transform = `translateY(-${spinPositions[idx]}px)`;
     // Broadcast every ~6 frames to partner
     spinBroadcastCounter++;
-    if (G.players.length >= 2 && idx === 0 && spinBroadcastCounter % 6 === 0) {
+    if (answererCount() >= 2 && idx === 0 && spinBroadcastCounter % 6 === 0) {
       broadcastEvent('slot_tick_sync', { pos: [spinPositions[0], spinPositions[1]] });
     }
     spinRAF[idx] = requestAnimationFrame(frame);
@@ -7324,7 +7339,7 @@ function playerStopSlot() {
   // Broadcast stop to MC so it syncs (MC will snap its reels too)
   broadcastEvent('slot_stopped', { cats: G.roundCats });
   // In 2p mode: also broadcast to partner with final positions
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     broadcastEvent('slot_stopped_sync', { cats: G.roundCats, pos: [spinPositions[0], spinPositions[1]] });
   }
 
@@ -7360,7 +7375,7 @@ function playerStopSlot() {
           setTimeout(() => {
             broadcastEvent('player_cat_chosen', { cat: catName });
             // Notify partner (2p mode)
-            if (G.players.length >= 2) {
+            if (answererCount() >= 2) {
               broadcastEvent('cat_chosen_sync', { cat: catName });
             }
             $('playerMain').innerHTML = `
@@ -7513,7 +7528,7 @@ function playerSubmit() {
   const val = input.value.trim();
   broadcastEvent('player_submit', { text: val });
   // In 2-player mode, also notify partner so they see the answer
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     broadcastEvent('partner_submitted', { text: val, name: G.myPlayerName });
   }
   input.disabled = true;
@@ -7721,7 +7736,7 @@ function showBonusMC() {
   const oldList = $('mcBonusAnsweredList');
   if (oldList) oldList.remove();
   // 2p mode: show per-player panels
-  const is2P = G.players.length >= 2;
+  const is2P = answererCount() >= 2;
   const panel1p = $('bonusTypingPanel1P');
   const panel2p = $('bonusTypingPanel2P');
   if (panel1p) panel1p.style.display = is2P ? 'none' : 'block';
@@ -7833,7 +7848,7 @@ function showBonusPlayer(total) {
   // 2p: show partner typing area & label partner name
   const partnerWrap = $('bonusPartnerTypingWrap');
   const partnerLabel = $('bonusPartnerLabel');
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     const partnerIdx = G.myPlayerIndex === 0 ? 1 : 0;
     const partnerName = G.players[partnerIdx] ? G.players[partnerIdx].name : 'เพื่อน';
     if (partnerWrap) partnerWrap.style.display = 'block';
@@ -8093,7 +8108,7 @@ function bonusTyping(val) {
   bonusTypingVal = val;
   broadcastEvent('bonus_typing', { text: val, playerIdx: G.myPlayerIndex });
   // Also let partner player see typing
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     broadcastEvent('bonus_partner_typing', { text: val, playerIdx: G.myPlayerIndex });
   }
 }
@@ -8102,7 +8117,7 @@ function bonusSubmit() {
   if (!bonusTypingVal.trim()) return;
   const txt = bonusTypingVal.trim();
   broadcastEvent('bonus_submit', { text: txt, playerIdx: G.myPlayerIndex });
-  if (G.players.length >= 2) {
+  if (answererCount() >= 2) {
     broadcastEvent('bonus_partner_submitted', { text: txt, playerIdx: G.myPlayerIndex });
   }
   $('bonusAnswerInput').value = '';
@@ -8116,7 +8131,7 @@ function bonusJudge(correct) {
 }
 
 function bonusJudgePlayer(playerIdx, correct) {
-  const is2P = G.players.length >= 2;
+  const is2P = answererCount() >= 2;
   // Disable the judged player's buttons
   if (is2P) {
     const cBtn = $('bonusCorrect' + playerIdx);
