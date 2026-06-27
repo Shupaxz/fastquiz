@@ -4711,25 +4711,7 @@ function startFirestoreRoomListener(code) {
     if (fsRoom.players && Array.isArray(fsRoom.players)) {
       // อัปเดต G.players สำหรับ MC — reconcile เต็มรูปแบบจาก Firestore (แหล่งข้อมูลจริง)
       if (G.isMC) {
-        const ownerLocal = (G.players || []).find(p => p.isOwner);
-        const prevNames = (G.players || []).map(p => p.name).sort().join('|');
-
-        const merged = [];
-        const seen = new Set();
-        const fsOwner = fsRoom.players.find(p => p.isOwner) || ownerLocal;
-        if (fsOwner) { merged.push(fsOwner); seen.add(fsOwner.name); }
-        fsRoom.players.forEach(p => {
-          if (!seen.has(p.name)) { merged.push(p); seen.add(p.name); }
-        });
-        G.players = merged;
-
-        const newNames = G.players.map(p => p.name).sort().join('|');
-        const changed = prevNames !== newNames;
-
-        // อัปเดต mc-lobby-screen เสมอทุกครั้งที่ Firestore อัปเดต
-        updateMcLobbyPlayers();
-        renderLobby();
-        updateStartGameButton();
+        const changed = syncMcPlayersFromRoom(fsRoom);
         if (changed && onJoinScreen) {
           updateStartGameButton();
         }
@@ -4768,6 +4750,52 @@ function startFirestoreRoomListener(code) {
 
 function stopFirestoreRoomListener() {
   if (_firestoreRoomUnsub) { _firestoreRoomUnsub(); _firestoreRoomUnsub = null; }
+  if (_mcRoomPollTimer) { clearInterval(_mcRoomPollTimer); _mcRoomPollTimer = null; }
+}
+
+/* รวม logic การ sync รายชื่อผู้เล่นฝั่ง MC ไว้ที่เดียว เรียกได้ทั้งจาก onSnapshot และ poll */
+function syncMcPlayersFromRoom(fsRoom) {
+  if (!fsRoom || !Array.isArray(fsRoom.players)) return;
+  if (!G.isMC) return;
+
+  const ownerLocal = (G.players || []).find(p => p.isOwner);
+  const prevNames = (G.players || []).map(p => p.name).sort().join('|');
+
+  const merged = [];
+  const seen = new Set();
+  const fsOwner = fsRoom.players.find(p => p.isOwner) || ownerLocal;
+  if (fsOwner) { merged.push(fsOwner); seen.add(fsOwner.name); }
+  fsRoom.players.forEach(p => {
+    if (p && p.name && !seen.has(p.name)) { merged.push(p); seen.add(p.name); }
+  });
+  G.players = merged;
+
+  const newNames = G.players.map(p => p.name).sort().join('|');
+  const changed = prevNames !== newNames;
+
+  updateMcLobbyPlayers();
+  renderLobby();
+  updateStartGameButton();
+  return changed;
+}
+
+/* Polling fallback ฝั่ง MC — force อ่านห้องจาก server เผื่อ onSnapshot ไม่ส่ง (cache/เน็ตสะดุด)
+   การันตีว่าชื่อผู้เล่นจะขึ้นบนจอ MC แน่นอน */
+let _mcRoomPollTimer = null;
+function startMcRoomPoll(code) {
+  if (_mcRoomPollTimer) { clearInterval(_mcRoomPollTimer); _mcRoomPollTimer = null; }
+  if (!window._db || !code) return;
+  _mcRoomPollTimer = setInterval(async () => {
+    // หยุด poll เมื่อไม่ใช่ MC แล้ว หรือออกจากห้อง
+    if (!G.isMC || G.roomCode !== code) { clearInterval(_mcRoomPollTimer); _mcRoomPollTimer = null; return; }
+    // หยุดเมื่อเข้าเกมแล้ว (ไม่จำเป็นต้อง poll lobby อีก)
+    const active = document.querySelector('.screen.active');
+    if (active && (active.id === 'game-mc' || active.id === 'bonus-mc' || active.id === 'final-screen')) return;
+    try {
+      const snap = await _db.collection('rooms').doc(code).get({ source: 'server' }).catch(() => _db.collection('rooms').doc(code).get());
+      if (snap && snap.exists) syncMcPlayersFromRoom(snap.data());
+    } catch(e) { /* เงียบไว้ ไม่ให้ poll พัง */ }
+  }, 2000);
 }
 
 async function createFirestoreRoom(code) {
@@ -5856,7 +5884,8 @@ async function createRoom() {
   const code = String(Math.floor(1000 + Math.random() * 9000));
 
   const mcName = (window._userProfile && window._userProfile.nickname) || (window._currentUser && window._currentUser.email) || 'MC';
-  const mcAvatar = (window._userProfile && window._userProfile.avatar) || '';
+  const mcAvatarRaw = (window._userProfile && window._userProfile.avatar) || '';
+  const mcAvatar = (typeof mcAvatarRaw === 'string' && mcAvatarRaw.startsWith('data:')) ? '👑' : (mcAvatarRaw || '👑');
 
   // ตั้ง state ก่อนเลย
   G.roomCode = code;
@@ -5878,6 +5907,7 @@ async function createRoom() {
   // เริ่ม listen
   _lastFsEventTs = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(code);
+  startMcRoomPoll(code); // poll สำรอง การันตีชื่อผู้เล่นขึ้นบนจอ MC
 
   // ===== Sync Firestore ใน background =====
   if (window._db) {
@@ -6148,7 +6178,9 @@ async function joinRoom() {
   G.categories = foundRoom.categoriesCompact || foundRoom.categories || [];
   G.bonusCategories = foundRoom.bonusCategoriesCompact || foundRoom.bonusCategories || [];
 
-  const myAvatar = (window._userProfile && window._userProfile.avatar) || '⚡';
+  const myAvatarRaw = (window._userProfile && window._userProfile.avatar) || '⚡';
+  // ถ้า avatar เป็นรูป base64 ขนาดใหญ่ อย่าเขียนลง players array (เสี่ยงเกิน document limit → write fail → ชื่อไม่ขึ้น)
+  const myAvatar = (typeof myAvatarRaw === 'string' && myAvatarRaw.startsWith('data:')) ? '⚡' : myAvatarRaw;
   const player = { name, id: Date.now(), avatar: myAvatar, isOwner: false };
 
   // ===== ไปหน้า join-screen ทันทีเลย =====
