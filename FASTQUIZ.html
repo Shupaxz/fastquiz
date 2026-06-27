@@ -3978,8 +3978,8 @@ body::after {
       <div style="font-family:var(--font-en);font-size:38px;font-weight:900;letter-spacing:5px;background:linear-gradient(135deg,#fff 0%,var(--cyan) 40%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;filter:drop-shadow(0 0 20px rgba(0,200,255,0.4));">GAME ROOM</div>
     </div>
 
-    <!-- 2 Player slots (Image 4 style) -->
-    <div id="joinPlayerSlots" style="display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;">
+    <!-- 3 Player slots -->
+    <div id="joinPlayerSlots" style="display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;">
       <!-- Slot 0: Me -->
       <div id="joinSlot0" class="join-player-slot join-slot-me">
         <div class="jps-inner">
@@ -3992,20 +3992,39 @@ body::after {
         <div class="jps-corner bl"></div><div class="jps-corner br"></div>
       </div>
 
-      <!-- VS divider enhanced -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-        <div style="width:2px;height:55px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
-        <div style="font-family:var(--font-en);font-size:20px;font-weight:900;color:rgba(0,200,255,0.5);letter-spacing:3px;text-shadow:0 0 12px rgba(0,200,255,0.4);padding:6px 0;">X</div>
-        <div style="width:2px;height:55px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
+      <!-- divider -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:2px;height:40px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
+        <div style="font-family:var(--font-en);font-size:16px;font-weight:900;color:rgba(0,200,255,0.5);letter-spacing:2px;text-shadow:0 0 12px rgba(0,200,255,0.4);padding:4px 0;">+</div>
+        <div style="width:2px;height:40px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
       </div>
 
-      <!-- Slot 1: Waiting/Friend -->
+      <!-- Slot 1: Waiting -->
       <div id="joinSlot1" class="join-player-slot join-slot-waiting">
         <div class="jps-inner">
           <div class="jps-avatar" id="joinSlotAv1" style="opacity:0.3;">?</div>
           <div class="jps-status-bar" style="background:#1A3060;"></div>
           <div class="jps-name" id="joinSlotName1" style="color:var(--text2);">รอผู้เล่น...</div>
           <div class="jps-badge waiting" id="joinSlotBadge1">WAITING</div>
+        </div>
+        <div class="jps-corner tl"></div><div class="jps-corner tr"></div>
+        <div class="jps-corner bl"></div><div class="jps-corner br"></div>
+      </div>
+
+      <!-- divider -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:2px;height:40px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
+        <div style="font-family:var(--font-en);font-size:16px;font-weight:900;color:rgba(0,200,255,0.5);letter-spacing:2px;text-shadow:0 0 12px rgba(0,200,255,0.4);padding:4px 0;">+</div>
+        <div style="width:2px;height:40px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);"></div>
+      </div>
+
+      <!-- Slot 2: Waiting -->
+      <div id="joinSlot2" class="join-player-slot join-slot-waiting">
+        <div class="jps-inner">
+          <div class="jps-avatar" id="joinSlotAv2" style="opacity:0.3;">?</div>
+          <div class="jps-status-bar" style="background:#1A3060;"></div>
+          <div class="jps-name" id="joinSlotName2" style="color:var(--text2);">รอผู้เล่น...</div>
+          <div class="jps-badge waiting" id="joinSlotBadge2">WAITING</div>
         </div>
         <div class="jps-corner tl"></div><div class="jps-corner tr"></div>
         <div class="jps-corner bl"></div><div class="jps-corner br"></div>
@@ -4669,14 +4688,15 @@ function setRoom(d) {
 
 function broadcastEvent(type, data) {
   const ts = Date.now();
-  const ev = { type, data, ts };
+  const safeData = sanitizeForFirestore(data === undefined ? null : data);
+  const ev = { type, data: safeData, ts };
 
   // PRIMARY: Firestore — cross-browser, cross-device
   if (G.roomCode && window._db) {
     try {
       _db.collection('rooms').doc(G.roomCode).update({
-        lastEvent: { type, data, ts }
-      }).catch(e => console.warn('broadcastEvent Firestore error:', e));
+        lastEvent: { type, data: safeData, ts }
+      }).catch(e => console.warn('broadcastEvent Firestore error:', e.code, e.message));
     } catch(e) {}
   }
 
@@ -4725,20 +4745,13 @@ function startFirestoreRoomListener(code) {
         }
       }
 
-      // อัปเดต join-screen slots สำหรับทุกคนที่อยู่ในหน้านี้
+      // ★ player (non-MC) ก็ sync G.players จาก Firestore ด้วย เพื่อให้ช่อง slot โชว์ทุกคน
+      if (!G.isMC) {
+        G.players = fsRoom.players.slice();
+      }
+
+      // อัปเดต join-screen slots สำหรับทุกคนที่อยู่ในหน้านี้ (polling loop เป็นคนเติม slot จริง)
       if (onJoinScreen) {
-        const myName = G.myPlayerName || (window._userProfile && window._userProfile.nickname) || '';
-        const others = fsRoom.players.filter(p => p.name !== myName);
-        if (others.length > 0) {
-          const other = others[0];
-          const slot1 = $('joinSlot1');
-          const nameEl1 = $('joinSlotName1');
-          if (slot1 && slot1.className.includes('waiting')) {
-            animatePlayerJoinSlot(other.name, other.avatar || '⚡');
-          } else if (nameEl1 && nameEl1.textContent !== other.name) {
-            animatePlayerJoinSlot(other.name, other.avatar || '⚡');
-          }
-        }
         updateStartGameButton();
       }
     }
@@ -5504,12 +5517,13 @@ function sanitizeForFirestore(val) {
 }
 function fmt(n) { return Math.floor(n).toLocaleString('th-TH'); }
 
-/* Update join screen slot 1 when a player enters */
-function animatePlayerJoinSlot(playerName, playerAvatar) {
-  const slot = $('joinSlot1');
-  const avEl = $('joinSlotAv1');
-  const nameEl = $('joinSlotName1');
-  const badgeEl = $('joinSlotBadge1');
+/* Update join screen slot when a player enters (slotIdx default 1) */
+function animatePlayerJoinSlot(playerName, playerAvatar, slotIdx) {
+  const idx = slotIdx || 1;
+  const slot = $('joinSlot' + idx);
+  const avEl = $('joinSlotAv' + idx);
+  const nameEl = $('joinSlotName' + idx);
+  const badgeEl = $('joinSlotBadge' + idx);
   if (!slot) return;
 
   // Update content
@@ -6347,6 +6361,15 @@ async function joinRoom() {
   }
   dbg('joinRoom: SUCCESS entering room ' + code + ' as "' + name + '"');
 
+  // ===== ตรวจความจุห้อง: เล่นได้สูงสุด 2 คน (MC + ผู้เล่น 1) =====
+  // ถ้ามี guest (ไม่นับ MC) อยู่แล้ว 1 คน และไม่ใช่เราเอง → ห้องเต็ม
+  const existingGuests = (foundRoom.players || []).filter(p => p && !p.isOwner && p.name !== name);
+  if (existingGuests.length >= 1) {
+    dbg('joinRoom: room full (guests=' + existingGuests.length + ')');
+    showNotif('🚫 ห้องเต็มแล้ว! เกมนี้เล่นได้สูงสุด 2 คน');
+    return;
+  }
+
   // ===== เข้าห้องสำเร็จ =====
   G.isMC = false;
   G.isRoomOwner = false;
@@ -6495,19 +6518,23 @@ function startGame() {
 
   // Update Firestore room phase so cross-device players know game started
   if (G.roomCode && window._db) {
-    _db.collection('rooms').doc(G.roomCode).update({
+    const mapCats = (cats) => (cats || []).map(c => ({
+      name: c && c.name != null ? String(c.name) : '',
+      questions: ((c && c.questions) || []).map(q => ({
+        q: (q && q.q != null) ? String(q.q) : '',
+        a: (q && q.a != null) ? String(q.a) : '',
+        choices: (q && Array.isArray(q.choices)) ? q.choices.map(ch => ch != null ? String(ch) : '') : []
+      }))
+    }));
+    const updateData = sanitizeForFirestore({
       phase: 'game',
       players: G.players,
-      // Store a compact version of categories for cross-device players (no images)
-      categoriesCompact: G.categories.map(c => ({
-        name: c.name,
-        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
-      })),
-      bonusCategoriesCompact: (G.bonusCategories || []).map(c => ({
-        name: c.name,
-        questions: (c.questions || []).map(q => ({ q: q.q, a: q.a, choices: q.choices || [] }))
-      }))
-    }).catch(e => console.warn('Firestore startGame update error:', e));
+      categoriesCompact: mapCats(G.categories),
+      bonusCategoriesCompact: mapCats(G.bonusCategories)
+    });
+    _db.collection('rooms').doc(G.roomCode).update(updateData)
+      .then(() => dbg && dbg('startGame: phase set to game OK'))
+      .catch(e => { console.warn('Firestore startGame update error:', e.code, e.message); if (typeof dbg==='function') dbg('startGame update ERROR: ' + (e.code||e.message)); });
   }
 
   broadcastEvent('game_started', { players: G.players });
@@ -8733,13 +8760,11 @@ function updateStartGameButton() {
     if (typeBtn) typeBtn.style.display = 'none';
     if (mcHint) mcHint.style.display = 'block';
 
-    // ต้องมีผู้เล่นอย่างน้อย 1 คน (ไม่นับ MC) จึงจะกดเริ่มเกมได้
-    const hasGuest = (G.players || []).filter(p => !p.isOwner).length >= 1;
-    if (hasGuest) {
-      container.innerHTML = `<button class="btn-join-3d" style="width:100%;font-size:16px;padding:16px;background:linear-gradient(135deg,#FFD700,#FF8800);color:#000;font-weight:900;border:none;cursor:pointer;border-radius:12px;letter-spacing:2px;box-shadow:0 4px 20px rgba(255,180,0,0.4);" onclick="startGameFromLobby()">⚡ เริ่มเกม!</button>`;
-    } else {
-      container.innerHTML = `<div style="width:100%;padding:16px;text-align:center;border-radius:10px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.2);font-family:var(--font-th);font-size:15px;color:rgba(0,200,255,0.55);">⏳ รอผู้เล่นเข้าร่วมก่อน...</div>`;
-    }
+    // เล่นคนเดียวก็ได้ หรือ 2 คนก็ได้ → กดเริ่มเกมได้เสมอ
+    const guestCount = (G.players || []).filter(p => !p.isOwner).length;
+    const label = guestCount >= 1 ? ('⚡ เริ่มเกม! (2 คน)') : '⚡ เริ่มเกม! (เดี่ยว)';
+    container.innerHTML = `<button class="btn-join-3d" style="width:100%;font-size:16px;padding:16px;background:linear-gradient(135deg,#FFD700,#FF8800);color:#000;font-weight:900;border:none;cursor:pointer;border-radius:12px;letter-spacing:2px;box-shadow:0 4px 20px rgba(255,180,0,0.4);" onclick="startGameFromLobby()">${label}</button>`
+      + (guestCount < 1 ? `<div style="margin-top:8px;text-align:center;font-family:var(--font-th);font-size:13px;color:rgba(0,200,255,0.5);">เริ่มได้เลย หรือรออีก 1 คนเพื่อเล่นเป็นทีม</div>` : '');
 
   } else if (!G.isRoomOwner && G.roomCode) {
     // ===== ผู้เล่นที่ Join แล้ว — รอหัวหน้าห้อง =====
@@ -8759,39 +8784,55 @@ function updateStartGameButton() {
 
 function startGameFromLobby() {
   if (!G.isMC || !G.isRoomOwner) { showNotif('⚠️ เฉพาะหัวหน้าห้องเท่านั้นที่เริ่มเกมได้'); return; }
-  const guests = (G.players || []).filter(p => !p.isOwner);
-  if (guests.length < 1) { showNotif('⚠️ ต้องมีผู้เล่นอย่างน้อย 1 คนก่อนเริ่มเกม'); return; }
+  // เล่นคนเดียวก็ได้ → ไม่บังคับจำนวนผู้เล่นขั้นต่ำ
   startGame();
 }
 /* old renderJoinFriendPanel removed */
 
-/* ---- Poll for second player join on join screen ---- */
-let _joinSlotFilled = false;
+/* ---- Fill join-screen slots from current players (cross-device via G.players) ---- */
+function resetJoinSlot(idx) {
+  const slot = $('joinSlot' + idx);
+  if (slot) slot.className = 'join-player-slot join-slot-waiting';
+  const avEl = $('joinSlotAv' + idx);
+  if (avEl) { avEl.innerHTML = ''; avEl.textContent = '?'; avEl.style.opacity = '0.3'; }
+  const nameEl = $('joinSlotName' + idx);
+  if (nameEl) { nameEl.textContent = 'รอผู้เล่น...'; nameEl.style.color = 'var(--text2)'; }
+  const badgeEl = $('joinSlotBadge' + idx);
+  if (badgeEl) { badgeEl.textContent = 'WAITING'; badgeEl.className = 'jps-badge waiting'; }
+}
+
+let _joinSlotState = '';
 setInterval(() => {
   const screen = document.querySelector('.screen.active');
-  if (!screen || screen.id !== 'join-screen') { _joinSlotFilled = false; return; }
-  const room = getRoom();
-  if (!room || !room.players) return;
-  // Look for a player that is NOT me
-  const myName = (window._userProfile && window._userProfile.nickname) || '';
-  const others = room.players.filter(p => p.name !== myName);
-  if (others.length > 0 && !_joinSlotFilled) {
-    _joinSlotFilled = true;
-    const other = others[0];
-    animatePlayerJoinSlot(other.name, other.avatar || '⚡');
-  } else if (others.length === 0 && _joinSlotFilled) {
-    // Player left - reset slot
-    _joinSlotFilled = false;
-    const slot = $('joinSlot1');
-    if (slot) slot.className = 'join-player-slot join-slot-waiting';
-    const avEl = $('joinSlotAv1');
-    if (avEl) { avEl.textContent = '?'; avEl.style.opacity = '0.3'; }
-    const nameEl = $('joinSlotName1');
-    if (nameEl) { nameEl.textContent = 'รอผู้เล่น...'; nameEl.style.color = 'var(--text2)'; }
-    const badgeEl = $('joinSlotBadge1');
-    if (badgeEl) { badgeEl.textContent = 'WAITING'; badgeEl.className = 'jps-badge waiting'; }
+  if (!screen || screen.id !== 'join-screen') { _joinSlotState = ''; return; }
+
+  // รวมรายชื่อจากทั้ง G.players (sync จาก Firestore) และ localStorage room
+  const myName = G.myPlayerName || (window._userProfile && window._userProfile.nickname) || 'คุณ';
+  let everyone = [];
+  if (G.players && G.players.length) {
+    everyone = G.players.slice();
+  } else {
+    const room = getRoom();
+    if (room && room.players) everyone = room.players.slice();
   }
-}, 300);
+  // คนอื่นที่ไม่ใช่เรา (สูงสุดแสดง 2 ช่อง = slot1, slot2)
+  const others = everyone.filter(p => p && p.name && p.name !== myName);
+
+  // สร้าง signature เพื่อเช็คว่าเปลี่ยนไหม (กัน re-animate ซ้ำ)
+  const sig = others.map(p => p.name).join('|');
+  if (sig === _joinSlotState) return;
+  _joinSlotState = sig;
+
+  // เติม slot 1 และ 2
+  for (let i = 1; i <= 2; i++) {
+    const other = others[i - 1];
+    if (other) {
+      animatePlayerJoinSlot(other.name, other.avatar || '⚡', i);
+    } else {
+      resetJoinSlot(i);
+    }
+  }
+}, 400);
 
 /* ---- FRIEND REQUEST NOTIFICATION ---- */
 function showFriendRequestNotif(req) {
@@ -8971,7 +9012,9 @@ async function acceptInvite(inviteId, roomCode, fromName, fromAvatar) {
   G.myPlayerName = myName;
   G.myPlayerIndex = 1;
 
-  const player = { name: myName, id: Date.now(), avatar: myAvatar, isOwner: false };
+  const myAvatarRaw = (window._userProfile && window._userProfile.avatar) || '';
+  const safeAvatar = (typeof myAvatarRaw === 'string' && myAvatarRaw.startsWith('data:')) ? '⚡' : (myAvatarRaw || '⚡');
+  const player = sanitizeForFirestore({ name: myName, id: Date.now(), avatar: safeAvatar, isOwner: false });
 
   // mark invite accepted
   await window._respondInvite(inviteId, true, '').catch(() => {});
