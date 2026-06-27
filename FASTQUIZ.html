@@ -4686,17 +4686,26 @@ function setRoom(d) {
   }
 }
 
+let _broadcastSeq = 0;
 function broadcastEvent(type, data) {
   const ts = Date.now();
+  _broadcastSeq++;
+  // seq เพิ่มความไม่ซ้ำ กันกรณี event หลายตัวเกิดใน ms เดียวกัน
+  const seq = ts * 1000 + (_broadcastSeq % 1000);
   const safeData = sanitizeForFirestore(data === undefined ? null : data);
-  const ev = { type, data: safeData, ts };
+  const ev = { type, data: safeData, ts, seq };
 
-  // PRIMARY: Firestore — cross-browser, cross-device
+  // PRIMARY: Firestore — ใช้ "คิว" (eventQueue) แทน lastEvent ตัวเดียว
+  // เพื่อไม่ให้ event ที่ยิงติด ๆ กัน (game_started → round_cats) ทับกันหาย
   if (G.roomCode && window._db) {
     try {
       _db.collection('rooms').doc(G.roomCode).update({
-        lastEvent: { type, data: safeData, ts }
-      }).catch(e => console.warn('broadcastEvent Firestore error:', e.code, e.message));
+        eventQueue: firebase.firestore.FieldValue.arrayUnion(ev),
+        lastEvent: { type, data: safeData, ts, seq } // เก็บไว้เผื่อ compat
+      }).catch(e => {
+        console.warn('broadcastEvent Firestore error:', e.code, e.message);
+        if (typeof dbg === 'function') dbg('broadcast ' + type + ' ERR: ' + (e.code||e.message));
+      });
     } catch(e) {}
   }
 
@@ -4705,6 +4714,18 @@ function broadcastEvent(type, data) {
     localStorage.removeItem(LS_EVENT);
     setTimeout(() => localStorage.setItem(LS_EVENT, JSON.stringify(ev)), 10);
   } catch(e) {}
+
+  // ตัดคิวให้สั้นเป็นระยะ (กัน document โตเกิน 1MB) — เฉพาะ MC ที่เป็นเจ้าของห้อง
+  if (G.isMC && G.roomCode && window._db && (_broadcastSeq % 25 === 0)) {
+    _db.collection('rooms').doc(G.roomCode).get().then(snap => {
+      if (!snap.exists) return;
+      const q = snap.data().eventQueue;
+      if (Array.isArray(q) && q.length > 50) {
+        const trimmed = q.slice(-30); // เก็บ 30 ตัวล่าสุด
+        _db.collection('rooms').doc(G.roomCode).update({ eventQueue: trimmed }).catch(() => {});
+      }
+    }).catch(() => {});
+  }
 }
 
 window.addEventListener('storage', (e) => {
@@ -4720,13 +4741,15 @@ window.addEventListener('storage', (e) => {
    ============================================================ */
 let _firestoreRoomUnsub = null;
 let _lastFsEventTs = 0;
+let _lastFsEventSeq = 0;
 
 function startFirestoreRoomListener(code) {
   if (_firestoreRoomUnsub) { _firestoreRoomUnsub(); _firestoreRoomUnsub = null; }
   if (!window._db || !code) return;
-  // Reset to 0 so we don't miss events that arrived just before listener started
-  // We guard against replaying old events by checking age (> 30s old = skip)
+  // baseline: ข้าม event ที่เกิดก่อน listener นี้เริ่ม (กัน replay ของเก่า)
+  // ยกเว้นไม่ตั้งสูงเกินไป เพื่อให้ยังรับ game_started/round_cats ที่อาจยิงมาพร้อม ๆ กัน
   const listenStart = Date.now();
+  if (_lastFsEventSeq === 0) _lastFsEventSeq = (listenStart - 3000) * 1000; // เผื่อ 3 วิ
   _firestoreRoomUnsub = _db.collection('rooms').doc(code).onSnapshot(snap => {
     if (!snap.exists) return;
     const fsRoom = snap.data();
@@ -4757,12 +4780,23 @@ function startFirestoreRoomListener(code) {
     }
 
     // === ROUTE CROSS-DEVICE EVENTS ===
-    // ทั้ง MC และ Player รับ lastEvent จาก Firestore (cross-device)
-    if (fsRoom.lastEvent) {
+    // ใช้ eventQueue (คิว) เป็นหลัก — process ทุก event ที่ยังไม่เคยเห็น ตามลำดับ seq
+    if (Array.isArray(fsRoom.eventQueue) && fsRoom.eventQueue.length) {
+      const fresh = fsRoom.eventQueue
+        .filter(ev => ev && ev.seq && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 60000)
+        .sort((a, b) => a.seq - b.seq);
+      fresh.forEach(ev => {
+        _lastFsEventSeq = Math.max(_lastFsEventSeq, ev.seq);
+        if (ev.ts) _lastFsEventTs = Math.max(_lastFsEventTs, ev.ts);
+        routeEvent(ev.type, ev.data);
+      });
+    } else if (fsRoom.lastEvent) {
+      // fallback: ระบบเก่าที่ใช้ lastEvent ตัวเดียว
       const ev = fsRoom.lastEvent;
-      // รับ event ที่ ts > lastFsEventTs และไม่เก่าเกิน 30 วินาที
-      if (ev.ts && ev.ts > _lastFsEventTs && (Date.now() - ev.ts) < 30000) {
-        _lastFsEventTs = ev.ts;
+      const evSeq = ev.seq || (ev.ts ? ev.ts * 1000 : 0);
+      if (evSeq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 30000) {
+        _lastFsEventSeq = evSeq;
+        if (ev.ts) _lastFsEventTs = ev.ts;
         routeEvent(ev.type, ev.data);
       }
     }
@@ -5181,12 +5215,19 @@ function mcSnapSlots() {
 function handleEventPlayer(type, data) {
   switch(type) {
     case 'game_started':
-      G.players = data.players;
+      G.players = data.players || G.players;
       const room2 = getRoom();
       if (room2 && room2.categories && room2.categories.length > 0) {
         G.categories = room2.categories; G.bonusCategories = room2.bonusCategories;
       }
-      // If categories not in localStorage (cross-device), fetch from Firestore
+      // Re-confirm player index from players list
+      if (G.myPlayerName) {
+        const foundIdx = G.players.findIndex(p => p.name === G.myPlayerName);
+        if (foundIdx >= 0) G.myPlayerIndex = foundIdx;
+      }
+      // แสดงหน้าเกมทันที (ไม่รอ fetch — กัน race กับ round_cats)
+      showGamePlayerPhase();
+      // ถ้า categories ยังไม่มี (cross-device) → โหลดจาก Firestore แบบ background
       if ((!G.categories || G.categories.length === 0) && G.roomCode && window._db) {
         _db.collection('rooms').doc(G.roomCode).get().then(snap => {
           if (snap.exists) {
@@ -5194,21 +5235,8 @@ function handleEventPlayer(type, data) {
             if (fd.categoriesCompact) G.categories = fd.categoriesCompact;
             if (fd.bonusCategoriesCompact) G.bonusCategories = fd.bonusCategoriesCompact;
           }
-          // Re-confirm player index from players list
-          if (G.myPlayerName) {
-            const foundIdx = G.players.findIndex(p => p.name === G.myPlayerName);
-            if (foundIdx >= 0) G.myPlayerIndex = foundIdx;
-          }
-          showGamePlayerPhase();
-        }).catch(() => showGamePlayerPhase());
-        return; // wait for async fetch
+        }).catch(() => {});
       }
-      // Re-confirm player index from players list
-      if (G.myPlayerName) {
-        const foundIdx = G.players.findIndex(p => p.name === G.myPlayerName);
-        if (foundIdx >= 0) G.myPlayerIndex = foundIdx;
-      }
-      showGamePlayerPhase();
       break;
     case 'round_cats':
       G.roundCats = data.cats;
@@ -5216,6 +5244,14 @@ function handleEventPlayer(type, data) {
       G.money = 20000;
       G.answerSubmitted = false;
       G.judging = false;
+      // ★ ถ้ายังไม่อยู่หน้าเกม (เช่น game_started ยัง fetch categories ไม่เสร็จ) → เข้าหน้าเกมก่อน
+      {
+        const active = document.querySelector('.screen.active');
+        if (!active || active.id !== 'game-player') {
+          showScreen('game-player');
+          updatePlayerMissDisplay && updatePlayerMissDisplay();
+        }
+      }
       stopPlayerFlash();
       updateQStatusBar('player');
       if (G.players.length >= 2) {
@@ -6037,7 +6073,7 @@ async function createRoom() {
   showNotif('✅ สร้างห้องสำเร็จ! รหัส: ' + code);
 
   // เริ่ม listen
-  _lastFsEventTs = 0; // reset so listener catches all fresh events
+  _lastFsEventTs = 0; _lastFsEventSeq = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(code);
   startMcRoomPoll(code); // poll สำรอง การันตีชื่อผู้เล่นขึ้นบนจอ MC
 
@@ -6394,7 +6430,7 @@ async function joinRoom() {
   updateStartGameButton();
 
   // เริ่ม listen Firestore ก่อน เพื่อรับ game_started/อัปเดตทันที
-  _lastFsEventTs = 0;
+  _lastFsEventTs = 0; _lastFsEventSeq = 0;
   startFirestoreRoomListener(code);
 
   // ===== ลงทะเบียนผู้เล่นเข้า Firestore — ต้องสำเร็จเพื่อให้ชื่อขึ้นบนจอ MC =====
@@ -6529,18 +6565,33 @@ function startGame() {
     const updateData = sanitizeForFirestore({
       phase: 'game',
       players: G.players,
+      eventQueue: [], // เคลียร์คิว event เก่าก่อนเริ่มเกมใหม่
       categoriesCompact: mapCats(G.categories),
       bonusCategoriesCompact: mapCats(G.bonusCategories)
     });
+    // เคลียร์คิวก่อน แล้วค่อย broadcast game_started + round_cats (เรียงลำดับชัวร์)
     _db.collection('rooms').doc(G.roomCode).update(updateData)
-      .then(() => dbg && dbg('startGame: phase set to game OK'))
-      .catch(e => { console.warn('Firestore startGame update error:', e.code, e.message); if (typeof dbg==='function') dbg('startGame update ERROR: ' + (e.code||e.message)); });
+      .then(() => {
+        if (typeof dbg==='function') dbg('startGame: phase set to game OK, queue cleared');
+        broadcastEvent('game_started', { players: G.players });
+        // doRoundCats จะ broadcast round_cats ตามมา
+        doRoundCats();
+      })
+      .catch(e => {
+        console.warn('Firestore startGame update error:', e.code, e.message);
+        if (typeof dbg==='function') dbg('startGame update ERROR: ' + (e.code||e.message));
+        // ถึง update fail ก็ broadcast ต่อ (localStorage fallback)
+        broadcastEvent('game_started', { players: G.players });
+        doRoundCats();
+      });
+  } else {
+    // ไม่มี Firestore (เล่น local) — broadcast ผ่าน localStorage
+    broadcastEvent('game_started', { players: G.players });
+    doRoundCats();
   }
 
-  broadcastEvent('game_started', { players: G.players });
   showScreen('game-mc');
   updateMCScreenInit();
-  doRoundCats();
 }
 
 function updateMCScreenInit() {
@@ -9066,7 +9117,7 @@ async function acceptInvite(inviteId, roomCode, fromName, fromAvatar) {
   }, 100);
 
   // เริ่ม listen Firestore เพื่อรับ game_started
-  _lastFsEventTs = 0; // reset so listener catches all fresh events
+  _lastFsEventTs = 0; _lastFsEventSeq = 0; // reset so listener catches all fresh events
   startFirestoreRoomListener(roomCode);
 
   // fetch inviter avatar ถ้าไม่มี
