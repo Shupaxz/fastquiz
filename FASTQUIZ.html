@@ -8926,9 +8926,12 @@ function showFriendContextMenu(e, friendIdx) {
 }
 
 function openFriendActionModal(friendIdx) {
-  closeFriendActionModal();
-  const f = (window._userProfile.friends || [])[friendIdx];
-  if (!f) return;
+  try {
+    closeFriendActionModal();
+    const friends = (window._userProfile && window._userProfile.friends) || [];
+    const f = friends[friendIdx];
+    if (typeof dbg === 'function') dbg('openFriendActionModal idx=' + friendIdx + ' found=' + (!!f));
+    if (!f) { showNotif('ไม่พบข้อมูลเพื่อน'); return; }
 
   const st = window._friendStatuses && window._friendStatuses[f.uid];
   let statusLabel = 'OFFLINE', statusColor = '#667', statusBg = 'rgba(100,100,150,0.12)';
@@ -8943,6 +8946,7 @@ function openFriendActionModal(friendIdx) {
   const overlay = document.createElement('div');
   overlay.className = 'friend-action-overlay';
   overlay.id = 'friendActionOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.78);backdrop-filter:blur(8px);';
   overlay.onclick = (ev) => { if (ev.target === overlay) closeFriendActionModal(); };
 
   overlay.innerHTML = `
@@ -8972,6 +8976,11 @@ function openFriendActionModal(friendIdx) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  } catch(err) {
+    console.error('openFriendActionModal error', err);
+    if (typeof dbg === 'function') dbg('openFriendActionModal ERR: ' + (err.message||err));
+    showNotif('เปิดเมนูเพื่อนไม่ได้');
+  }
 }
 
 function closeFriendActionModal() {
@@ -9620,73 +9629,147 @@ function lightningTransition(target) {
   const canvas = $('lightning-canvas');
   if (!canvas) { target === 'create' ? goCreate() : goJoin(); return; }
   const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const W = canvas.width = window.innerWidth;
+  const H = canvas.height = window.innerHeight;
   canvas.classList.add('active');
 
-  let frame = 0;
-  const totalFrames = 40;
+  // ธีมสีตามปุ่ม: CREATE = ทอง/ส้ม, JOIN = ฟ้า/ม่วง
+  const theme = target === 'create'
+    ? { core:'#FFF6CC', glow:'#FFD700', glow2:'#FF8800', flash:'255,200,0', ring:'#FFCC33' }
+    : { core:'#DFFCFF', glow:'#00E5FF', glow2:'#7A5CFF', flash:'0,200,255', ring:'#33E0FF' };
 
-  function drawLightning(x1, y1, x2, y2, roughness, depth) {
-    if (depth === 0) return;
-    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * roughness;
-    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * roughness;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(mx, my);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    if (Math.random() > 0.5 && depth > 1) {
-      const branchX = mx + (Math.random() - 0.5) * roughness * 1.5;
-      const branchY = my + (Math.random() - 0.5) * roughness * 1.5;
-      ctx.beginPath();
-      ctx.moveTo(mx, my);
-      ctx.lineTo(branchX, branchY);
-      ctx.stroke();
+  // SFX ฟ้าผ่า
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    const noise = ac.createBufferSource();
+    const buf = ac.createBuffer(1, ac.sampleRate*0.4, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2.2);
+    noise.buffer = buf;
+    const bp = ac.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1400; bp.Q.value=0.6;
+    const g = ac.createGain(); g.gain.value=0.0001;
+    g.gain.exponentialRampToValueAtTime(0.5, ac.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.5);
+    noise.connect(bp); bp.connect(g); g.connect(ac.destination);
+    noise.start();
+    // เสียง rumble ต่ำ
+    const o = ac.createOscillator(); o.type='sawtooth'; o.frequency.value=70;
+    const og = ac.createGain(); og.gain.value=0.0001;
+    og.gain.exponentialRampToValueAtTime(0.25, ac.currentTime+0.05);
+    og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.6);
+    o.connect(og); og.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.6);
+  } catch(e) {}
+
+  function bolt(x1,y1,x2,y2,rough,depth,segs) {
+    // สร้างเส้นแตกแบบ midpoint-displacement ทั้งเส้นแล้ววาดทีเดียว (ลื่นกว่า)
+    let pts = [{x:x1,y:y1},{x:x2,y:y2}];
+    for (let d=0; d<depth; d++) {
+      const next = [];
+      for (let i=0;i<pts.length-1;i++) {
+        const a=pts[i], b=pts[i+1];
+        const mx=(a.x+b.x)/2 + (Math.random()-0.5)*rough;
+        const my=(a.y+b.y)/2 + (Math.random()-0.5)*rough;
+        next.push(a, {x:mx,y:my});
+      }
+      next.push(pts[pts.length-1]);
+      pts = next; rough *= 0.5;
     }
-    drawLightning(x1, y1, mx, my, roughness * 0.55, depth - 1);
-    drawLightning(mx, my, x2, y2, roughness * 0.55, depth - 1);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    // แตกกิ่ง
+    if (segs) {
+      for (let k=0;k<segs;k++){
+        const i = 2 + Math.floor(Math.random()*(pts.length-4));
+        if (!pts[i]) continue;
+        const len = 60 + Math.random()*120;
+        const ang = Math.atan2(pts[i+1]?pts[i+1].y-pts[i].y:0, pts[i+1]?pts[i+1].x-pts[i].x:1) + (Math.random()-0.5)*1.6;
+        ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y);
+        ctx.lineTo(pts[i].x+Math.cos(ang)*len, pts[i].y+Math.sin(ang)*len);
+        ctx.stroke();
+      }
+    }
   }
 
+  let frame = 0;
+  const TOTAL = 56;
+  const cx = W/2, cy = H/2;
+
   function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const progress = frame / totalFrames;
+    ctx.clearRect(0,0,W,H);
+    const p = frame / TOTAL;
 
-    // Background flash
-    const alpha = Math.sin(progress * Math.PI) * 0.35;
-    ctx.fillStyle = `rgba(255, 200, 0, ${alpha})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // ── Stage 1: charge-up (0–0.35): vignette เรืองแสงจากกลางจอ ──
+    if (p < 0.4) {
+      const c = p/0.4;
+      const r = Math.max(W,H) * (0.2 + c*0.5);
+      const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+      grad.addColorStop(0, `rgba(${theme.flash},${0.15+c*0.25})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+    }
 
-    // Multiple lightning bolts
-    const bolts = [
-      [canvas.width * 0.3, 0, canvas.width * 0.5, canvas.height],
-      [canvas.width * 0.6, 0, canvas.width * 0.4, canvas.height],
-      [canvas.width * 0.1, canvas.height * 0.2, canvas.width * 0.9, canvas.height * 0.8],
-    ];
+    // ── Stage 2: main strike (0.25–0.7): ฟ้าผ่าหลายเส้น + flash ──
+    if (p >= 0.22 && p < 0.78) {
+      const sp = (p-0.22)/0.56;
+      const intensity = Math.sin(sp*Math.PI);
+      // flash เต็มจอ
+      ctx.fillStyle = `rgba(${theme.flash},${intensity*0.45})`;
+      ctx.fillRect(0,0,W,H);
 
-    bolts.forEach(([x1,y1,x2,y2], idx) => {
-      const roughness = 120 + Math.random() * 80;
-      const alpha2 = Math.sin(progress * Math.PI) * (0.8 + Math.random() * 0.2);
-      // Outer glow
-      ctx.strokeStyle = `rgba(255, 200, 0, ${alpha2 * 0.3})`;
-      ctx.lineWidth = 8;
-      ctx.shadowBlur = 40;
-      ctx.shadowColor = '#FFD700';
-      drawLightning(x1, y1, x2, y2, roughness, 5);
-      // Core bolt
-      ctx.strokeStyle = `rgba(255, 255, 200, ${alpha2})`;
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#FFFFFF';
-      drawLightning(x1, y1, x2, y2, roughness * 0.7, 4);
-    });
+      const numBolts = 3 + Math.floor(Math.random()*3);
+      for (let i=0;i<numBolts;i++) {
+        const startX = W*(0.2+Math.random()*0.6);
+        const endX = cx + (Math.random()-0.5)*W*0.4;
+        // outer glow
+        ctx.strokeStyle = `rgba(${theme.flash},${intensity*0.35})`;
+        ctx.lineWidth = 9; ctx.shadowBlur = 45; ctx.shadowColor = theme.glow;
+        ctx.lineCap='round';
+        bolt(startX,-20, endX, H+20, 160, 6, 3);
+        // mid
+        ctx.strokeStyle = theme.glow; ctx.lineWidth = 4; ctx.shadowBlur=28; ctx.shadowColor=theme.glow2;
+        bolt(startX,-20, endX, H+20, 110, 6, 0);
+        // core
+        ctx.strokeStyle = theme.core; ctx.lineWidth = 1.6; ctx.shadowBlur=14; ctx.shadowColor='#fff';
+        bolt(startX,-20, endX, H+20, 80, 6, 0);
+      }
+    }
 
+    // ── Stage 3: shockwave ring (0.5–1): วงคลื่นกระจายจากกลาง ──
+    if (p >= 0.5) {
+      const sw = (p-0.5)/0.5;
+      const r = sw * Math.max(W,H) * 0.9;
+      ctx.beginPath();
+      ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle = theme.ring;
+      ctx.globalAlpha = (1-sw)*0.9;
+      ctx.lineWidth = 6 + (1-sw)*10;
+      ctx.shadowBlur = 30; ctx.shadowColor = theme.ring;
+      ctx.stroke();
+      // วงที่สอง
+      ctx.beginPath();
+      ctx.arc(cx,cy,r*0.7,0,Math.PI*2);
+      ctx.globalAlpha = (1-sw)*0.5;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Stage 4: fade to white flash ก่อนสลับหน้า ──
+    if (p > 0.82) {
+      const f = (p-0.82)/0.18;
+      ctx.fillStyle = `rgba(${theme.flash},${f*0.55})`;
+      ctx.fillRect(0,0,W,H);
+    }
+
+    ctx.shadowBlur = 0;
     frame++;
-    if (frame < totalFrames) {
+    if (frame < TOTAL) {
       requestAnimationFrame(animate);
     } else {
       canvas.classList.remove('active');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,W,H);
       target === 'create' ? goCreate() : goJoin();
     }
   }
