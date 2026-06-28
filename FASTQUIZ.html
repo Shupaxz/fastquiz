@@ -10415,101 +10415,193 @@ function lightningTransition(target) {
 
   // ธีมสีตามปุ่ม: CREATE = ทอง/ส้ม, JOIN = ฟ้า/ม่วง
   const theme = target === 'create'
-    ? { core:'#FFF3C8', glow:'#FFC83D', flash:'255,190,40', ring:'#FFD24D' }
-    : { core:'#D8FBFF', glow:'#2FD8FF', flash:'40,200,255', ring:'#46E0FF' };
+    ? { core:'#FFF3C8', glow:'#FFC83D', mid:'#FF8A1E', flashRGB:'255,190,40', ring:'#FFD24D', spark:['#FFE9A8','#FFC83D','#FF8A1E'] }
+    : { core:'#E0FCFF', glow:'#2FD8FF', mid:'#6A7CFF', flashRGB:'40,200,255', ring:'#46E0FF', spark:['#CFF6FF','#2FD8FF','#7A5CFF'] };
 
-  // เสียงฟ้าผ่าเบา ๆ นุ่ม ๆ (ไม่แสบหู)
+  const cx = W/2, cy = H/2;
+  const maxR = Math.hypot(W, H) / 2;
+
+  // เสียง warp นุ่ม ๆ (เพิ่มความถี่ขึ้นเหมือนพุ่งทะยาน + ไม่แสบหู)
   try {
     const ac = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ac.createOscillator(); o.type='sine'; o.frequency.value=180;
-    o.frequency.exponentialRampToValueAtTime(60, ac.currentTime+0.4);
-    const g = ac.createGain(); g.gain.value=0.0001;
-    g.gain.exponentialRampToValueAtTime(0.18, ac.currentTime+0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.55);
-    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.55);
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(120, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(700, ac.currentTime + 0.5);
+    o.frequency.exponentialRampToValueAtTime(180, ac.currentTime + 0.85);
+    const g = ac.createGain(); g.gain.value = 0.0001;
+    g.gain.exponentialRampToValueAtTime(0.16, ac.currentTime + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.9);
+    const o2 = ac.createOscillator(); o2.type='triangle'; o2.frequency.value=55;
+    const g2 = ac.createGain(); g2.gain.value=0.0001;
+    g2.gain.exponentialRampToValueAtTime(0.12, ac.currentTime+0.1);
+    g2.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+0.7);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+0.9);
+    o2.connect(g2); g2.connect(ac.destination); o2.start(); o2.stop(ac.currentTime+0.7);
   } catch(e) {}
 
-  const cx = W/2;
+  // ── สร้างเส้น warp (พุ่งเข้าศูนย์กลาง) ไว้ล่วงหน้า ──
+  const streaks = [];
+  for (let i = 0; i < 46; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    streaks.push({
+      ang,
+      r0: maxR * (0.55 + Math.random() * 0.7),  // เริ่มไกล
+      len: 60 + Math.random() * 200,            // ความยาวเส้น
+      speed: 0.9 + Math.random() * 1.5,
+      w: 1 + Math.random() * 2.5,
+      hue: Math.floor(Math.random()*3),
+      delay: Math.random() * 0.18
+    });
+  }
 
-  // สร้างเส้นสายฟ้าไว้ล่วงหน้า "ครั้งเดียว" (ไม่สุ่มใหม่ทุกเฟรม → ลื่น ไม่แลค ไม่กระพริบมั่ว)
-  function makeBolt(startX) {
-    const pts = [{x:startX, y:-30}];
-    const segments = 9;
-    for (let i=1;i<=segments;i++) {
-      const t = i/segments;
-      const targetX = cx + (startX - cx) * (1 - t) * 0.3; // เอนเข้ากลางจอเล็กน้อย
-      pts.push({
-        x: targetX + (Math.random()-0.5) * 90 * (1-t*0.3),
-        y: (H+30) * t
-      });
+  // ── particle ดูดเข้า portal ──
+  const parts = [];
+  for (let i = 0; i < 30; i++) {
+    const ang = Math.random()*Math.PI*2;
+    parts.push({ ang, r: maxR*(0.3+Math.random()*0.7), sz: 1.5+Math.random()*3, sp: 0.85+Math.random()*1.2, hue: Math.floor(Math.random()*3) });
+  }
+
+  // ── โค้งสายฟ้ารอบ portal (สร้างไว้ล่วงหน้า ไม่สุ่มทุกเฟรม) ──
+  function makeArc(baseAng, radius) {
+    const pts = [];
+    const segs = 10;
+    const spread = 0.9 + Math.random()*0.5;
+    for (let i=0;i<=segs;i++){
+      const t = i/segs;
+      const a = baseAng + (t-0.5)*spread;
+      const rr = radius + (Math.random()-0.5)*26;
+      pts.push({ x: cx + Math.cos(a)*rr, y: cy + Math.sin(a)*rr });
     }
     return pts;
   }
-  // 2 เส้นหลัก กำลังดี ไม่รก
-  const bolts = [ makeBolt(W*0.42), makeBolt(W*0.58) ];
 
-  function strokeBolt(pts) {
+  let frame = 0;
+  const TOTAL = 50;
+
+  function strokePts(pts) {
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.stroke();
   }
 
-  let frame = 0;
-  const TOTAL = 42; // สั้น กระชับ
-
   function animate() {
-    ctx.clearRect(0,0,W,H);
-    const p = frame / TOTAL;
-    const ease = Math.sin(p * Math.PI); // นุ่มขึ้น-ลง
+    const p = frame / TOTAL;            // 0..1
+    const ease = Math.sin(p * Math.PI); // ขึ้น-ลงนุ่ม
 
-    // ── flash เรืองนุ่มจากกลางจอ (radial — สบายตา) ──
-    const grad = ctx.createRadialGradient(cx, H/2, 0, cx, H/2, Math.max(W,H)*0.75);
-    grad.addColorStop(0, `rgba(${theme.flash},${ease*0.22})`);
+    // เคลียร์แบบมี trail นิด ๆ (ให้เส้น warp มีหาง สวยขึ้น ไม่แลค)
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = `rgba(2,4,10,${0.32 + p*0.25})`;
+    ctx.fillRect(0,0,W,H);
+
+    ctx.globalCompositeOperation = 'lighter'; // โหมดเรืองแสง (additive) — ดูพรีเมียม
+
+    // ── 1) แสงเรืองนุ่มจากศูนย์กลาง (สบายตา) ──
+    const coreR = maxR * (0.12 + ease*0.30);
+    const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,coreR);
+    grad.addColorStop(0, `rgba(${theme.flashRGB},${0.16+ease*0.20})`);
+    grad.addColorStop(0.5, `rgba(${theme.flashRGB},${0.05+ease*0.08})`);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(cx,cy,coreR,0,Math.PI*2); ctx.fill();
 
-    // ── สายฟ้า: โผล่ช่วงกลาง fade in/out นุ่ม ๆ ──
-    if (p > 0.12 && p < 0.72) {
-      const bp = Math.sin(((p-0.12)/0.6) * Math.PI); // 0→1→0
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      bolts.forEach(pts => {
-        // glow ชั้นนอก (นุ่ม)
-        ctx.strokeStyle = `rgba(${theme.flash},${bp*0.4})`;
-        ctx.lineWidth = 7; ctx.shadowBlur = 22; ctx.shadowColor = theme.glow;
-        strokeBolt(pts);
-        // แกนสว่าง
-        ctx.strokeStyle = `rgba(255,255,255,${bp*0.95})`;
-        ctx.lineWidth = 2; ctx.shadowBlur = 10; ctx.shadowColor = theme.core;
-        strokeBolt(pts);
-      });
-      ctx.shadowBlur = 0;
-    }
+    // ── 2) เส้น warp พุ่งเข้าศูนย์กลาง ──
+    ctx.lineCap = 'round';
+    streaks.forEach(s => {
+      const lp = Math.max(0, Math.min(1, (p - s.delay) / (1 - s.delay)));
+      // ระยะปัจจุบัน: เคลื่อนจาก r0 เข้าหา 0
+      const r = s.r0 * (1 - lp * s.speed);
+      if (r < -s.len) return;
+      const rEnd = Math.max(0, r);
+      const rStart = Math.max(0, r + s.len);
+      const x1 = cx + Math.cos(s.ang) * rStart, y1 = cy + Math.sin(s.ang) * rStart;
+      const x2 = cx + Math.cos(s.ang) * rEnd,   y2 = cy + Math.sin(s.ang) * rEnd;
+      const a = Math.min(1, ease * 1.2) * (0.5 + 0.5*(1 - r/maxR));
+      const col = theme.spark[s.hue];
+      const g2 = ctx.createLinearGradient(x1,y1,x2,y2);
+      g2.addColorStop(0, 'rgba(0,0,0,0)');
+      g2.addColorStop(1, col);
+      ctx.strokeStyle = g2; ctx.globalAlpha = a;
+      ctx.lineWidth = s.w; ctx.shadowBlur = 12; ctx.shadowColor = col;
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    });
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
 
-    // ── shockwave ring บาง ๆ วงเดียว (เรียบหรู) ──
-    if (p >= 0.45) {
-      const sw = (p-0.45)/0.55;
-      ctx.beginPath();
-      ctx.arc(cx, H/2, sw*Math.max(W,H)*0.6, 0, Math.PI*2);
-      ctx.strokeStyle = theme.ring;
-      ctx.globalAlpha = (1-sw)*0.5;
-      ctx.lineWidth = 3 + (1-sw)*5;
-      ctx.shadowBlur = 16; ctx.shadowColor = theme.ring;
-      ctx.stroke();
+    // ── 3) วงแหวน portal หมุน 2 วง ──
+    if (p > 0.18) {
+      const rp = (p-0.18)/0.82;
+      for (let k=0;k<2;k++){
+        const ringR = maxR*(0.10 + rp*0.42) * (k? 0.62:1);
+        const rot = frame*0.06*(k?-1:1);
+        ctx.save();
+        ctx.translate(cx,cy); ctx.rotate(rot);
+        ctx.strokeStyle = theme.ring;
+        ctx.globalAlpha = (1-rp)*0.6;
+        ctx.lineWidth = 2.5 + (1-rp)*4;
+        ctx.shadowBlur = 18; ctx.shadowColor = theme.ring;
+        // วงแหวนแบบประ (มีช่อง) ให้ดูเป็น sci-fi
+        ctx.beginPath();
+        const dashes = 18;
+        for (let d=0; d<dashes; d++){
+          const a0 = (d/dashes)*Math.PI*2;
+          const a1 = a0 + (Math.PI*2/dashes)*0.6;
+          ctx.moveTo(Math.cos(a0)*ringR, Math.sin(a0)*ringR);
+          ctx.arc(0,0,ringR,a0,a1);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
 
-    // ── fade ปิดท้ายนุ่ม ๆ ──
-    if (p > 0.8) {
-      const f = (p-0.8)/0.2;
-      ctx.fillStyle = `rgba(${theme.flash},${f*0.3})`;
-      ctx.fillRect(0,0,W,H);
+    // ── 4) สายฟ้าโค้งรอบ portal (โผล่เป็นจังหวะ) ──
+    if (p > 0.30 && p < 0.85 && frame % 3 === 0) {
+      const arcR = maxR * (0.16 + ((p-0.3)/0.55)*0.34);
+      const nArc = 2 + Math.floor(Math.random()*2);
+      for (let i=0;i<nArc;i++){
+        const pts = makeArc(Math.random()*Math.PI*2, arcR);
+        // glow
+        ctx.strokeStyle = theme.glow; ctx.globalAlpha = 0.5;
+        ctx.lineWidth = 3.5; ctx.shadowBlur = 16; ctx.shadowColor = theme.glow;
+        strokePts(pts);
+        // core
+        ctx.strokeStyle = theme.core; ctx.globalAlpha = 0.95;
+        ctx.lineWidth = 1.4; ctx.shadowBlur = 8; ctx.shadowColor = '#fff';
+        strokePts(pts);
+      }
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
 
+    // ── 5) particle ดูดเข้า portal ──
+    parts.forEach(pt => {
+      pt.r -= pt.sp * (3 + ease*6);
+      if (pt.r < 6) pt.r = maxR*(0.5+Math.random()*0.5);
+      const x = cx + Math.cos(pt.ang)*pt.r, y = cy + Math.sin(pt.ang)*pt.r;
+      ctx.fillStyle = theme.spark[pt.hue];
+      ctx.globalAlpha = ease * (1 - pt.r/maxR) * 0.9;
+      ctx.shadowBlur = 8; ctx.shadowColor = theme.spark[pt.hue];
+      ctx.beginPath(); ctx.arc(x,y,pt.sz,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+
+    // ── 6) แกนกลางสว่าง + แสงเปล่งตอนจบ ──
+    if (p > 0.55) {
+      const fp = (p-0.55)/0.45;
+      const burstR = fp*fp * maxR * 1.2;
+      const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(1,burstR));
+      bg.addColorStop(0, `rgba(255,255,255,${0.5*fp})`);
+      bg.addColorStop(0.4, `rgba(${theme.flashRGB},${0.4*fp})`);
+      bg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(cx,cy,Math.max(1,burstR),0,Math.PI*2); ctx.fill();
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
     frame++;
     if (frame < TOTAL) {
       requestAnimationFrame(animate);
     } else {
+      // วาบขาวจบสั้น ๆ แล้วสลับหน้า
+      ctx.fillStyle = `rgba(${theme.flashRGB},0.25)`;
+      ctx.fillRect(0,0,W,H);
       canvas.classList.remove('active');
       ctx.clearRect(0,0,W,H);
       target === 'create' ? goCreate() : goJoin();
