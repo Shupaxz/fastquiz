@@ -114,7 +114,7 @@
       window._currentUser = cred.user;
       window._userProfile = {
         uid, email: '', displayName: nickname, avatar: '⚡',
-        nickname: nickname, friends: [], gameHistory: [], isAnonymous: true
+        nickname: nickname, friends: [], gameHistory: [], rp: 0, isAnonymous: true
       };
       await _db.collection('users').doc(uid).set(window._userProfile).catch(() => {});
       return true;
@@ -147,6 +147,56 @@
     await _db.collection('users').doc(window._currentUser.uid).set({
       gameHistory: firebase.firestore.FieldValue.arrayUnion(entry)
     }, { merge: true });
+  };
+
+  // อัปเดต/สร้าง entry ใน leaderboard (RP รวม)
+  window._updateLeaderboard = async function(rp) {
+    if (!window._currentUser || !window._userProfile) return;
+    try {
+      await _db.collection('leaderboard').doc(window._currentUser.uid).set({
+        uid: window._currentUser.uid,
+        name: window._userProfile.nickname || window._currentUser.email || 'ผู้เล่น',
+        avatar: window._userProfile.avatar || '',
+        rp: rp,
+        isKing: !!window._userProfile.isKing,
+        updatedAt: Date.now()
+      }, { merge: true });
+    } catch(e) {}
+  };
+
+  /* ตรวจ "ราชา นศท." รายสัปดาห์ — ทุกวันจันทร์ 00:00
+     ถ้าเป็นสัปดาห์ใหม่ และผู้เล่นติด top50 → ตั้ง isKing=true (สัปดาห์ก่อน) */
+  window._checkWeeklyKing = async function() {
+    if (!window._currentUser || !window._userProfile || !window._db) return;
+    try {
+      // คำนวณเลขสัปดาห์ (วันจันทร์เป็นวันเริ่ม)
+      const now = new Date();
+      const day = (now.getDay() + 6) % 7; // จันทร์=0
+      const monday = new Date(now); monday.setDate(now.getDate() - day); monday.setHours(0,0,0,0);
+      const weekId = monday.toISOString().slice(0,10);
+
+      const metaRef = _db.collection('leaderboard_meta').doc('weekly');
+      const metaSnap = await metaRef.get();
+      const meta = metaSnap.exists ? metaSnap.data() : {};
+
+      // ถ้าเป็นสัปดาห์ใหม่ → ประมวลผลแชมป์ของสัปดาห์ที่ผ่านมา
+      if (meta.weekId !== weekId) {
+        // ดึง top50 ปัจจุบัน (= ผลของสัปดาห์ที่เพิ่งจบ)
+        const top = await _db.collection('leaderboard').orderBy('rp','desc').limit(50).get();
+        const kingUids = [];
+        top.forEach(d => kingUids.push(d.id));
+        // ตั้ง weekId ใหม่ + เก็บรายชื่อแชมป์
+        await metaRef.set({ weekId: weekId, kings: kingUids, processedAt: Date.now() }, { merge: true });
+        // ถ้าเราติด top50 → เป็นราชา
+        const iAmKing = kingUids.indexOf(window._currentUser.uid) >= 0;
+        if (iAmKing && !window._userProfile.isKing) {
+          window._userProfile.isKing = true;
+          await _db.collection('users').doc(window._currentUser.uid).set({ isKing: true, kingWeek: weekId }, { merge: true });
+          await _db.collection('leaderboard').doc(window._currentUser.uid).set({ isKing: true }, { merge: true });
+          window._pendingKingCelebration = true;
+        }
+      }
+    } catch(e) {}
   };
 
   window._searchUser = async function(q) {
@@ -380,7 +430,7 @@
       if (snap.exists) {
         window._userProfile = snap.data();
       } else {
-        window._userProfile = { uid: user.uid, email: user.email, displayName: user.displayName || '', avatar: '', nickname: '', friends: [], gameHistory: [] };
+        window._userProfile = { uid: user.uid, email: user.email, displayName: user.displayName || '', avatar: '', nickname: '', friends: [], gameHistory: [], rp: 0 };
         await _db.collection('users').doc(user.uid).set(window._userProfile);
       }
       // รอ DOM ready ก่อน (กัน race condition ที่ Firebase fire ก่อน script โหลดเสร็จ)
@@ -3570,6 +3620,166 @@ body::after {
 .chat-toast-msg { font-family:var(--font-th); font-size:13px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px; }
 
 /* edit profile avatar options */
+/* ===== MODE SELECTOR (Casual / Ranked) ===== */
+.mode-card {
+  width: 160px; padding: 16px 14px; border-radius: 16px; cursor: pointer;
+  background: linear-gradient(160deg, rgba(6,14,32,0.95), rgba(2,6,18,0.98));
+  border: 1px solid var(--border); text-align: center; transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.mode-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity:0; transition:opacity 0.25s;
+}
+.mode-card:hover { transform: translateY(-3px); border-color: var(--border2); }
+.mode-card.selected { border-color: var(--cyan); box-shadow: 0 0 24px rgba(0,200,255,0.25), inset 0 0 30px rgba(0,150,255,0.08); transform: translateY(-3px); }
+.mode-card.selected::before { opacity:1; }
+.mode-card.selected#modeRanked { border-color: var(--gold); box-shadow: 0 0 24px rgba(255,200,0,0.3), inset 0 0 30px rgba(255,180,0,0.1); }
+.mode-card.selected#modeRanked::before { background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+.mode-ic { font-size: 34px; margin-bottom: 6px; filter: drop-shadow(0 0 10px rgba(0,200,255,0.5)); }
+.mode-card#modeRanked .mode-ic { filter: drop-shadow(0 0 10px rgba(255,200,0,0.5)); }
+.mode-title { font-family: var(--font-en); font-size: 16px; font-weight: 900; letter-spacing: 3px; color: var(--text); }
+.mode-card.selected .mode-title { color: var(--cyan); text-shadow: 0 0 16px var(--cyan); }
+.mode-card.selected#modeRanked .mode-title { color: var(--gold); text-shadow: 0 0 16px var(--gold); }
+.mode-sub { font-family: var(--font-th); font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+/* ===== 3D RANK TEXT / DIVISION ===== */
+.rank-name-3d {
+  font-family: var(--font-en); font-weight: 900; letter-spacing: 2px;
+  background: linear-gradient(180deg, #fff 0%, currentColor 60%, rgba(0,0,0,0.5) 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+}
+.rank-div-3d {
+  display:inline-block; font-family: var(--font-en); font-weight:900; font-size:0.7em;
+  margin-left:6px; padding:2px 10px; border-radius:8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(0,0,0,0.3));
+  border:1px solid rgba(255,255,255,0.3); text-shadow:0 2px 4px rgba(0,0,0,0.5);
+}
+.rp-number-3d {
+  font-family: var(--font-en); font-weight: 900;
+  background: linear-gradient(180deg, #ffffff, #9fe8ff 50%, #2a8fc8);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0,100,200,0.5));
+}
+
+/* ===== RANK-UP OVERLAY ===== */
+.rankup-overlay {
+  position: fixed; inset: 0; z-index: 50000; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(10,20,50,0.96), rgba(2,4,12,0.99));
+  animation: ruFade 0.4s ease both; overflow:hidden;
+}
+@keyframes ruFade { from{opacity:0} to{opacity:1} }
+.rankup-rays {
+  position:absolute; width:160vmax; height:160vmax; top:50%; left:50%;
+  transform: translate(-50%,-50%);
+  background: repeating-conic-gradient(from 0deg, rgba(0,200,255,0.08) 0deg 6deg, transparent 6deg 12deg);
+  animation: ruSpin 12s linear infinite; pointer-events:none;
+}
+@keyframes ruSpin { to { transform: translate(-50%,-50%) rotate(360deg); } }
+.rankup-label {
+  font-family: var(--font-en); font-size: 18px; letter-spacing: 8px; color: var(--cyan);
+  text-shadow: 0 0 24px var(--cyan); opacity:0; animation: ruLabel 0.6s ease 0.3s forwards;
+}
+@keyframes ruLabel { from{opacity:0; transform:translateY(-14px);} to{opacity:1; transform:translateY(0);} }
+.rankup-icon-wrap {
+  position:relative; animation: ruIcon 0.8s cubic-bezier(0.34,1.6,0.5,1) 0.2s both;
+}
+@keyframes ruIcon { from{opacity:0; transform:scale(0.2) rotate(-30deg);} to{opacity:1; transform:scale(1) rotate(0);} }
+.rankup-icon-wrap::after {
+  content:''; position:absolute; inset:-30%; border-radius:50%;
+  background: radial-gradient(circle, rgba(0,200,255,0.4), transparent 65%);
+  animation: ruPulse 1.6s ease-in-out infinite; z-index:-1;
+}
+@keyframes ruPulse { 0%,100%{transform:scale(0.9);opacity:0.6;} 50%{transform:scale(1.15);opacity:1;} }
+.rankup-name {
+  font-size: 40px; opacity:0; animation: ruName 0.6s ease 0.5s forwards;
+}
+@keyframes ruName { from{opacity:0; transform:scale(0.7);} to{opacity:1; transform:scale(1);} }
+.rankup-rp { font-family:var(--font-en); font-size:22px; opacity:0; animation: ruName 0.6s ease 0.7s forwards; }
+.rankup-btn {
+  margin-top: 20px; opacity:0; animation: ruName 0.5s ease 1s forwards;
+}
+.rankup-particle { position:absolute; border-radius:50%; pointer-events:none; }
+
+/* RP gain pill on final screen */
+.rp-gain-pill {
+  display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:30px;
+  font-family:var(--font-en); font-weight:900; font-size:20px; margin-top:14px;
+  border:1px solid; animation: rpPop 0.5s cubic-bezier(0.34,1.6,0.5,1) both;
+}
+@keyframes rpPop { from{opacity:0;transform:scale(0.5);} to{opacity:1;transform:scale(1);} }
+.rp-gain-pill.up { color:var(--neon); border-color:var(--neon); background:rgba(57,255,20,0.1); box-shadow:0 0 20px rgba(57,255,20,0.3); }
+.rp-gain-pill.down { color:var(--red); border-color:var(--red); background:rgba(255,40,80,0.1); box-shadow:0 0 20px rgba(255,40,80,0.3); }
+
+/* ===== LEADERBOARD ===== */
+.lb-overlay {
+  position: fixed; inset: 0; z-index: 40000; display:flex; align-items:center; justify-content:center;
+  background: rgba(2,6,16,0.82); backdrop-filter: blur(10px); animation: ruFade 0.3s ease both;
+}
+.lb-card {
+  width: min(94vw, 560px); max-height: 86vh; display:flex; flex-direction:column;
+  background: linear-gradient(165deg, rgba(8,16,38,0.98), rgba(3,8,20,0.99));
+  border: 1px solid var(--border2); border-radius: 22px; overflow: hidden; position: relative;
+  box-shadow: 0 0 60px rgba(0,120,255,0.25), 0 30px 70px rgba(0,0,0,0.8);
+  animation: faCardIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.lb-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--cyan), var(--gold), transparent);
+  background-size: 200%; animation: borderFlow 3s linear infinite;
+}
+.lb-header {
+  padding: 22px 24px 16px; text-align:center; border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,200,0,0.06), transparent);
+}
+.lb-title { font-family:var(--font-en); font-size:26px; font-weight:900; letter-spacing:4px;
+  background:linear-gradient(135deg,#fff,var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  filter: drop-shadow(0 0 16px rgba(255,200,0,0.4)); }
+.lb-sub { font-family:var(--font-th); font-size:12px; color:var(--text2); margin-top:4px; }
+.lb-list { overflow-y:auto; padding: 10px 14px 18px; }
+.lb-row {
+  display:flex; align-items:center; gap:12px; padding:11px 14px; margin-bottom:8px; border-radius:13px;
+  background: rgba(0,15,38,0.6); border:1px solid var(--border); transition: all 0.2s;
+  animation: lbRowIn 0.4s ease both;
+}
+@keyframes lbRowIn { from{opacity:0; transform:translateX(-16px);} to{opacity:1; transform:translateX(0);} }
+.lb-row:hover { border-color: var(--border2); transform: translateX(3px); }
+.lb-row.me { border-color: var(--cyan); box-shadow: 0 0 18px rgba(0,200,255,0.2); background: rgba(0,40,80,0.4); }
+.lb-rank-num {
+  font-family:var(--font-en); font-weight:900; font-size:18px; width:34px; text-align:center; flex-shrink:0;
+}
+.lb-row.top1 .lb-rank-num { color:#FFD700; text-shadow:0 0 12px #FFD700; }
+.lb-row.top2 .lb-rank-num { color:#C0C8D4; text-shadow:0 0 12px #C0C8D4; }
+.lb-row.top3 .lb-rank-num { color:#CD7F32; text-shadow:0 0 12px #CD7F32; }
+.lb-avatar { width:42px; height:42px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  font-size:22px; overflow:hidden; border:1px solid var(--border2); background:rgba(0,20,50,0.8); }
+.lb-avatar img { width:100%; height:100%; object-fit:cover; }
+.lb-info { flex:1; min-width:0; }
+.lb-name { font-family:var(--font-th); font-weight:700; font-size:15px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lb-rankname { font-family:var(--font-th); font-size:11px; }
+.lb-rp { font-family:var(--font-en); font-weight:900; font-size:17px; color:var(--cyan); text-shadow:0 0 10px rgba(0,200,255,0.4); flex-shrink:0; }
+.lb-mini-icon { width:30px; height:30px; flex-shrink:0; }
+
+/* leaderboard floating button */
+.lb-fab {
+  position: fixed; left: 18px; bottom: 18px; z-index: 9000;
+  width: 56px; height: 56px; border-radius: 16px; cursor: pointer;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(160deg, rgba(255,200,0,0.14), rgba(255,140,0,0.06));
+  border: 1px solid rgba(255,200,0,0.4); backdrop-filter: blur(8px);
+  box-shadow: 0 0 24px rgba(255,180,0,0.2); transition: all 0.25s; overflow:hidden;
+}
+.lb-fab::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(circle at 50% 0%, rgba(255,220,100,0.25), transparent 70%);
+  animation: ruPulse 2.5s ease-in-out infinite;
+}
+.lb-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 34px rgba(255,180,0,0.4); }
+.lb-fab svg { position:relative; z-index:1; }
+
 .edit-av-opt {
   aspect-ratio:1; display:flex; align-items:center; justify-content:center;
   font-size:20px; border-radius:10px; cursor:pointer;
@@ -4028,6 +4238,7 @@ body::after {
         <div class="profile-hero-name" id="profilePageName">—</div>
         <div class="profile-hero-email" id="profilePageEmail">—</div>
         <div class="profile-hero-badge">● ONLINE</div>
+        <div id="profileRankBadge" style="margin-top:12px;display:flex;align-items:center;gap:12px;"></div>
       </div>
       <div class="profile-hero-actions">
         <button class="btn-profile-action bpa-back" onclick="closeProfilePage()">← กลับหน้าหลัก</button>
@@ -4226,6 +4437,20 @@ body::after {
         </div>
         <div class="jps-corner tl"></div><div class="jps-corner tr"></div>
         <div class="jps-corner bl"></div><div class="jps-corner br"></div>
+      </div>
+    </div>
+
+    <!-- MODE SELECTOR: Casual / Ranked -->
+    <div id="modeSelector" style="display:flex;gap:14px;justify-content:center;margin-bottom:4px;">
+      <div class="mode-card selected" id="modeCasual" onclick="selectMode('casual')">
+        <div class="mode-ic">🎮</div>
+        <div class="mode-title">CASUAL</div>
+        <div class="mode-sub">เล่นสนุก ไม่เก็บแรงก์</div>
+      </div>
+      <div class="mode-card" id="modeRanked" onclick="selectMode('ranked')">
+        <div class="mode-ic">🏆</div>
+        <div class="mode-title">RANKED</div>
+        <div class="mode-sub">เก็บคะแนนแรงก์ RP</div>
       </div>
     </div>
 
@@ -4746,6 +4971,7 @@ const G = {
   lifelineUsed: [false, false],
   lifelinePending: [false, false],
   inputEnabled: false,
+  gameMode: 'casual',
   barOpen: false,
   qOpen: false,
   bonusTimer: 120,
@@ -4764,6 +4990,147 @@ const G = {
 let _historySavedForGame = false;
 function answererCount() {
   return (G.players || []).filter(p => p && !p.isOwner).length;
+}
+
+/* ============================================================
+   RANK SYSTEM (Ranked mode + RP + Leaderboard)
+   ============================================================
+   ลำดับแรงก์ (จากต่ำ→สูง) แต่ละแรงก์กว้าง 100 RP
+   ทองแดง III/II/I → เงิน III/II/I → ทอง IV/III/II/I →
+   แพลทินัม IV/III/II/I → เพชร V/IV/III/II/I →
+   "เปิดเพื่อคุณให้ปิดใหม่" (ไม่มี cap) → "ราชา นศท." (top50 รายสัปดาห์)
+*/
+const RANK_TIERS = [
+  { key:'bronze3',  name:'ทองแดง',   div:'III', min:0,    color:'#CD7F32', glow:'#E89B5A', icon:'bronze' },
+  { key:'bronze2',  name:'ทองแดง',   div:'II',  min:100,  color:'#CD7F32', glow:'#E89B5A', icon:'bronze' },
+  { key:'bronze1',  name:'ทองแดง',   div:'I',   min:200,  color:'#CD7F32', glow:'#E89B5A', icon:'bronze' },
+  { key:'silver3',  name:'เงิน',     div:'III', min:300,  color:'#C0C8D4', glow:'#E8F0FF', icon:'silver' },
+  { key:'silver2',  name:'เงิน',     div:'II',  min:400,  color:'#C0C8D4', glow:'#E8F0FF', icon:'silver' },
+  { key:'silver1',  name:'เงิน',     div:'I',   min:500,  color:'#C0C8D4', glow:'#E8F0FF', icon:'silver' },
+  { key:'gold4',    name:'ทอง',      div:'IV',  min:600,  color:'#FFD700', glow:'#FFE875', icon:'gold' },
+  { key:'gold3',    name:'ทอง',      div:'III', min:700,  color:'#FFD700', glow:'#FFE875', icon:'gold' },
+  { key:'gold2',    name:'ทอง',      div:'II',  min:800,  color:'#FFD700', glow:'#FFE875', icon:'gold' },
+  { key:'gold1',    name:'ทอง',      div:'I',   min:900,  color:'#FFD700', glow:'#FFE875', icon:'gold' },
+  { key:'plat4',    name:'แพลทินัม', div:'IV',  min:1000, color:'#3CFFD0', glow:'#9CFFEC', icon:'plat' },
+  { key:'plat3',    name:'แพลทินัม', div:'III', min:1100, color:'#3CFFD0', glow:'#9CFFEC', icon:'plat' },
+  { key:'plat2',    name:'แพลทินัม', div:'II',  min:1200, color:'#3CFFD0', glow:'#9CFFEC', icon:'plat' },
+  { key:'plat1',    name:'แพลทินัม', div:'I',   min:1300, color:'#3CFFD0', glow:'#9CFFEC', icon:'plat' },
+  { key:'dia5',     name:'เพชร',     div:'V',   min:1400, color:'#5CC8FF', glow:'#B0E4FF', icon:'diamond' },
+  { key:'dia4',     name:'เพชร',     div:'IV',  min:1500, color:'#5CC8FF', glow:'#B0E4FF', icon:'diamond' },
+  { key:'dia3',     name:'เพชร',     div:'III', min:1600, color:'#5CC8FF', glow:'#B0E4FF', icon:'diamond' },
+  { key:'dia2',     name:'เพชร',     div:'II',  min:1700, color:'#5CC8FF', glow:'#B0E4FF', icon:'diamond' },
+  { key:'dia1',     name:'เพชร',     div:'I',   min:1800, color:'#5CC8FF', glow:'#B0E4FF', icon:'diamond' },
+  { key:'apex',     name:'เปิดเพื่อคุณให้ปิดใหม่', div:'', min:1900, color:'#FF3CAC', glow:'#FF8ED4', icon:'apex', noCap:true },
+];
+// แรงก์พิเศษ (top50 รายสัปดาห์) — ไม่อยู่ใน threshold ปกติ
+const RANK_KING = { key:'king', name:'ราชา นศท.', div:'', color:'#FFE14D', glow:'#FFF3A0', icon:'king' };
+
+function getRankByRP(rp) {
+  rp = Math.max(0, rp || 0);
+  let tier = RANK_TIERS[0];
+  for (let i = 0; i < RANK_TIERS.length; i++) {
+    if (rp >= RANK_TIERS[i].min) tier = RANK_TIERS[i];
+  }
+  return tier;
+}
+// ความคืบหน้าภายในแรงก์ปัจจุบัน (0..1) + RP ที่ต้องไปแรงก์ถัดไป
+function getRankProgress(rp) {
+  rp = Math.max(0, rp || 0);
+  const tier = getRankByRP(rp);
+  const idx = RANK_TIERS.findIndex(t => t.key === tier.key);
+  const next = RANK_TIERS[idx + 1];
+  if (!next) { // apex — ไม่มี cap
+    return { tier, next:null, inTier: rp - tier.min, span: 100, pct: 1, toNext: 0 };
+  }
+  const span = next.min - tier.min;
+  const inTier = rp - tier.min;
+  return { tier, next, inTier, span, pct: Math.min(1, inTier / span), toNext: next.min - rp };
+}
+
+/* คำนวณ RP ที่ได้/เสีย ต่อ 1 เกม ranked
+   - ตอบถูก +18 ต่อข้อ, ตอบผิด -8 ต่อข้อ
+   - โบนัสเงินรางวัล +1 ต่อ ฿2,000
+   - แรงก์สูงได้ยากขึ้นเล็กน้อย (decay) ให้ fair: ตั้งแต่เพชรขึ้นไปคูณ 0.9, apex คูณ 0.8
+   ผลลัพธ์ปกติ: เกมดี ~+60..+130, เกมแย่ ~-20..+15  → ไต่สนุก ไม่เฟ้อ ไม่ฝืด
+*/
+function calcRankRP(correct, wrong, prize, currentRP) {
+  correct = correct||0; wrong = wrong||0; prize = prize||0;
+  let rp = correct * 18 - wrong * 8 + Math.floor(prize / 2000);
+  // ผู้เล่นใหม่/แรงก์ต่ำ บวกโบนัสไต่ง่ายช่วงแรก
+  const tier = getRankByRP(currentRP);
+  if (tier.key.startsWith('bronze')) rp = Math.round(rp * 1.15);
+  else if (tier.key.startsWith('silver')) rp = Math.round(rp * 1.05);
+  else if (tier.key.startsWith('dia')) rp = Math.round(rp * 0.9);
+  else if (tier.key === 'apex') rp = Math.round(rp * 0.8);
+  // กันค่าสุดโต่ง
+  if (rp > 200) rp = 200;
+  if (rp < -60) rp = -60;
+  return rp;
+}
+
+/* สร้าง SVG ไอคอนแรงก์ 3D สวย ๆ ตามชนิด */
+function rankIconSVG(iconType, size) {
+  size = size || 120;
+  const id = 'rk' + Math.random().toString(36).slice(2,7);
+  const themes = {
+    bronze:  { c1:'#E89B5A', c2:'#CD7F32', c3:'#8B4513', shine:'#FFD9A0' },
+    silver:  { c1:'#F0F6FF', c2:'#C0C8D4', c3:'#7A8699', shine:'#FFFFFF' },
+    gold:    { c1:'#FFEC8B', c2:'#FFD700', c3:'#B8860B', shine:'#FFFBE0' },
+    plat:    { c1:'#C8FFF2', c2:'#3CFFD0', c3:'#1A9C82', shine:'#EBFFFB' },
+    diamond: { c1:'#C4ECFF', c2:'#5CC8FF', c3:'#2A7CB8', shine:'#F0FBFF' },
+    apex:    { c1:'#FF9ED8', c2:'#FF3CAC', c3:'#A01060', shine:'#FFD6EE' },
+    king:    { c1:'#FFF3A0', c2:'#FFE14D', c3:'#C9A000', shine:'#FFFEF0' },
+  };
+  const t = themes[iconType] || themes.bronze;
+  // รูปทรงต่างกันเล็กน้อยตามแรงก์ (ยิ่งสูงยิ่งหรู)
+  let shape = '';
+  if (iconType === 'king') {
+    shape = `
+      <path d="M60 28 L72 50 L94 44 L84 70 L60 78 L36 70 L26 44 L48 50 Z" fill="url(#g${id})" stroke="url(#s${id})" stroke-width="2"/>
+      <path d="M40 84 L80 84 L78 94 L42 94 Z" fill="url(#g${id})" stroke="url(#s${id})" stroke-width="1.5"/>
+      <circle cx="60" cy="22" r="6" fill="${t.shine}"/>
+      <circle cx="26" cy="40" r="5" fill="${t.c1}"/><circle cx="94" cy="40" r="5" fill="${t.c1}"/>`;
+  } else if (iconType === 'apex') {
+    shape = `
+      <path d="M60 20 L92 40 L92 76 L60 100 L28 76 L28 40 Z" fill="url(#g${id})" stroke="url(#s${id})" stroke-width="2.5"/>
+      <path d="M60 34 L78 46 L78 70 L60 84 L42 70 L42 46 Z" fill="none" stroke="${t.shine}" stroke-width="2" opacity="0.8"/>
+      <path d="M60 20 L60 100 M28 40 L92 76 M92 40 L28 76" stroke="${t.shine}" stroke-width="1" opacity="0.3"/>`;
+  } else {
+    // โล่ 3D
+    shape = `
+      <path d="M60 18 L96 32 L96 64 Q96 92 60 104 Q24 92 24 64 L24 32 Z" fill="url(#g${id})" stroke="url(#s${id})" stroke-width="2.5"/>
+      <path d="M60 30 L84 40 L84 64 Q84 82 60 92 Q36 82 36 64 L36 40 Z" fill="none" stroke="${t.shine}" stroke-width="1.5" opacity="0.55"/>
+      <path d="M60 18 L96 32 L96 50 Q78 40 60 40 Q42 40 24 50 L24 32 Z" fill="${t.shine}" opacity="0.18"/>`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 6px 16px ${t.c3}88) drop-shadow(0 0 24px ${t.c2}66);">
+    <defs>
+      <linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${t.c1}"/>
+        <stop offset="50%" stop-color="${t.c2}"/>
+        <stop offset="100%" stop-color="${t.c3}"/>
+      </linearGradient>
+      <linearGradient id="s${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${t.shine}"/>
+        <stop offset="100%" stop-color="${t.c3}"/>
+      </linearGradient>
+    </defs>
+    ${shape}
+  </svg>`;
+}
+
+/* แสดงดาว division (I, II, III...) ใต้ไอคอน */
+function rankDivStars(div) {
+  if (!div) return '';
+  return `<span class="rank-div-3d">${div}</span>`;
+}
+
+/* โหมดเกมที่ผู้เล่นเลือกตอน JOIN: 'casual' | 'ranked' */
+window._selectedGameMode = 'casual';
+function selectMode(mode) {
+  window._selectedGameMode = mode;
+  const c = $('modeCasual'), r = $('modeRanked');
+  if (c) c.classList.toggle('selected', mode === 'casual');
+  if (r) r.classList.toggle('selected', mode === 'ranked');
 }
 
 /* ============================================================
@@ -6663,6 +7030,7 @@ async function joinRoom() {
   G.roomCode = code;
   G.myPlayerName = name;
   G.myPlayerIndex = 0; // guest เป็นผู้ตอบคนเดียว → index 0 ในกลุ่มผู้ตอบ
+  G.gameMode = window._selectedGameMode || 'casual'; // โหมดที่ผู้เล่นเลือกตอน JOIN
   G.categories = foundRoom.categoriesCompact || foundRoom.categories || [];
   G.bonusCategories = foundRoom.bonusCategoriesCompact || foundRoom.bonusCategories || [];
 
@@ -8543,8 +8911,28 @@ function showFinalScreen(total) {
   setTimeout(launchConfetti, 1200);
   setTimeout(launchConfetti, 2000);
 
-  // ===== บันทึกประวัติการเล่นลงบัญชีของผู้ใช้คนนี้ (ทั้ง MC และผู้เล่น) =====
+  // บันทึกประวัติ + คำนวณ RP
   saveMyGameHistory(total);
+
+  // แสดงผล RP / rank-up (ranked เท่านั้น)
+  const rr = window._lastRankResult;
+  let pillHost = $('finalRpPill');
+  if (!pillHost) {
+    pillHost = document.createElement('div');
+    pillHost.id = 'finalRpPill';
+    pillHost.style.cssText = 'text-align:center;margin-top:6px;';
+    const amt = $('finalAmount');
+    if (amt && amt.parentNode) amt.parentNode.insertBefore(pillHost, amt.nextSibling);
+  }
+  pillHost.innerHTML = '';
+  if (rr) {
+    const up = rr.rpGain >= 0;
+    pillHost.innerHTML = `<div class="rp-gain-pill ${up?'up':'down'}">${up?'▲':'▼'} ${up?'+':''}${rr.rpGain} RP <span style="opacity:0.6;font-size:14px;">(${rr.newRP} RP)</span></div>`;
+    // ถ้าเลื่อนแรงก์ขึ้น → โชว์ rank-up overlay
+    if (rr.newRank && rr.oldRank && rr.newRank.min > rr.oldRank.min) {
+      setTimeout(() => showRankUp(rr.newRank, rr.newRP), 1400);
+    }
+  }
 }
 
 let _historySavedForGameUnused; // (ตัวจริงประกาศไว้ด้านบนแล้ว)
@@ -8557,29 +8945,150 @@ function saveMyGameHistory(total) {
   const answered = Math.max(G.currentQ + 1, correct); // จำนวนข้อที่เล่นไป
   const wrong = Math.max(0, answered - correct);
   const totalQ = (correct + wrong) || 1;
+  const mode = G.gameMode || 'casual';
   const entry = {
     date: new Date().toLocaleDateString('th-TH'),
     ts: Date.now(),
+    mode: mode,
     correct: correct,
     wrong: wrong,
     correctPct: Math.round(correct / totalQ * 100),
     wrongPct: Math.round(wrong / totalQ * 100),
-    prize: total || 0
+    prize: total || 0,
+    rpGain: 0
   };
+
+  // ===== RANKED: คำนวณ RP =====
+  let rpGain = 0, oldRP = 0, newRP = 0, oldRank = null, newRank = null;
+  if (mode === 'ranked') {
+    oldRP = (window._userProfile && window._userProfile.rp) || 0;
+    rpGain = calcRankRP(correct, wrong, total, oldRP);
+    newRP = Math.max(0, oldRP + rpGain);
+    oldRank = getRankByRP(oldRP);
+    newRank = getRankByRP(newRP);
+    entry.rpGain = rpGain;
+  }
+
   window._saveGameHistory(entry).then(() => {
-    if (typeof dbg === 'function') dbg('history saved: ' + JSON.stringify(entry));
-    // อัปเดต local profile ทันทีเพื่อให้หน้า history เห็นเลย
     if (window._userProfile) {
       window._userProfile.gameHistory = window._userProfile.gameHistory || [];
       window._userProfile.gameHistory.push(entry);
     }
-  }).catch(e => { if (typeof dbg === 'function') dbg('history save ERR: ' + (e.code||e.message)); });
+  }).catch(() => {});
+
+  // บันทึก RP ใหม่ลง profile (ranked เท่านั้น)
+  if (mode === 'ranked') {
+    if (window._userProfile) window._userProfile.rp = newRP;
+    if (window._saveProfile) window._saveProfile({ rp: newRP, rankUpdatedAt: Date.now() }).catch(()=>{});
+    // อัปเดต leaderboard entry
+    if (window._updateLeaderboard) window._updateLeaderboard(newRP);
+    // แสดง RP บนหน้าสรุป + rank-up ถ้าเลื่อนแรงก์
+    window._lastRankResult = { rpGain, oldRP, newRP, oldRank, newRank };
+  } else {
+    window._lastRankResult = null;
+  }
 }
 
 function restartGame() {
   localStorage.removeItem(LS_ROOM);
   localStorage.removeItem(LS_EVENT);
   location.reload();
+}
+
+/* ===== RANK-UP OVERLAY ANIMATION ===== */
+function showRankUp(rank, rp) {
+  const ov = document.createElement('div');
+  ov.className = 'rankup-overlay';
+  ov.innerHTML = `
+    <div class="rankup-rays"></div>
+    <div class="rankup-label">RANK UP!</div>
+    <div class="rankup-icon-wrap">${rankIconSVG(rank.icon, 170)}</div>
+    <div class="rankup-name rank-name-3d" style="color:${rank.color};">${rank.name}${rank.div?rankDivStars(rank.div):''}</div>
+    <div class="rankup-rp rp-number-3d">${rp} RP</div>
+    <button class="btn-big bb-gold rankup-btn" onclick="this.closest('.rankup-overlay').remove()">เยี่ยม!</button>`;
+  document.body.appendChild(ov);
+  // particle burst
+  const colors = [rank.color, rank.glow, '#fff'];
+  for (let i=0;i<40;i++){
+    const p = document.createElement('div');
+    p.className = 'rankup-particle';
+    const sz = 4 + Math.random()*8;
+    p.style.cssText = `width:${sz}px;height:${sz}px;background:${colors[i%3]};left:50%;top:42%;box-shadow:0 0 8px ${colors[i%3]};`;
+    ov.appendChild(p);
+    const ang = Math.random()*Math.PI*2, dist = 120 + Math.random()*260;
+    p.animate([
+      { transform:'translate(-50%,-50%) translate(0,0) scale(1)', opacity:1 },
+      { transform:`translate(-50%,-50%) translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px) scale(0)`, opacity:0 }
+    ], { duration: 1100 + Math.random()*700, easing:'cubic-bezier(0.2,0.6,0.3,1)', delay: 200+Math.random()*200, fill:'forwards' });
+  }
+  // sound
+  try {
+    const ac = new (window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.value=f;
+      const t=ac.currentTime+i*0.12; g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.25,t+0.04); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+      o.start(t);o.stop(t+0.5);
+    });
+  } catch(e){}
+}
+
+/* ===== LEADERBOARD ===== */
+function openLeaderboard() {
+  const ov = document.createElement('div');
+  ov.className = 'lb-overlay';
+  ov.id = 'lbOverlay';
+  ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+  ov.innerHTML = `
+    <div class="lb-card">
+      <div class="fa-close" style="top:16px;right:18px;" onclick="document.getElementById('lbOverlay').remove()">✕</div>
+      <div class="lb-header">
+        <div class="lb-title">🏆 LEADERBOARD</div>
+        <div class="lb-sub">จัดอันดับตามคะแนนแรงก์ (RP) · รีเซ็ตแชมป์ทุกวันจันทร์ 00:00</div>
+      </div>
+      <div class="lb-list" id="lbList"><div class="fa-chat-empty">⏳ กำลังโหลดอันดับ...</div></div>
+    </div>`;
+  document.body.appendChild(ov);
+  loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+  const listEl = $('lbList');
+  if (!listEl || !window._db) return;
+  try {
+    const snap = await _db.collection('leaderboard').orderBy('rp','desc').limit(50).get();
+    if (snap.empty) { listEl.innerHTML = '<div class="fa-chat-empty">ยังไม่มีใครในกระดานผู้นำ<br>เล่นโหมด Ranked เพื่อขึ้นอันดับ!</div>'; return; }
+    const myUid = window._currentUser && window._currentUser.uid;
+    let html = '';
+    let rank = 0;
+    snap.forEach(doc => {
+      rank++;
+      const d = doc.data();
+      const tier = getRankByRP(d.rp || 0);
+      const isKing = d.isKing;
+      const dispRank = isKing ? RANK_KING : tier;
+      const av = d.avatar || '👾';
+      const avHTML = (typeof av==='string'&&av.startsWith('data:'))?`<img src="${av}">`:av;
+      const topClass = rank<=3 ? ('top'+rank) : '';
+      const meClass = (d.uid === myUid) ? 'me' : '';
+      const medal = rank===1?'👑':rank===2?'🥈':rank===3?'🥉':rank;
+      html += `
+        <div class="lb-row ${topClass} ${meClass}">
+          <div class="lb-rank-num">${medal}</div>
+          <div class="lb-mini-icon">${rankIconSVG(dispRank.icon, 30)}</div>
+          <div class="lb-avatar">${avHTML}</div>
+          <div class="lb-info">
+            <div class="lb-name">${d.name || 'ผู้เล่น'}</div>
+            <div class="lb-rankname" style="color:${dispRank.color};">${dispRank.name}${dispRank.div?' '+dispRank.div:''}</div>
+          </div>
+          <div class="lb-rp">${d.rp||0} <span style="font-size:11px;opacity:0.6;">RP</span></div>
+        </div>`;
+    });
+    listEl.innerHTML = html;
+  } catch(e) {
+    listEl.innerHTML = '<div class="fa-chat-empty">โหลดกระดานผู้นำไม่ได้<br><span style="font-size:11px;">'+(e.code||e.message)+'</span></div>';
+  }
 }
 
 function goHome() {
@@ -8645,6 +9154,7 @@ function showLoginToHome() {
     window._listenFriendRequests && window._listenFriendRequests();
     startOnlineStatusSystem();
     startChatNotifications();
+    window._checkWeeklyKing && window._checkWeeklyKing();
     window._listenFriendsStatus && window._listenFriendsStatus((statuses) => {
       window._friendStatuses = statuses;
       renderJoinFriendPanel();
@@ -8929,6 +9439,26 @@ function openProfilePage() {
   $('statPct').textContent = totalQ > 0 ? Math.round(totalCorrect/totalQ*100)+'%' : '0%';
   $('statBest').textContent = '฿'+fmt(bestPrize);
   $('statFriends').textContent = (window._userProfile.friends||[]).length;
+
+  // ===== แสดงแรงก์ =====
+  const rankBadge = $('profileRankBadge');
+  if (rankBadge) {
+    const rp = window._userProfile.rp || 0;
+    const isKing = window._userProfile.isKing;
+    const prog = getRankProgress(rp);
+    const disp = isKing ? RANK_KING : prog.tier;
+    const pctTxt = prog.next ? `${prog.inTier}/${prog.span} → ${prog.next.name}${prog.next.div?' '+prog.next.div:''}` : 'สูงสุดแล้ว (ไม่มี cap)';
+    rankBadge.innerHTML = `
+      <div style="width:54px;height:54px;flex-shrink:0;">${rankIconSVG(disp.icon, 54)}</div>
+      <div>
+        <div class="rank-name-3d" style="color:${disp.color};font-size:18px;">${disp.name}${disp.div?rankDivStars(disp.div):''}</div>
+        <div style="font-family:var(--font-en);font-size:13px;color:var(--cyan);margin-top:2px;">${rp} RP</div>
+        <div style="width:180px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:5px;overflow:hidden;">
+          <div style="width:${Math.round(prog.pct*100)}%;height:100%;background:linear-gradient(90deg,${disp.color},${disp.glow});border-radius:3px;box-shadow:0 0 8px ${disp.color};"></div>
+        </div>
+        <div style="font-family:var(--font-th);font-size:10px;color:var(--text2);margin-top:3px;">${pctTxt}</div>
+      </div>`;
+  }
 
   renderHistoryList();
   renderFriendsList();
@@ -10003,5 +10533,15 @@ function launchConfetti() {
 }
 
 </script>
+<!-- Leaderboard floating button -->
+<div class="lb-fab" onclick="openLeaderboard()" title="กระดานผู้นำ">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFD24D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+    <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+  </svg>
+</div>
+
 </body>
 </html>
