@@ -347,6 +347,57 @@
     });
   };
 
+  // ===== GROUPS =====
+  // สร้างกลุ่มใหม่ (ผู้สร้างเป็น owner + สมาชิกคนแรก)
+  window._createGroup = async function(name, avatar, memberUids) {
+    if (!window._currentUser) return null;
+    const members = Array.from(new Set([window._currentUser.uid, ...(memberUids||[])]));
+    const doc = await _db.collection('groups').add({
+      name: name || 'กลุ่มใหม่',
+      avatar: avatar || '🛡',
+      ownerUid: window._currentUser.uid,
+      members: members,
+      createdAt: Date.now()
+    });
+    return doc.id;
+  };
+  // โหลดกลุ่มที่เราเป็นสมาชิก
+  window._loadMyGroups = async function() {
+    if (!window._currentUser) return [];
+    const snap = await _db.collection('groups')
+      .where('members','array-contains', window._currentUser.uid).get();
+    const groups = [];
+    snap.forEach(d => groups.push({ id: d.id, ...d.data() }));
+    return groups;
+  };
+  window._updateGroup = async function(groupId, data) {
+    await _db.collection('groups').doc(groupId).set(data, { merge: true });
+  };
+  window._deleteGroup = async function(groupId) {
+    await _db.collection('groups').doc(groupId).delete();
+  };
+  // เชิญสมาชิกทุกคนในกลุ่มเข้าห้อง (ยกเว้นตัวเอง)
+  window._inviteGroup = async function(groupId, roomCode) {
+    if (!window._currentUser) return 0;
+    const snap = await _db.collection('groups').doc(groupId).get();
+    if (!snap.exists) return 0;
+    const members = (snap.data().members || []).filter(uid => uid !== window._currentUser.uid);
+    const batch = _db.batch();
+    members.forEach(uid => {
+      const ref = _db.collection('invites').doc();
+      batch.set(ref, {
+        from: window._currentUser.uid,
+        fromName: window._userProfile.nickname || window._currentUser.email,
+        fromAvatar: window._userProfile.avatar || '',
+        to: uid, roomCode,
+        groupName: snap.data().name || '',
+        timestamp: Date.now(), status: 'pending'
+      });
+    });
+    await batch.commit();
+    return members.length;
+  };
+
   window._shownInviteIds = new Set();
   window._inviteListenerActive = false;
   window._listenInvites = function() {
@@ -3363,6 +3414,42 @@ body::after {
 .profile-tab.active::before { opacity:1; background: linear-gradient(180deg, transparent, rgba(0,200,255,0.08)); }
 .profile-tab-content { display: none; padding: 28px 30px; }
 .profile-tab-content.active { display: block; animation: tabSlideIn 0.3s ease both; }
+
+/* join/mc panel tabs (FRIEND / GROUP) */
+.jfp-tabs { display:flex; padding-top:56px; }
+.jfp-tab {
+  flex:1; text-align:center; padding:12px 6px; cursor:pointer;
+  font-family:var(--font-en); font-size:12px; font-weight:700; letter-spacing:2px;
+  color:var(--text2); border-bottom:2px solid transparent; transition:all 0.2s;
+}
+.jfp-tab:hover { color:var(--text); }
+.jfp-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); text-shadow:0 0 10px var(--cyan); }
+
+/* group cards (profile) */
+.group-card {
+  display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:10px;
+  border-radius:14px; background:rgba(0,15,38,0.6); border:1px solid var(--border);
+  cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+}
+.group-card:hover { border-color:var(--cyan); transform:translateX(4px); box-shadow:0 0 22px rgba(0,200,255,0.18); }
+.group-card-av {
+  width:46px; height:46px; border-radius:14px; flex-shrink:0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; font-size:24px;
+  background:linear-gradient(160deg,rgba(0,40,90,0.9),rgba(0,15,40,0.95)); border:1px solid var(--border2);
+}
+.group-card-av img { width:100%; height:100%; object-fit:cover; }
+.group-card-name { font-family:var(--font-th); font-weight:800; font-size:15px; color:var(--text); }
+.group-card-meta { font-family:var(--font-th); font-size:11px; color:var(--text2); margin-top:2px; }
+
+/* group invite row in mc panel */
+.group-invite-row {
+  display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px;
+  border-radius:12px; background:rgba(0,15,38,0.6); border:1px solid var(--border); transition:all 0.2s;
+}
+.group-invite-row:hover { border-color:var(--border2); }
+.group-invite-row .gi-av { width:38px; height:38px; border-radius:11px; flex-shrink:0; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; font-size:19px; background:rgba(0,30,70,0.8); border:1px solid var(--border2); }
+.group-invite-row .gi-av img { width:100%; height:100%; object-fit:cover; }
 @keyframes tabSlideIn {
   from { opacity:0; transform:translateY(10px); }
   to   { opacity:1; transform:translateY(0); }
@@ -4277,6 +4364,7 @@ body::after {
   <div class="profile-tabs">
     <div class="profile-tab active" onclick="switchProfileTab('history',event)">📊 HISTORY</div>
     <div class="profile-tab" onclick="switchProfileTab('friends',event)">👥 FRIENDS</div>
+    <div class="profile-tab" onclick="switchProfileTab('groups',event)">🛡 GROUP</div>
   </div>
   <div id="tab-history" class="profile-tab-content active">
     <div class="history-row history-head">
@@ -4292,6 +4380,11 @@ body::after {
     <div id="friendSearchResults" style="margin-bottom:16px;"></div>
     <div style="font-family:var(--font-en);font-size:11px;color:var(--text2);letter-spacing:3px;margin-bottom:12px;padding:0 4px;">YOUR FRIENDS</div>
     <div id="friendsList"></div>
+  </div>
+  <div id="tab-groups" class="profile-tab-content">
+    <button class="btn-big bb-cyan" style="width:100%;padding:14px;font-size:14px;margin-bottom:18px;" onclick="openCreateGroup()">➕ สร้างกลุ่มใหม่</button>
+    <div style="font-family:var(--font-en);font-size:11px;color:var(--text2);letter-spacing:3px;margin-bottom:12px;padding:0 4px;">YOUR GROUPS</div>
+    <div id="groupsList"></div>
   </div>
 </div>
 
@@ -4574,15 +4667,19 @@ body::after {
     </div>
   </div>
 
-  <!-- FRIENDS PANEL RIGHT -->
+  <!-- FRIENDS / GROUP PANEL RIGHT -->
   <div id="mcLobbyFriendPanel" class="join-friend-panel" style="display:flex;width:280px;flex-shrink:0;position:relative;z-index:1;">
     <div style="display:flex;flex-direction:column;width:100%;position:static;border-left:1px solid var(--border2);">
-      <div class="jfp-header" style="padding-top:60px;">
-        <div class="jfp-title">👥 FRIENDS</div>
-        <div class="jfp-subtitle">ชวนเพื่อนเข้าห้องนี้ได้เลย</div>
+      <div class="jfp-tabs">
+        <div class="jfp-tab active" id="mcTabFriendBtn" onclick="switchInvitePanel('friend','mc')">👥 FRIEND</div>
+        <div class="jfp-tab" id="mcTabGroupBtn" onclick="switchInvitePanel('group','mc')">🛡 GROUP</div>
       </div>
+      <div class="jfp-subtitle" style="padding:8px 16px 4px;">ชวนเข้าห้องนี้ได้เลย</div>
       <div id="mcLobbyFriendList" class="jfp-list">
         <div class="jfp-empty">ไม่มีเพื่อน<br><span style="font-size:11px;opacity:0.5;">เพิ่มเพื่อนในโปรไฟล์</span></div>
+      </div>
+      <div id="mcLobbyGroupList" class="jfp-list" style="display:none;">
+        <div class="jfp-empty">ยังไม่มีกลุ่ม<br><span style="font-size:11px;opacity:0.5;">สร้างกลุ่มในโปรไฟล์</span></div>
       </div>
     </div>
   </div>
@@ -9491,6 +9588,221 @@ function switchProfileTab(tab, e) {
   document.querySelectorAll('.profile-tab-content').forEach(t => t.classList.remove('active'));
   if (e && e.target) e.target.classList.add('active');
   $('tab-' + tab).classList.add('active');
+  if (tab === 'groups') renderGroupsList();
+}
+
+/* ===== GROUPS UI ===== */
+window._myGroups = [];
+async function renderGroupsList() {
+  const list = $('groupsList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;font-family:var(--font-th);">⏳ กำลังโหลด...</div>';
+  try {
+    window._myGroups = await window._loadMyGroups();
+  } catch(e) { window._myGroups = []; }
+  if (!window._myGroups.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:30px;font-family:var(--font-th);">ยังไม่มีกลุ่ม<br><span style="font-size:12px;opacity:0.6;">กดปุ่มด้านบนเพื่อสร้างกลุ่ม</span></div>';
+    return;
+  }
+  list.innerHTML = window._myGroups.map((g, i) => {
+    const av = g.avatar || '🛡';
+    const avHTML = (typeof av==='string'&&av.startsWith('data:'))?`<img src="${av}">`:av;
+    const isOwner = g.ownerUid === (window._currentUser && window._currentUser.uid);
+    return `<div class="group-card" onclick="openGroupDetail('${g.id}')">
+      <div class="group-card-av">${avHTML}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="group-card-name">${g.name||'กลุ่ม'} ${isOwner?'<span style="font-size:10px;color:var(--gold);">👑</span>':''}</div>
+        <div class="group-card-meta">${(g.members||[]).length} สมาชิก</div>
+      </div>
+      <div style="color:var(--text2);font-size:18px;">›</div>
+    </div>`;
+  }).join('');
+}
+
+const GROUP_AVATARS = ['🛡','⚔️','🔥','⭐','👑','🐉','🦅','🐺','🦁','💎','🎯','🚀','⚡','🌟','🏆','🎮','💀','👾','🦾','🧊'];
+
+function openCreateGroup() {
+  window._editingGroupId = null;
+  window._groupSelectedAvatar = GROUP_AVATARS[0];
+  window._groupSelectedMembers = [];
+  showGroupEditor('สร้างกลุ่มใหม่', '', GROUP_AVATARS[0]);
+}
+
+async function openGroupDetail(groupId) {
+  const g = (window._myGroups||[]).find(x => x.id === groupId);
+  if (!g) return;
+  window._editingGroupId = groupId;
+  window._groupSelectedAvatar = g.avatar || GROUP_AVATARS[0];
+  // โหลดสมาชิกปัจจุบัน (ยกเว้นเรา) เป็น preset
+  window._groupSelectedMembers = (g.members||[]).filter(uid => uid !== (window._currentUser&&window._currentUser.uid));
+  showGroupEditor('แก้ไขกลุ่ม', g.name||'', g.avatar||GROUP_AVATARS[0], g);
+}
+
+function showGroupEditor(title, name, avatar, existing) {
+  closeFriendActionModal();
+  const curIsImg = typeof avatar==='string' && avatar.startsWith('data:');
+  const avGrid = GROUP_AVATARS.map(em =>
+    `<div class="edit-av-opt ${(!curIsImg && avatar===em)?'selected':''}" onclick="pickGroupAvatar('${em}',this)">${em}</div>`
+  ).join('');
+  // รายชื่อเพื่อนให้เลือกเข้ากลุ่ม
+  const friends = (window._userProfile.friends||[]);
+  const friendChecks = friends.length ? friends.map((f,i) => {
+    const checked = (window._groupSelectedMembers||[]).includes(f.uid);
+    const av = f.avatar||'👾';
+    const avHTML = (typeof av==='string'&&av.startsWith('data:'))?`<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`:av;
+    return `<div class="group-invite-row" style="cursor:pointer;${checked?'border-color:var(--neon);':''}" onclick="toggleGroupMember('${f.uid}',this)" data-uid="${f.uid}">
+      <div class="gi-av">${avHTML}</div>
+      <div style="flex:1;font-family:var(--font-th);font-size:14px;color:var(--text);">${f.customName||f.nickname||f.uid}</div>
+      <div class="gm-check" style="font-size:18px;color:${checked?'var(--neon)':'var(--text2)'};">${checked?'☑':'☐'}</div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:var(--text2);font-family:var(--font-th);font-size:13px;padding:14px;">ยังไม่มีเพื่อน เพิ่มเพื่อนก่อนเพื่อนำเข้ากลุ่ม</div>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'friend-action-overlay';
+  overlay.id = 'friendActionOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.78);backdrop-filter:blur(8px);';
+  overlay.onclick = (ev)=>{ if(ev.target===overlay) closeFriendActionModal(); };
+  overlay.innerHTML = `
+    <div class="friend-action-card" style="width:min(94vw,460px);max-height:88vh;overflow-y:auto;">
+      <div class="fa-close" onclick="closeFriendActionModal()">✕</div>
+      <div class="fa-header">
+        <div class="fa-avatar" id="groupAvPreview">${curIsImg?`<img src="${avatar}">`:avatar}</div>
+        <div><div class="fa-name">🛡 ${title}</div></div>
+      </div>
+      <div style="padding:18px 20px 6px;">
+        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:6px;">ชื่อกลุ่ม</label>
+        <input class="cyber-input" id="groupNameInput" maxlength="24" value="${(name||'').replace(/"/g,'&quot;')}" style="width:100%;margin-bottom:16px;" placeholder="ตั้งชื่อกลุ่ม...">
+
+        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">รูปกลุ่ม</label>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:120px;overflow-y:auto;margin-bottom:10px;">${avGrid}</div>
+        <input type="file" accept="image/*" onchange="handleGroupAvatarUpload(event)" style="font-family:var(--font-th);font-size:12px;color:var(--text2);margin-bottom:16px;">
+
+        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">เลือกสมาชิก (จากเพื่อน)</label>
+        <div style="max-height:200px;overflow-y:auto;margin-bottom:14px;">${friendChecks}</div>
+
+        <div style="display:flex;gap:10px;">
+          <button class="btn-big bb-cyan" style="flex:1;padding:12px;font-size:14px;" onclick="saveGroup()">💾 บันทึก</button>
+          ${existing?`<button class="btn-big bb-red" style="padding:12px 18px;font-size:13px;" onclick="confirmDeleteGroup('${window._editingGroupId}')">🗑</button>`:''}
+          <button class="btn-big bb-gray" style="padding:12px 18px;font-size:14px;" onclick="closeFriendActionModal()">ยกเลิก</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function pickGroupAvatar(em, el) {
+  window._groupSelectedAvatar = em;
+  document.querySelectorAll('#friendActionOverlay .edit-av-opt').forEach(a=>a.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  const prev = $('groupAvPreview'); if (prev) prev.innerHTML = em;
+}
+function handleGroupAvatarUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); const s=150; c.width=s; c.height=s;
+      const ctx=c.getContext('2d'); const min=Math.min(img.width,img.height);
+      ctx.drawImage(img,(img.width-min)/2,(img.height-min)/2,min,min,0,0,s,s);
+      const url=c.toDataURL('image/jpeg',0.8);
+      window._groupSelectedAvatar=url;
+      document.querySelectorAll('#friendActionOverlay .edit-av-opt').forEach(a=>a.classList.remove('selected'));
+      const prev=$('groupAvPreview'); if(prev) prev.innerHTML=`<img src="${url}">`;
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function toggleGroupMember(uid, el) {
+  window._groupSelectedMembers = window._groupSelectedMembers || [];
+  const i = window._groupSelectedMembers.indexOf(uid);
+  if (i>=0) window._groupSelectedMembers.splice(i,1);
+  else window._groupSelectedMembers.push(uid);
+  const on = window._groupSelectedMembers.includes(uid);
+  if (el) {
+    el.style.borderColor = on ? 'var(--neon)' : '';
+    const chk = el.querySelector('.gm-check');
+    if (chk) { chk.textContent = on?'☑':'☐'; chk.style.color = on?'var(--neon)':'var(--text2)'; }
+  }
+}
+async function saveGroup() {
+  const name = ($('groupNameInput').value||'').trim();
+  if (!name) { showNotif('⚠️ กรุณาตั้งชื่อกลุ่ม'); return; }
+  const avatar = window._groupSelectedAvatar || GROUP_AVATARS[0];
+  const members = window._groupSelectedMembers || [];
+  showNotif('⏳ กำลังบันทึก...');
+  try {
+    if (window._editingGroupId) {
+      const allMembers = Array.from(new Set([window._currentUser.uid, ...members]));
+      await window._updateGroup(window._editingGroupId, { name, avatar, members: allMembers });
+      showNotif('✅ อัปเดตกลุ่มแล้ว!');
+    } else {
+      await window._createGroup(name, avatar, members);
+      showNotif('✅ สร้างกลุ่มสำเร็จ!');
+    }
+    closeFriendActionModal();
+    renderGroupsList();
+  } catch(e) { showNotif('❌ บันทึกไม่สำเร็จ'); }
+}
+async function confirmDeleteGroup(groupId) {
+  if (!confirm('ลบกลุ่มนี้?')) return;
+  try { await window._deleteGroup(groupId); showNotif('🗑 ลบกลุ่มแล้ว'); closeFriendActionModal(); renderGroupsList(); }
+  catch(e){ showNotif('❌ ลบไม่สำเร็จ'); }
+}
+
+/* ===== สลับแถบ FRIEND/GROUP ในหน้า join/mc ===== */
+function switchInvitePanel(which, ctx) {
+  const prefix = ctx === 'mc' ? 'mcLobby' : 'join';
+  const fBtn = $(ctx==='mc'?'mcTabFriendBtn':'joinTabFriendBtn');
+  const gBtn = $(ctx==='mc'?'mcTabGroupBtn':'joinTabGroupBtn');
+  const fList = $(prefix + 'FriendList');
+  const gList = $(prefix + 'GroupList');
+  if (which === 'group') {
+    if (fBtn) fBtn.classList.remove('active');
+    if (gBtn) gBtn.classList.add('active');
+    if (fList) fList.style.display = 'none';
+    if (gList) { gList.style.display = 'block'; renderInviteGroupList(ctx); }
+  } else {
+    if (gBtn) gBtn.classList.remove('active');
+    if (fBtn) fBtn.classList.add('active');
+    if (gList) gList.style.display = 'none';
+    if (fList) fList.style.display = 'block';
+  }
+}
+
+async function renderInviteGroupList(ctx) {
+  const listId = (ctx==='mc'?'mcLobby':'join') + 'GroupList';
+  const list = $(listId);
+  if (!list) return;
+  list.innerHTML = '<div class="jfp-empty">⏳ กำลังโหลด...</div>';
+  let groups = [];
+  try { groups = await window._loadMyGroups(); } catch(e){}
+  if (!groups.length) {
+    list.innerHTML = '<div class="jfp-empty">ยังไม่มีกลุ่ม<br><span style="font-size:11px;opacity:0.5;">สร้างกลุ่มในโปรไฟล์</span></div>';
+    return;
+  }
+  list.innerHTML = groups.map(g => {
+    const av = g.avatar||'🛡';
+    const avHTML = (typeof av==='string'&&av.startsWith('data:'))?`<img src="${av}">`:av;
+    return `<div class="group-invite-row">
+      <div class="gi-av">${avHTML}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:var(--font-th);font-weight:700;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${g.name||'กลุ่ม'}</div>
+        <div style="font-family:var(--font-th);font-size:11px;color:var(--text2);">${(g.members||[]).length} สมาชิก</div>
+      </div>
+      <button class="btn-xs bx-cyan" style="font-size:11px;" onclick="inviteGroupToRoom('${g.id}')">📨 เชิญ</button>
+    </div>`;
+  }).join('');
+}
+
+async function inviteGroupToRoom(groupId) {
+  if (!G.roomCode) { showNotif('⚠️ ยังไม่มีรหัสห้อง'); return; }
+  showNotif('⏳ กำลังส่งคำเชิญ...');
+  try {
+    const n = await window._inviteGroup(groupId, G.roomCode);
+    showNotif(`📨 ส่งคำเชิญให้สมาชิก ${n} คนแล้ว!`);
+  } catch(e) { showNotif('❌ ส่งคำเชิญไม่สำเร็จ'); }
 }
 
 function renderHistoryList() {
@@ -10258,7 +10570,7 @@ function showInviteNotif(invite) {
     : `<span style="font-size:28px;margin-right:8px;">${av || '⚡'}</span>`;
 
   div.innerHTML = `
-    <div class="invite-notif-title">⚡ คำเชิญเข้าเกม!</div>
+    <div class="invite-notif-title">⚡ คำเชิญเข้าเกม!${invite.groupName?` <span style="font-size:11px;color:var(--purple);">🛡 ${invite.groupName}</span>`:''}</div>
     <div class="invite-notif-msg" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
       ${avHTML}<strong style="color:var(--gold);">${invite.fromName}</strong>&nbsp;<span style="color:var(--text2);">ชวนคุณเข้าห้อง</span>&nbsp;<strong style="color:var(--cyan);">${invite.roomCode}</strong>
     </div>
