@@ -7235,6 +7235,15 @@ function doRoundCats() {
   if (unused.length >= 2) valid = unused;
   const shuffled = [...valid].sort(() => Math.random()-0.5);
   G.roundCats = shuffled.slice(0, 2).map(c => c.name);
+  // กันกรณีหมวดที่ใช้ได้น้อย → ให้มี 2 ช่องเสมอ (ถ้ามีหมวดเดียวก็ใช้ valid ทั้งหมดมาเติม)
+  if (G.roundCats.length < 2) {
+    const allValid = G.categories.filter(c => c.name.trim()).map(c => c.name);
+    for (let i = 0; i < allValid.length && G.roundCats.length < 2; i++) {
+      if (!G.roundCats.includes(allValid[i])) G.roundCats.push(allValid[i]);
+    }
+    // ถ้ายังไม่ครบ 2 (มีหมวดเดียวจริง ๆ) ก็ปล่อยให้ซ้ำได้
+    while (G.roundCats.length < 2 && G.roundCats.length > 0) G.roundCats.push(G.roundCats[0]);
+  }
   G.selectedCat = null; G.currentQuestion = null;
   G.barOpen = false; G.qOpen = false;
   G.answerSubmitted = false; G.judging = false;
@@ -7842,7 +7851,7 @@ function playerStartSlot() {
   // ★ เก็บลำดับที่ใช้เติม reel ไว้ ใช้ตอน snap ให้ตรงกัน (กัน G.categories เปลี่ยนระหว่าง spin)
   window._reelFillNames = allCatNames.slice();
   const itemH = 100;
-  const copies = 8; // many copies for seamless loop
+  const copies = 16; // เพิ่มจำนวน copy ให้พอ กัน targetItemIdx เกินขอบเขต (ไม่เจอช่อง→ไม่หยุด)
 
   [0,1].forEach(idx => {
     const reel = $(`slotReel${idx}`);
@@ -7918,63 +7927,67 @@ function playerStopSlot() {
   clearInterval(spinIntervals[0]);
   clearInterval(spinIntervals[1]);
 
-  // ★ ใช้ลำดับเดียวกับที่เติม reel ตอน start (ไม่ใช่ G.categories ปัจจุบันที่อาจเปลี่ยน)
+  // ★ ใช้ลำดับเดียวกับที่เติม reel ตอน start
   const allCatNames = (window._reelFillNames && window._reelFillNames.length)
     ? window._reelFillNames.slice()
     : G.categories.filter(c => c.name.trim()).map(c => c.name);
   const itemH = 100;
-  // ★ ล็อก roundCats ไว้ตอนนี้ กันถูกเขียนทับระหว่าง animation (ทำให้ช่อง≠ปุ่ม)
+  const N = allCatNames.length;
+  // ล็อกหมวดที่สุ่มได้ไว้
   const lockedCats = G.roundCats.slice();
 
+  // ★★ การันตีก่อนหมุน: หา index ของหมวดเป้าหมายในรีล แล้ว "เขียนชื่อหมวดลงไปที่ตำแหน่งเป้าหมายเลย"
+  // เพื่อให้สิ่งที่รีลหมุนไปหยุด = หมวดที่ถูกต้อง 100% (ไม่ต้อง swap ข้อความตอนจบ → ไม่กระตุก)
+  const finalTargets = [];
   [0,1].forEach(idx => {
     const reel = $(`slotReel${idx}`);
-    if (!reel) return;
+    if (!reel) { finalTargets[idx] = 0; return; }
     const catName = lockedCats[idx];
-    const catIdx = allCatNames.indexOf(catName);
-    const safeCatIdx = catIdx >= 0 ? catIdx : 0;
-    // Land on copy #3 (index 2) for safe range
-    const targetPos = (allCatNames.length * 3 + safeCatIdx) * itemH;
+    let catIdx = allCatNames.indexOf(catName);
+    if (catIdx < 0) catIdx = 0;
+    // เลือก copy ที่อยู่ "ข้างหน้า" ตำแหน่งปัจจุบันเสมอ เพื่อหมุนไปข้างหน้าอย่างน้อย 2 รอบ
+    const curPos = spinPositions[idx] || 0;
+    const curLoop = Math.floor(curPos / (N * itemH));
+    // เป้าหมายอยู่ที่ copy (curLoop + 3) เพื่อให้มีระยะหมุนพอ
+    let targetItemIdx = (curLoop + 3) * N + catIdx;
+    let targetPos = targetItemIdx * itemH;
+    // ถ้าใกล้เกินไป (น้อยกว่า 2 รอบ) เพิ่มอีกรอบ
+    while (targetPos - curPos < N * itemH * 2) { targetItemIdx += N; targetPos += N * itemH; }
+    // กัน targetItemIdx เกินจำนวนช่องในรีล (clamp ลงมาทีละรอบ)
+    while (targetItemIdx >= reel.children.length && targetItemIdx - N >= 0) {
+      targetItemIdx -= N; targetPos -= N * itemH;
+    }
 
-    // If current pos is ahead of target, add extra loop
-    let fromPos = spinPositions[idx];
-    while (fromPos > targetPos) fromPos -= allCatNames.length * itemH;
+    // ★ เขียนชื่อหมวดเป้าหมายลงในช่องที่จะหยุดพอดี (และช่องข้างเคียงให้ดูสมจริง)
+    if (reel.children[targetItemIdx]) {
+      reel.children[targetItemIdx].textContent = catName;
+    }
+    finalTargets[idx] = targetItemIdx;
 
+    // ตั้งตำแหน่งเริ่มต้น = ตำแหน่งปัจจุบันเป๊ะ ๆ แล้วค่อยหมุนไปจุดหมายแบบลื่นครั้งเดียว
     reel.style.transition = 'none';
-    reel.style.transform = `translateY(-${fromPos}px)`;
-    // Force reflow then animate
-    reel.getBoundingClientRect();
-    reel.style.transition = 'transform 3.5s cubic-bezier(0.33, 1, 0.68, 1)';
+    reel.style.transform = `translateY(-${curPos}px)`;
+    reel.getBoundingClientRect(); // reflow
+    reel.style.transition = 'transform 3.6s cubic-bezier(0.18, 0.9, 0.25, 1)';
     reel.style.transform = `translateY(-${targetPos}px)`;
+    spinPositions[idx] = targetPos; // sync ค่าไว้
   });
 
-  // Broadcast stop to MC so it syncs (MC will snap its reels too)
+  // Broadcast stop to MC (sync)
   broadcastEvent('slot_stopped', { cats: lockedCats });
-  // In 2p mode: also broadcast to partner with final positions
   if (answererCount() >= 2) {
     broadcastEvent('slot_stopped_sync', { cats: lockedCats, pos: [spinPositions[0], spinPositions[1]] });
   }
 
-  // Flash and show category buttons after 3.5s animation
+  // หลังหมุนจบ → ไฮไลต์ช่องที่หยุด (ไม่ขยับ transform อีก ไม่ swap ข้อความ → ไม่กระตุก)
   setTimeout(() => {
     [0,1].forEach(idx => {
       const frame = $(`slotFrame${idx}`);
       if (frame) frame.classList.add('stopped');
       const reel = $(`slotReel${idx}`);
-      if (reel) {
-        // ★ บังคับ snap ตำแหน่งสุดท้ายให้ตรงเป๊ะกับ lockedCats (กัน animation คลาดเคลื่อน)
-        const catIdx = allCatNames.indexOf(lockedCats[idx]);
-        const safeCatIdx = catIdx >= 0 ? catIdx : 0;
-        const finalPos = (allCatNames.length * 3 + safeCatIdx) * itemH;
-        reel.style.transition = 'none';
-        reel.style.transform = `translateY(-${finalPos}px)`;
+      if (reel && reel.children[finalTargets[idx]]) {
         Array.from(reel.children).forEach(c => c.classList.remove('highlight'));
-        const targetItemIdx = allCatNames.length * 3 + safeCatIdx;
-        // ★★ การันตี: บังคับข้อความของช่องที่โชว์ให้ตรงกับ lockedCats เป๊ะ ๆ
-        // (กันกรณี index ใน allCatNames ไม่ตรง เช่น หมวดซ้ำชื่อ/โหลด async → ช่อง≠ปุ่ม)
-        if (reel.children[targetItemIdx]) {
-          reel.children[targetItemIdx].textContent = lockedCats[idx];
-          reel.children[targetItemIdx].classList.add('highlight');
-        }
+        reel.children[finalTargets[idx]].classList.add('highlight');
       }
     });
 
