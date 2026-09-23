@@ -4497,6 +4497,245 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .gs-frame::before, .gs-lights, .gs-rays, .fs-sunburst, .fs-spot, .q-illus { animation: none !important; }
 }
+
+/* ================================================================
+   ★ UI SKIN v2 — 3D glossy buttons, modal, money ladder, quiz library
+   ================================================================ */
+
+/* ---------- Glossy 3D buttons (global) ---------- */
+.btn-big {
+  --edge: #0a1a33; --glow: rgba(0,0,0,0.35);
+  clip-path: none !important; border-radius: 14px; overflow: hidden; isolation: isolate;
+  letter-spacing: 0.06em !important; line-height: 1.2;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid rgba(255,255,255,0.28);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  box-shadow: 0 6px 0 var(--edge), 0 10px 22px var(--glow), inset 0 -3px 0 rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.55) !important;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s ease, filter .18s ease;
+}
+.btn-big::before {
+  content: ''; position: absolute; left: 5%; right: 5%; top: 2px; height: 46%; z-index: -1;
+  border-radius: 12px 12px 40% 40% / 12px 12px 14px 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+.btn-big::after {
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.45) 50%, transparent 65%) !important;
+  transform: translateX(-120%); animation: btn-sheen 4.2s ease-in-out infinite; z-index: 1;
+}
+.btn-big:nth-of-type(2)::after { animation-delay: .7s; }
+.btn-big:nth-of-type(3)::after { animation-delay: 1.4s; }
+@keyframes btn-sheen { 0%, 62% { transform: translateX(-120%); } 82%, 100% { transform: translateX(120%); } }
+.btn-big:hover:not(:disabled) { transform: translateY(-3px) scale(1.03); filter: brightness(1.12) saturate(1.1);
+  box-shadow: 0 9px 0 var(--edge), 0 16px 30px var(--glow), inset 0 -3px 0 rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.6) !important; }
+.btn-big:active:not(:disabled) { transform: translateY(5px) scale(0.99); transition-duration: .06s;
+  box-shadow: 0 1px 0 var(--edge), 0 3px 8px var(--glow), inset 0 3px 6px rgba(0,0,0,0.25) !important; }
+.btn-big:focus-visible { outline: 3px solid rgba(0,229,255,0.7); outline-offset: 4px; }
+.bb-gold   { --edge: #8a4e00; --glow: rgba(255,160,0,0.45); background: linear-gradient(180deg,#fff6b8 0%,#ffd84a 40%,#ffae00 75%,#ff9100 100%) !important; color: #2a1200 !important; }
+.bb-cyan   { --edge: #00508c; --glow: rgba(0,200,255,0.45); background: linear-gradient(180deg,#d8ffff 0%,#5ff4ff 38%,#00c8ff 72%,#0092ff 100%) !important; color: #00203a !important; }
+.bb-neon   { --edge: #0b6a00; --glow: rgba(57,255,20,0.4);  background: linear-gradient(180deg,#e2ffd6 0%,#8dff62 40%,#39e61a 75%,#1fb800 100%) !important; color: #042000 !important; }
+.bb-red    { --edge: #7a0014; --glow: rgba(255,40,80,0.45); background: linear-gradient(180deg,#ffb3bf 0%,#ff5470 42%,#f0163c 76%,#c4002a 100%) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(80,0,0,.6) !important; }
+.bb-purple { --edge: #3a0090; --glow: rgba(150,60,255,0.45); background: linear-gradient(180deg,#e7ccff 0%,#b36bff 42%,#8a2bff 76%,#6400d6 100%) !important; color: #fff !important; text-shadow: 0 1px 2px rgba(40,0,80,.6) !important; }
+.bb-gray   { --edge: #070d1c; --glow: rgba(0,0,0,0.45);    background: linear-gradient(180deg,#4a5d84 0%,#2c3a5c 45%,#1c2743 100%) !important; color: #d6e4ff !important; border-color: rgba(140,180,255,0.3) !important; text-shadow: 0 1px 2px rgba(0,0,0,.6) !important; }
+.bb-gray::before { opacity: .45; }
+
+.btn-mc { clip-path: none !important; border-radius: 12px; border: 1px solid rgba(255,255,255,0.22); letter-spacing: .06em; }
+.btn-mc::before {
+  content: ''; position: absolute; left: 4%; right: 4%; top: 2px; height: 44%; border-radius: 10px 10px 40% 40% / 10px 10px 12px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0)); pointer-events: none;
+}
+.btn-mc:active:not(:disabled) { transform: translateY(4px) scale(0.99); box-shadow: 0 1px 0 rgba(0,0,0,.6) !important; }
+
+.btn-xs { border-radius: 8px; font-family: 'IBM Plex Sans Thai', 'Orbitron', sans-serif; font-size: 11px; letter-spacing: .04em; position: relative; overflow: hidden;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.45); }
+.btn-xs:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.45); }
+.bx-cyan  { background: linear-gradient(180deg,#b8fbff,#00d9ff 60%,#009be0); }
+.bx-gold  { background: linear-gradient(180deg,#fff2a8,#ffcc1a 60%,#ff9d00); }
+.bx-red   { background: linear-gradient(180deg,#ff9aab,#ff3355 60%,#d0002a); }
+.bx-green { background: linear-gradient(180deg,#d6ffc6,#5cff2e 60%,#22c000); }
+.bx-gray  { background: linear-gradient(180deg,#4a5d84,#2a3858); color: #cfe0ff; }
+
+/* ---------- Group editor modal ---------- */
+.ge-card { width: min(94vw, 480px) !important; border-radius: 22px !important; }
+.ge-head { display: flex; align-items: center; gap: 14px; padding: 20px 22px 16px; border-bottom: 1px solid rgba(80,140,255,0.15); }
+.ge-avatar { width: 62px; height: 62px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0;
+  background: radial-gradient(circle at 35% 30%, #1b3a6a, #07142c); position: relative; isolation: isolate;
+  box-shadow: 0 8px 18px rgba(0,0,0,.5), 0 0 22px rgba(0,229,255,.35); animation: ge-pop .5s cubic-bezier(.2,1.6,.4,1); }
+.ge-avatar::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; padding: 3px; z-index: -1;
+  background: conic-gradient(from var(--gsa), #00e5ff, #ffd700, #ff2fb9, #00e5ff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: gs-spin 3s linear infinite; }
+.ge-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+@keyframes ge-pop { from { transform: scale(.4) rotate(-20deg); } to { transform: none; } }
+.ge-title { font-family: var(--font-th); font-size: 20px; font-weight: 800; color: #fff; text-shadow: 0 0 14px rgba(0,229,255,.4); }
+.ge-subtitle { font-family: var(--font-th); font-size: 12px; color: var(--text2); margin-top: 2px; }
+.ge-body { padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 16px; }
+.ge-label { font-family: var(--font-th); font-size: 13px; font-weight: 600; color: #8fb6ff; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ge-label small { color: var(--text2); font-weight: 400; }
+.ge-input { width: 100%; box-sizing: border-box; padding: 13px 16px; border-radius: 12px; font-family: var(--font-th); font-size: 15px; color: #fff;
+  background: linear-gradient(180deg, rgba(0,20,50,.9), rgba(0,10,30,.9)); border: 1px solid rgba(80,150,255,.35); outline: none;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.5); transition: border-color .2s, box-shadow .2s; }
+.ge-input:focus { border-color: var(--cyan); box-shadow: inset 0 2px 6px rgba(0,0,0,.5), 0 0 0 3px rgba(0,229,255,.18), 0 0 18px rgba(0,229,255,.25); }
+.ge-av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; max-height: 148px; overflow-y: auto; padding: 4px 4px 8px; }
+.ge-av-grid .edit-av-opt { font-size: 22px; border-radius: 12px; border: 1px solid rgba(90,140,230,.3);
+  background: linear-gradient(180deg, #16294d, #0a1631); box-shadow: 0 4px 0 #050b19, inset 0 1px 0 rgba(255,255,255,.12);
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s, border-color .18s; }
+.ge-av-grid .edit-av-opt:hover { transform: translateY(-3px) scale(1.08); border-color: var(--cyan); box-shadow: 0 7px 0 #050b19, 0 0 16px rgba(0,229,255,.35); }
+.ge-av-grid .edit-av-opt.selected { border-color: #ffd700; background: linear-gradient(180deg, #4a3a00, #221800);
+  box-shadow: 0 4px 0 #3a2700, 0 0 0 2px rgba(255,215,0,.5), 0 0 18px rgba(255,200,0,.55); transform: translateY(-2px) scale(1.06); }
+.ge-upload { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.ge-upload-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 11px; cursor: pointer;
+  font-family: var(--font-th); font-size: 13px; font-weight: 600; color: #bfeaff;
+  background: linear-gradient(180deg, rgba(0,229,255,.18), rgba(0,120,255,.1)); border: 1px dashed rgba(0,229,255,.55);
+  transition: background .2s, transform .15s; }
+.ge-upload-btn:hover { background: linear-gradient(180deg, rgba(0,229,255,.3), rgba(0,120,255,.18)); transform: translateY(-2px); }
+.ge-upload span.ge-file-note { font-family: var(--font-th); font-size: 11px; color: var(--text2); }
+.ge-members { max-height: 210px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ge-member { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(10,26,56,.9), rgba(5,14,32,.9)); border: 1px solid rgba(80,130,220,.25);
+  transition: border-color .2s, box-shadow .2s, transform .15s; }
+.ge-member:hover { transform: translateX(3px); border-color: rgba(0,229,255,.5); }
+.ge-member.on { border-color: rgba(57,255,20,.7) !important; box-shadow: 0 0 18px rgba(57,255,20,.2), inset 0 0 20px rgba(57,255,20,.06); }
+.ge-member .gi-av { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #0b1a36; flex-shrink: 0; }
+.ge-member .gi-av img { width: 100%; height: 100%; object-fit: cover; }
+.ge-member .ge-mname { flex: 1; font-family: var(--font-th); font-size: 15px; color: #e8f1ff; }
+.ge-switch { width: 46px; height: 26px; border-radius: 13px; background: #1a2744; position: relative; flex-shrink: 0;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.6); transition: background .25s; }
+.ge-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #b8c6e0); box-shadow: 0 2px 5px rgba(0,0,0,.5); transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+.ge-member.on .ge-switch { background: linear-gradient(90deg, #1fb800, #5cff2e); box-shadow: inset 0 2px 5px rgba(0,0,0,.3), 0 0 10px rgba(57,255,20,.5); }
+.ge-member.on .ge-switch::after { transform: translateX(20px); }
+.ge-member .gm-check { display: none; }
+.ge-foot { display: flex; gap: 12px; padding-top: 4px; }
+.ge-foot .btn-big { padding: 13px 18px !important; font-size: 14px !important; }
+.ge-foot .ge-save { flex: 1; }
+
+/* ---------- MONEY LADDER v2 (3D game show) ---------- */
+.ladder-overlay { background: radial-gradient(ellipse at 50% 40%, rgba(40,20,0,.75), rgba(0,2,10,.96) 70%) !important; perspective: 1400px; overflow: hidden; }
+.ladder-overlay .ml-rays { position: absolute; left: 50%; top: 45%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255,200,40,.08) 0deg 6deg, transparent 6deg 16deg);
+  -webkit-mask: radial-gradient(circle, #000, transparent 55%); mask: radial-gradient(circle, #000, transparent 55%);
+  animation: gs-rays 36s linear infinite; }
+.ladder-card.ml-v2 {
+  min-width: 0 !important; width: min(94vw, 560px); padding: 26px clamp(16px, 4vw, 34px) 26px !important;
+  border: 0 !important; border-radius: 26px !important; overflow: visible !important; isolation: isolate;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(255,190,0,.14), transparent 60%), linear-gradient(180deg, #140d26 0%, #080614 60%, #04030a 100%) !important;
+  box-shadow: 0 30px 70px rgba(0,0,0,.8), 0 0 70px rgba(255,160,0,.22) !important;
+  transform: rotateX(8deg); transform-style: preserve-3d;
+  animation: ml-card-in .9s cubic-bezier(.18,1.4,.4,1) both !important;
+}
+@keyframes ml-card-in { from { opacity: 0; transform: rotateX(70deg) scale(.6) translateY(80px); } to { opacity: 1; transform: rotateX(8deg) scale(1); } }
+.ladder-card.ml-v2::before {
+  content: ''; position: absolute; inset: -4px; height: auto; border-radius: 30px; padding: 4px; z-index: -1;
+  background: conic-gradient(from var(--gsa), #ffd700, #ff7a00, #fff7c2, #ff2fb9, #00e5ff, #ffd700) !important;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: gs-spin 3s linear infinite !important;
+}
+.ladder-card.ml-v2::after { display: none; }
+.ladder-card.ml-v2 .gs-lights { inset: -19px; border-radius: 40px; }
+.ml-title { position: relative; display: inline-block; margin: 2px 0 6px;
+  font-family: 'Bungee', 'Supermercado One', sans-serif !important; font-size: clamp(26px, 5vw, 40px); letter-spacing: .06em; line-height: 1.15;
+  color: #5c2d00; text-shadow: .02em .02em 0 #b36800, .04em .04em 0 #8f5200, .06em .06em 0 #6d3c00, .08em .08em 0 #4c2700, .1em .13em .2em rgba(0,0,0,.8);
+  animation: fs-slam .7s cubic-bezier(.2,1.4,.4,1) both .15s; }
+.ml-title::after { content: attr(data-text); position: absolute; inset: 0; color: transparent; text-shadow: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.95) 50%, transparent 60%) no-repeat, linear-gradient(180deg, #fffef2 0%, #fff08a 25%, #ffcc00 52%, #ff9500 72%, #ffe27a 100%);
+  background-size: 250% 100%, 100% 100%; -webkit-background-clip: text; background-clip: text; animation: m3d-shine 3s ease-in-out infinite 1s; }
+.ml-sub { font-family: var(--font-th); font-size: 13px; color: #9fe8ff; letter-spacing: .2em; margin-bottom: 16px; text-shadow: 0 0 10px rgba(0,200,255,.5); }
+.ml-steps { display: flex; flex-direction: column-reverse; gap: 10px; transform-style: preserve-3d; }
+.ml-step {
+  --c1: #16264a; --c2: #0a1430; --edge: #040914; --bd: rgba(90,140,230,.35); --tx: #6f87b8;
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 11px 16px 11px 12px; border-radius: 14px;
+  background: linear-gradient(180deg, var(--c1), var(--c2)); border: 1px solid var(--bd);
+  box-shadow: 0 7px 0 var(--edge), 0 12px 20px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12);
+  opacity: 0; animation: ml-step-in .6s cubic-bezier(.2,1.5,.4,1) forwards; animation-delay: calc(.35s + var(--k) * .12s);
+  overflow: hidden; isolation: isolate;
+}
+.ml-step::before { content: ''; position: absolute; left: 3%; right: 3%; top: 1px; height: 45%; border-radius: 12px 12px 40% 40% / 12px 12px 10px 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.14), transparent); pointer-events: none; z-index: -1; }
+@keyframes ml-step-in { from { opacity: 0; transform: translateX(calc(var(--dir) * 60px)) rotateY(calc(var(--dir) * 35deg)) scale(.85); } to { opacity: 1; transform: none; } }
+.ml-num { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Bungee', 'Supermercado One', sans-serif; font-size: 18px; color: var(--tx);
+  background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(0,0,0,.25)); border: 1px solid var(--bd);
+  box-shadow: 0 3px 0 var(--edge), inset 0 1px 0 rgba(255,255,255,.2); }
+.ml-mid { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; text-align: left; }
+.ml-tag { font-family: var(--font-th); font-size: 12px; font-weight: 700; color: var(--tx); letter-spacing: .08em; display: flex; align-items: center; gap: 6px; }
+.ml-bar { height: 9px; border-radius: 6px; background: rgba(0,0,0,.45); overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,.6); }
+.ml-bar i { display: block; height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, #39ff14, #00e5ff, #ffd700); box-shadow: 0 0 10px rgba(57,255,20,.7);
+  transition: width 1.3s cubic-bezier(.22,1,.36,1); position: relative; }
+.ml-bar i::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); background-size: 50% 100%; background-repeat: no-repeat; animation: ml-barshine 1.6s linear infinite; }
+@keyframes ml-barshine { from { background-position: -50% 0; } to { background-position: 150% 0; } }
+.ml-amt { flex-shrink: 0; text-align: right; min-width: 118px; }
+.ml-amt .m3d { font-size: clamp(20px, 3.4vw, 28px) !important; transform: none; filter: drop-shadow(0 0 6px rgba(255,190,0,.35)); }
+.ml-amt .ml-dim { font-family: 'Bungee', 'Supermercado One', sans-serif; font-size: clamp(16px, 2.8vw, 22px); color: #3b4f7a; text-shadow: 0 2px 0 #050b19; }
+.ml-step.future { filter: saturate(.6); }
+.ml-step.future .ml-tag::before { content: '🔒'; font-size: 11px; opacity: .7; }
+.ml-step.safe { --c1: #0f3a1c; --c2: #06200e; --edge: #021005; --bd: rgba(57,255,20,.55); --tx: #9bff7e; }
+.ml-step.safe .ml-num { color: #fff; background: linear-gradient(180deg, #5cff2e, #1a9c00); text-shadow: 0 1px 2px rgba(0,60,0,.8); }
+.ml-stamp { position: absolute; right: 136px; top: 50%; font-family: 'Bungee', sans-serif; font-size: 12px; color: #5cff2e; letter-spacing: .12em;
+  border: 2px solid #5cff2e; border-radius: 6px; padding: 1px 7px; transform: translateY(-50%) rotate(-10deg); text-shadow: 0 0 8px #39ff14; box-shadow: 0 0 10px rgba(57,255,20,.4);
+  opacity: 0; animation: ml-stamp .45s cubic-bezier(.2,1.8,.4,1) forwards; animation-delay: calc(.9s + var(--k) * .12s); }
+@keyframes ml-stamp { from { opacity: 0; transform: translateY(-50%) rotate(-10deg) scale(2.6); } to { opacity: 1; transform: translateY(-50%) rotate(-10deg) scale(1); } }
+.ml-step.miss { --c1: #3d0a14; --c2: #1e030a; --edge: #0e0004; --bd: rgba(255,40,80,.6); --tx: #ff8095; }
+.ml-step.miss .ml-num { color: #fff; background: linear-gradient(180deg, #ff5470, #b0001f); }
+.ml-step.miss.ml-landed { animation: ml-step-in .6s cubic-bezier(.2,1.5,.4,1) forwards, ml-shake .5s ease .9s; }
+.ml-x { font-family: 'Bungee', sans-serif; font-size: 26px; color: #ff2e55; text-shadow: 0 0 12px #ff1744, 0 3px 0 #5a0010; }
+@keyframes ml-shake { 0%,100% { transform: none; } 20% { transform: translateX(-7px) rotate(-1deg); } 40% { transform: translateX(6px) rotate(1deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+.ml-step.current { --c1: #4a3200; --c2: #231700; --edge: #140c00; --bd: #ffd700; --tx: #ffe27a;
+  box-shadow: 0 7px 0 var(--edge), 0 0 0 2px rgba(255,215,0,.35), 0 0 30px rgba(255,190,0,.45), inset 0 1px 0 rgba(255,255,255,.2);
+  animation: ml-step-in .6s cubic-bezier(.2,1.5,.4,1) forwards, ml-current 1.6s ease-in-out infinite 1.2s; }
+.ml-step.current .ml-num { color: #2a1200; background: linear-gradient(180deg, #fff2a8, #ffb300); }
+.ml-step.current::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgba(255,240,180,.35) 50%, transparent 65%); background-size: 250% 100%; animation: gs-glass 2.4s ease-in-out infinite; }
+@keyframes ml-current { 0%,100% { box-shadow: 0 7px 0 var(--edge), 0 0 0 2px rgba(255,215,0,.35), 0 0 26px rgba(255,190,0,.4), inset 0 1px 0 rgba(255,255,255,.2); }
+  50% { box-shadow: 0 7px 0 var(--edge), 0 0 0 3px rgba(255,215,0,.75), 0 0 46px rgba(255,190,0,.75), inset 0 1px 0 rgba(255,255,255,.3); } }
+.ml-arrow { position: absolute; left: -30px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #ffd700; text-shadow: 0 0 12px #ffb300; animation: ml-arrow .8s ease-in-out infinite alternate; }
+@keyframes ml-arrow { from { transform: translate(-4px, -50%); } to { transform: translate(4px, -50%); } }
+.ml-foot { margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 16px; background: linear-gradient(180deg, rgba(255,215,0,.08), rgba(255,215,0,.02)); border: 1px solid rgba(255,215,0,.3);
+  opacity: 0; animation: gs-fade-in .6s ease forwards 1.1s; }
+.ml-total-l { font-family: var(--font-th); font-size: 13px; font-weight: 700; color: #ffe27a; letter-spacing: .15em; text-align: left; }
+.ml-lives { display: flex; gap: 6px; margin-top: 6px; }
+.ml-life { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px;
+  background: linear-gradient(180deg, #2a3c64, #111c36); box-shadow: 0 3px 0 #050b19; }
+.ml-life.lost { background: linear-gradient(180deg, #ff5470, #a0001c); box-shadow: 0 3px 0 #4a000c, 0 0 10px rgba(255,40,80,.6); color: #fff; }
+.ml-foot .m3d { font-size: clamp(28px, 5vw, 42px) !important; }
+@media (max-width: 520px) { .ml-stamp { display: none; } .ml-amt { min-width: 96px; } .ml-arrow { display: none; } }
+
+/* ---------- Quiz library (saved question sets) ---------- */
+.qlib { max-width: 1320px; margin: 4px auto 10px; padding: 0 24px; width: 100%; box-sizing: border-box; }
+.qlib-panel { position: relative; border-radius: 20px; padding: 18px 20px 20px; isolation: isolate;
+  background: radial-gradient(100% 120% at 0% 0%, rgba(0,229,255,.1), transparent 55%), linear-gradient(180deg, #0d1733, #070d20);
+  border: 1px solid rgba(0,229,255,.28); box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); }
+.qlib-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.qlib-title { font-family: var(--font-th); font-size: 19px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+.qlib-title .qlib-badge { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; color: #00203a; background: linear-gradient(180deg, #b8fbff, #00d9ff); }
+.qlib-save { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.qlib-save .ge-input { width: 240px; padding: 10px 14px; font-size: 14px; }
+.qlib-save .btn-big { padding: 10px 18px !important; font-size: 13px !important; }
+.qlib-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.qlib-empty { grid-column: 1 / -1; text-align: center; padding: 22px; border: 1px dashed rgba(0,229,255,.3); border-radius: 14px; font-family: var(--font-th); color: #6f87b8; font-size: 14px; }
+.qset { position: relative; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; isolation: isolate;
+  background: linear-gradient(180deg, #14244a, #0a1330); border: 1px solid rgba(90,140,230,.3);
+  box-shadow: 0 7px 0 #040914, 0 14px 26px rgba(0,0,0,.45); transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, border-color .2s;
+  animation: qset-in .5s cubic-bezier(.2,1.5,.4,1) both; animation-delay: calc(var(--k, 0) * .06s); }
+@keyframes qset-in { from { opacity: 0; transform: translateY(24px) scale(.92); } to { opacity: 1; transform: none; } }
+.qset:hover { transform: translateY(-5px) rotateX(4deg); border-color: rgba(255,215,0,.6); box-shadow: 0 11px 0 #040914, 0 20px 36px rgba(0,0,0,.5), 0 0 24px rgba(255,200,0,.25); }
+.qset.active { border-color: #ffd700; box-shadow: 0 7px 0 #040914, 0 0 0 2px rgba(255,215,0,.45), 0 0 26px rgba(255,200,0,.3); }
+.qset-cover { height: 86px; position: relative; display: flex; align-items: flex-end; padding: 10px 12px; overflow: hidden;
+  background: linear-gradient(135deg, var(--h1, #3a1c8a), var(--h2, #00a3d9)); }
+.qset-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+.qset-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 20%, rgba(4,8,20,.85)); }
+.qset-name { position: relative; z-index: 1; font-family: var(--font-th); font-size: 16px; font-weight: 800; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.8);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.qset-cloud { position: absolute; top: 8px; right: 10px; z-index: 1; font-size: 11px; font-family: var(--font-th); padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,.45); color: #bfeaff; }
+.qset-meta { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 12px 4px; }
+.qset-chip { font-family: var(--font-th); font-size: 11.5px; color: #a9c3f5; background: rgba(90,140,230,.14); border: 1px solid rgba(90,140,230,.25); padding: 2px 9px; border-radius: 10px; }
+.qset-actions { display: flex; gap: 8px; padding: 10px 12px 14px; margin-top: auto; }
+.qset-actions .btn-big { padding: 9px 10px !important; font-size: 12.5px !important; }
+.qset-actions .qset-play { flex: 1; }
+
+#ladderCountdown3D { font-size: 64px !important; }
+.ladder-overlay { overflow-y: auto; padding: 30px 12px; }
 </style>
 </head>
 <body>
@@ -4724,6 +4963,19 @@ body::after {
       <button class="btn-big bb-gold" style="padding:10px 24px;font-size:12px;" onclick="autoGenerate()">🤖 Auto Generate</button>
       <button class="btn-big bb-gray" style="padding:10px 20px;font-size:12px;" onclick="resetSetup()">🔄 รีเซ็ต</button>
       <button class="btn-big bb-gray" style="padding:10px 20px;font-size:12px;" onclick="showScreen('home')">← กลับ</button>
+    </div>
+  </div>
+  <div class="qlib">
+    <div class="qlib-panel">
+      <div class="qlib-head">
+        <div class="qlib-title">📚 คลังโจทย์ของฉัน <span class="qlib-badge" id="qlibCount">0 ชุด</span></div>
+        <div class="qlib-save">
+          <input class="ge-input" id="qlibName" maxlength="40" placeholder="ตั้งชื่อชุดโจทย์...">
+          <button class="btn-big bb-neon" onclick="qlibSave(true)">💾 บันทึกชุดใหม่</button>
+          <button class="btn-big bb-cyan" id="qlibUpdateBtn" style="display:none" onclick="qlibSave(false)">🔁 บันทึกทับ</button>
+        </div>
+      </div>
+      <div class="qlib-list" id="qlibList"><div class="qlib-empty">กำลังโหลด...</div></div>
     </div>
   </div>
   <div class="setup-grid" id="setupGrid"></div>
@@ -5257,9 +5509,13 @@ body::after {
 
 <!-- ===== LADDER OVERLAY — 3D ===== -->
 <div class="ladder-overlay" id="ladderOverlay">
-  <div class="ladder-card">
-    <div class="ladder-title">💰 MONEY LADDER</div>
-    <div class="ladder-steps" id="ladderSteps"></div>
+  <div class="ml-rays"></div>
+  <div class="ladder-card ml-v2">
+    <div class="gs-lights"></div>
+    <div class="ml-title" data-text="MONEY LADDER">MONEY LADDER</div>
+    <div class="ml-sub">✦ บันไดเงินรางวัล ✦</div>
+    <div class="ladder-steps ml-steps" id="ladderSteps"></div>
+    <div id="ladderFoot"></div>
     <!-- MC only sees next button; player side has no button (handled in JS) -->
     <button class="btn-big bb-gold" style="margin-top:22px;width:100%;font-size:16px;display:none;padding:18px;letter-spacing:3px;" onclick="closeLadderMC()" id="ladderCloseBtn">⚡ ข้อถัดไป →</button>
     <div id="ladderCountdownWrap" style="display:none;margin-top:18px;text-align:center;">
@@ -6744,7 +7000,7 @@ const RULES_HELP_HTML =
 /* ============================================================
    HOME
    ============================================================ */
-function goCreate() { buildSetupUI(); showScreen('setup'); }
+function goCreate() { buildSetupUI(); showScreen('setup'); qlibRefresh(); }
 function goJoin()   {
   G.isRoomOwner = false;
   G.isMC = false;
@@ -6811,6 +7067,7 @@ const AUTO_DATA = [
 const AUTO_BONUS = ['ผลไม้','ประเทศในยุโรป','สีต่างๆ','สัตว์ในทะเล','อาหารไทย','ดาวเคราะห์','กีฬา','ผักต่างๆ','ภาษาในโลก','ประเทศในเอเชีย'];
 
 function autoGenerate() {
+  QLIB.currentId = null; setTimeout(renderQlib, 0);
   // Build a large pool of categories from AUTO_DATA and generate more via AI-like expansion
   const baseCats = AUTO_DATA.map(c => ({ name: c.name, questions: c.qs.map(q => ({...q, img:''})) }));
   // For extra categories beyond AUTO_DATA, create unique derived ones to avoid duplicates
@@ -7008,7 +7265,7 @@ function removeQuestion(i, j) {
   renderQList(i);
 }
 
-function resetSetup() { G.categories = []; G.bonusCategories = []; buildSetupUI(); }
+function resetSetup() { G.categories = []; G.bonusCategories = []; QLIB.currentId = null; buildSetupUI(); renderQlib(); }
 
 /* ============================================================
    CREATE ROOM (MC)
@@ -7875,28 +8132,10 @@ function updateQStatusBar(who) {
    MONEY LADDER
    ============================================================ */
 function showLadder(saved, total, currentQ, missCount) {
-  const steps = $('ladderSteps');
-  steps.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
-    const s = document.createElement('div');
-    const amt = saved[i] !== undefined ? saved[i] : null;
-    const isMiss = amt === 0 && i <= currentQ;
-    const isSafe = amt !== null && !isMiss && amt > 0;
-    s.className = 'ladder-step' + (i === currentQ ? ' current' : '') + (isMiss ? ' miss' : '') + (isSafe ? ' safe' : '');
-    const pct = amt !== null && !isMiss ? (amt/20000)*100 : 0;
-    s.innerHTML = `
-      <div class="step-num">${i+1}</div>
-      <div class="step-bar-wrap"><div class="step-bar-fill" style="width:0%;"></div></div>
-      ${isMiss ? '<div class="step-miss-3d"></div>' : ''}
-      ${isSafe ? '<div class="step-safe-badge">SAFE</div>' : ''}
-      <div class="step-amount">${amt !== null ? (isMiss ? '—' : `฿${fmt(amt)}`) : '฿20,000'}</div>
-    `;
-    steps.appendChild(s);
-    if (!isMiss && amt !== null) {
-      const fill = s.querySelector('.step-bar-fill');
-      setTimeout(() => { fill.style.transition = 'width 1.4s cubic-bezier(0.22,1,0.36,1)'; fill.style.width = pct+'%'; }, 80 + i * 120);
-    }
-  }
+  renderLadderV2(saved, total, currentQ, missCount);
+  // restart card entrance animation
+  const _card = document.querySelector('#ladderOverlay .ladder-card');
+  if (_card) { _card.style.animation = 'none'; void _card.offsetWidth; _card.style.animation = ''; }
   $('ladderOverlay').classList.add('show');
   // Decide: MC gets countdown (auto-fires closeLadderMC), player auto-closes
   const closeBtn = $('ladderCloseBtn');
@@ -9889,10 +10128,11 @@ function showGroupEditor(title, name, avatar, existing) {
     const checked = (window._groupSelectedMembers||[]).includes(f.uid);
     const av = f.avatar||'👾';
     const avHTML = (typeof av==='string'&&av.startsWith('data:'))?`<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`:av;
-    return `<div class="group-invite-row" style="cursor:pointer;${checked?'border-color:var(--neon);':''}" onclick="toggleGroupMember('${f.uid}',this)" data-uid="${f.uid}">
+    return `<div class="ge-member ${checked?'on':''}" onclick="toggleGroupMember('${f.uid}',this)" data-uid="${f.uid}">
       <div class="gi-av">${avHTML}</div>
-      <div style="flex:1;font-family:var(--font-th);font-size:14px;color:var(--text);">${f.customName||f.nickname||f.uid}</div>
-      <div class="gm-check" style="font-size:18px;color:${checked?'var(--neon)':'var(--text2)'};">${checked?'☑':'☐'}</div>
+      <div class="ge-mname">${f.customName||f.nickname||f.uid}</div>
+      <div class="gm-check">${checked?'☑':'☐'}</div>
+      <div class="ge-switch"></div>
     </div>`;
   }).join('') : '<div style="text-align:center;color:var(--text2);font-family:var(--font-th);font-size:13px;padding:14px;">ยังไม่มีเพื่อน เพิ่มเพื่อนก่อนเพื่อนำเข้ากลุ่ม</div>';
 
@@ -9902,27 +10142,34 @@ function showGroupEditor(title, name, avatar, existing) {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(2,6,16,0.78);backdrop-filter:blur(8px);';
   overlay.onclick = (ev)=>{ if(ev.target===overlay) closeFriendActionModal(); };
   overlay.innerHTML = `
-    <div class="friend-action-card" style="width:min(94vw,460px);max-height:88vh;overflow-y:auto;">
+    <div class="friend-action-card ge-card" style="max-height:90vh;overflow-y:auto;">
       <div class="fa-close" onclick="closeFriendActionModal()">✕</div>
-      <div class="fa-header">
-        <div class="fa-avatar" id="groupAvPreview">${curIsImg?`<img src="${avatar}">`:avatar}</div>
-        <div><div class="fa-name">🛡 ${title}</div></div>
+      <div class="ge-head">
+        <div class="ge-avatar" id="groupAvPreview">${curIsImg?`<img src="${avatar}">`:avatar}</div>
+        <div><div class="ge-title">${title}</div><div class="ge-subtitle">ตั้งชื่อ เลือกรูป แล้วชวนเพื่อนเข้ากลุ่ม</div></div>
       </div>
-      <div style="padding:18px 20px 6px;">
-        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:6px;">ชื่อกลุ่ม</label>
-        <input class="cyber-input" id="groupNameInput" maxlength="24" value="${(name||'').replace(/"/g,'&quot;')}" style="width:100%;margin-bottom:16px;" placeholder="ตั้งชื่อกลุ่ม...">
-
-        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">รูปกลุ่ม</label>
-        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:120px;overflow-y:auto;margin-bottom:10px;">${avGrid}</div>
-        <input type="file" accept="image/*" onchange="handleGroupAvatarUpload(event)" style="font-family:var(--font-th);font-size:12px;color:var(--text2);margin-bottom:16px;">
-
-        <label style="font-family:var(--font-th);font-size:13px;color:var(--text2);display:block;margin-bottom:8px;">เลือกสมาชิก (จากเพื่อน)</label>
-        <div style="max-height:200px;overflow-y:auto;margin-bottom:14px;">${friendChecks}</div>
-
-        <div style="display:flex;gap:10px;">
-          <button class="btn-big bb-cyan" style="flex:1;padding:12px;font-size:14px;" onclick="saveGroup()">💾 บันทึก</button>
-          ${existing?`<button class="btn-big bb-red" style="padding:12px 18px;font-size:13px;" onclick="confirmDeleteGroup('${window._editingGroupId}')">🗑</button>`:''}
-          <button class="btn-big bb-gray" style="padding:12px 18px;font-size:14px;" onclick="closeFriendActionModal()">ยกเลิก</button>
+      <div class="ge-body">
+        <div>
+          <div class="ge-label">ชื่อกลุ่ม <small>สูงสุด 24 ตัวอักษร</small></div>
+          <input class="ge-input" id="groupNameInput" maxlength="24" value="${(name||'').replace(/"/g,'&quot;')}" placeholder="ตั้งชื่อกลุ่ม...">
+        </div>
+        <div>
+          <div class="ge-label">รูปกลุ่ม</div>
+          <div class="ge-av-grid">${avGrid}</div>
+          <div class="ge-upload">
+            <label class="ge-upload-btn" for="groupAvFile">📷 อัปโหลดรูปเอง</label>
+            <input type="file" id="groupAvFile" accept="image/*" onchange="handleGroupAvatarUpload(event);var n=this.files[0];if(n)this.nextElementSibling.textContent=n.name;" style="display:none">
+            <span class="ge-file-note">JPG / PNG ครอปเป็นวงกลมให้อัตโนมัติ</span>
+          </div>
+        </div>
+        <div>
+          <div class="ge-label">เลือกสมาชิก <small>${friends.length} เพื่อน</small></div>
+          <div class="ge-members">${friendChecks}</div>
+        </div>
+        <div class="ge-foot">
+          <button class="btn-big bb-cyan ge-save" onclick="saveGroup()">💾 บันทึก</button>
+          ${existing?`<button class="btn-big bb-red" onclick="confirmDeleteGroup('${window._editingGroupId}')" title="ลบกลุ่ม">🗑 ลบ</button>`:''}
+          <button class="btn-big bb-gray" onclick="closeFriendActionModal()">ยกเลิก</button>
         </div>
       </div>
     </div>`;
@@ -9960,7 +10207,8 @@ function toggleGroupMember(uid, el) {
   else window._groupSelectedMembers.push(uid);
   const on = window._groupSelectedMembers.includes(uid);
   if (el) {
-    el.style.borderColor = on ? 'var(--neon)' : '';
+    el.classList.toggle('on', on);
+    if (!el.classList.contains('ge-member')) el.style.borderColor = on ? 'var(--neon)' : '';
     const chk = el.querySelector('.gm-check');
     if (chk) { chk.textContent = on?'☑':'☐'; chk.style.color = on?'var(--neon)':'var(--text2)'; }
   }
@@ -11675,6 +11923,286 @@ function qImgPaste(e, i, j) {
   for (const it of items) {
     if (it.kind === 'file' && it.type.startsWith('image/')) { e.preventDefault(); loadQImageFile(it.getAsFile(), i, j); return; }
   }
+}
+
+/* ================================================================
+   ★ MONEY LADDER v2
+   ================================================================ */
+function renderLadderV2(saved, total, currentQ, missCount) {
+  const steps = $('ladderSteps');
+  steps.className = 'ladder-steps ml-steps';
+  steps.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const amt = saved[i] !== undefined && saved[i] !== null ? saved[i] : null;
+    const done = amt !== null && i <= currentQ;
+    const isMiss = done && amt === 0;
+    const isSafe = done && amt > 0;
+    const isNext = !done && i === currentQ + 1;
+    const state = isMiss ? 'miss' : isSafe ? 'safe' : isNext ? 'current' : 'future';
+    const s = document.createElement('div');
+    s.className = 'ml-step ' + state + (i === currentQ ? ' ml-landed' : '');
+    s.style.setProperty('--k', 4 - i);
+    s.style.setProperty('--dir', i % 2 ? 1 : -1);
+    const tag = isSafe ? '✓ ผ่านแล้ว' : isMiss ? 'พลาด!' : isNext ? '⚡ ข้อถัดไป' : 'รอเล่น';
+    const pct = isSafe ? Math.max(4, Math.min(100, (amt / 20000) * 100)) : 0;
+    s.innerHTML = `
+      ${isNext ? '<div class="ml-arrow">▶</div>' : ''}
+      <div class="ml-num">${i + 1}</div>
+      <div class="ml-mid">
+        <div class="ml-tag">${tag}</div>
+        <div class="ml-bar"><i></i></div>
+      </div>
+      ${isSafe ? '<div class="ml-stamp">SAFE</div>' : ''}
+      <div class="ml-amt">${isMiss ? '<span class="ml-x">✕</span>' : isSafe ? '<span class="ml-money"></span>' : '<span class="ml-dim">฿20,000</span>'}</div>`;
+    steps.appendChild(s);
+    if (isSafe) {
+      const m = s.querySelector('.ml-money');
+      if (i === currentQ) build3DMoney(m, amt, { dur: 1100, delay: 700 });
+      else build3DMoney(m, amt, { instant: true });
+      setTimeout(() => { const b = s.querySelector('.ml-bar i'); if (b) b.style.width = pct + '%'; }, 500 + (4 - i) * 120);
+    }
+  }
+  let foot = $('ladderFoot');
+  if (foot) {
+    const lives = [0, 1].map(k => `<div class="ml-life ${k < (missCount || 0) ? 'lost' : ''}">${k < (missCount || 0) ? '✕' : '♥'}</div>`).join('');
+    foot.className = 'ml-foot';
+    foot.innerHTML = `<div><div class="ml-total-l">รางวัลสะสม</div><div class="ml-lives" title="โอกาสพลาด">${lives}</div></div><span class="ml-total-m"></span>`;
+    build3DMoney(foot.querySelector('.ml-total-m'), total || 0, { dur: 1300, delay: 1000 });
+  }
+  if (typeof FX !== 'undefined') { const lastAmt = saved[currentQ]; if (lastAmt > 0) FX.sparkle(0.9); }
+}
+
+/* ================================================================
+   ★ QUIZ LIBRARY — save question sets, load & play
+   Local: IndexedDB (big, keeps images)   Cloud: Firestore users/{uid}/quizSets (+ images in qsImgs)
+   ================================================================ */
+const QLIB = { sets: [], currentId: null, busy: false };
+
+function qlibDB() {
+  if (QLIB._dbp) return QLIB._dbp;
+  QLIB._dbp = new Promise((res, rej) => {
+    try {
+      const r = indexedDB.open('fastquiz_library', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('sets', { keyPath: 'id' }); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    } catch (e) { rej(e); }
+  });
+  return QLIB._dbp;
+}
+async function qlibLocal(mode, arg) {
+  try {
+    const db = await qlibDB();
+    return await new Promise((res, rej) => {
+      const tx = db.transaction('sets', mode === 'all' ? 'readonly' : 'readwrite');
+      const st = tx.objectStore('sets');
+      const rq = mode === 'all' ? st.getAll() : mode === 'put' ? st.put(arg) : st.delete(arg);
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => rej(rq.error);
+    });
+  } catch (e) {
+    // fallback: localStorage (no images if too big)
+    let all = [];
+    try { all = JSON.parse(localStorage.getItem('fq_qlib') || '[]'); } catch (e2) {}
+    if (mode === 'all') return all;
+    all = all.filter(s => s.id !== (mode === 'put' ? arg.id : arg));
+    if (mode === 'put') all.push(arg);
+    try { localStorage.setItem('fq_qlib', JSON.stringify(all)); } catch (e3) { showNotif('⚠️ พื้นที่ในเครื่องเต็ม บันทึกไม่ได้'); }
+    return true;
+  }
+}
+function qlibCloudOK() {
+  const u = window._currentUser;
+  return !!(window._db && u && !u.isAnonymous);
+}
+function qlibCloudCol() { return _db.collection('users').doc(window._currentUser.uid).collection('quizSets'); }
+function qlibImgCol() { return _db.collection('users').doc(window._currentUser.uid).collection('qsImgs'); }
+
+function qlibSnapshot() {
+  const cats = (G.categories || []).map(c => ({
+    name: String(c.name || ''),
+    questions: (c.questions || []).map(q => ({ q: String(q.q || ''), a: String(q.a || ''), choices: (q.choices || []).map(x => String(x || '')), img: q.img && q.img !== '__img__' ? q.img : '' }))
+  }));
+  const bonus = (G.bonusCategories || []).map(b => typeof b === 'string' ? b : (b && b.name) || '');
+  return { categories: cats, bonusCategories: bonus };
+}
+function qlibStats(set) {
+  const cats = (set.categories || []).filter(c => c.name && c.name.trim());
+  const qs = cats.reduce((n, c) => n + (c.questions || []).filter(q => q.q && q.q.trim() && q.a && q.a.trim()).length, 0);
+  const imgs = (set.categories || []).reduce((n, c) => n + (c.questions || []).filter(q => q.img).length, 0);
+  return { cats: cats.length, qs, imgs };
+}
+function qlibCover(set) {
+  for (const c of set.categories || []) for (const q of c.questions || []) if (q.img && q.img.startsWith('data:')) return q.img;
+  return '';
+}
+
+async function qlibCloudSave(set) {
+  if (!qlibCloudOK()) return false;
+  try {
+    const lean = JSON.parse(JSON.stringify(set));
+    const uploads = [];
+    lean.categories.forEach(c => c.questions.forEach(q => {
+      if (q.img && q.img.startsWith('data:')) {
+        const key = qimgHash(q.img);
+        const data = q.img;
+        uploads.push(qlibImgCol().doc(key).set({ img: data, ts: Date.now() }));
+        q.img = 'qsimg:' + key;
+      }
+    }));
+    await Promise.all(uploads);
+    delete lean.cover;
+    lean.coverKey = (() => { for (const c of lean.categories) for (const q of c.questions) if (q.img) return q.img; return ''; })();
+    await qlibCloudCol().doc(set.id).set(sanitizeForFirestore(lean));
+    return true;
+  } catch (e) { console.warn('[QLIB] cloud save failed', e); return false; }
+}
+async function qlibCloudList() {
+  if (!qlibCloudOK()) return [];
+  try {
+    const snap = await qlibCloudCol().get();
+    const out = [];
+    snap.forEach(d => out.push(Object.assign({ id: d.id }, d.data(), { _cloud: true })));
+    return out;
+  } catch (e) { console.warn('[QLIB] cloud list failed', e); return []; }
+}
+async function qlibHydrateImgs(set) {
+  const jobs = [];
+  (set.categories || []).forEach(c => (c.questions || []).forEach(q => {
+    if (q.img && q.img.startsWith('qsimg:')) {
+      const key = q.img.slice(6);
+      jobs.push(qlibImgCol().doc(key).get().then(s => { q.img = s.exists ? (s.data().img || '') : ''; }).catch(() => { q.img = ''; }));
+    }
+  }));
+  await Promise.all(jobs);
+  return set;
+}
+
+async function qlibRefresh() {
+  const local = (await qlibLocal('all')) || [];
+  const map = {};
+  local.forEach(s => { map[s.id] = Object.assign({}, s, { _local: true }); });
+  const cloud = await qlibCloudList();
+  cloud.forEach(s => {
+    const l = map[s.id];
+    if (!l || (s.updatedAt || 0) > (l.updatedAt || 0)) map[s.id] = Object.assign({}, s, { _local: !!l, _cloud: true });
+    else l._cloud = true;
+  });
+  QLIB.sets = Object.values(map).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  renderQlib();
+}
+
+function renderQlib() {
+  const list = $('qlibList');
+  if (!list) return;
+  const cnt = $('qlibCount'); if (cnt) cnt.textContent = QLIB.sets.length + ' ชุด';
+  const nameIn = $('qlibName');
+  const cur = QLIB.sets.find(s => s.id === QLIB.currentId);
+  const upBtn = $('qlibUpdateBtn');
+  if (upBtn) { upBtn.style.display = cur ? '' : 'none'; upBtn.title = cur ? 'บันทึกทับ "' + cur.name + '"' : ''; }
+  if (!QLIB.sets.length) {
+    list.innerHTML = `<div class="qlib-empty">ยังไม่มีชุดโจทย์ที่บันทึกไว้ — ใส่โจทย์ให้ครบแล้วกด <b>💾 บันทึกชุดใหม่</b> เพื่อเก็บไว้เล่นครั้งหน้า</div>`;
+    return;
+  }
+  const hues = [['#3a1c8a', '#00a3d9'], ['#8a1c4a', '#ff9100'], ['#0b6a4a', '#00d9ff'], ['#5a2a00', '#ffcc1a'], ['#2a0a6a', '#ff2fb9'], ['#003a6a', '#39ff14']];
+  list.innerHTML = QLIB.sets.map((s, k) => {
+    const st = qlibStats(s);
+    const h = hues[k % hues.length];
+    const cover = s.cover || '';
+    const d = new Date(s.updatedAt || Date.now());
+    const ds = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const where = s._cloud && s._local ? '☁️ ซิงก์แล้ว' : s._cloud ? '☁️ คลาวด์' : '💻 ในเครื่อง';
+    return `<div class="qset ${s.id === QLIB.currentId ? 'active' : ''}" style="--k:${k};--h1:${h[0]};--h2:${h[1]}">
+      <div class="qset-cover">${cover ? `<img src="${cover}" alt="">` : ''}<div class="qset-name">${esc(s.name)}</div><div class="qset-cloud">${where}</div></div>
+      <div class="qset-meta">
+        <span class="qset-chip">📂 ${st.cats} หมวด</span><span class="qset-chip">❓ ${st.qs} ข้อ</span>${st.imgs ? `<span class="qset-chip">🖼 ${st.imgs} รูป</span>` : ''}<span class="qset-chip">🕒 ${ds}</span>
+      </div>
+      <div class="qset-actions">
+        <button class="btn-big bb-gold qset-play" onclick="qlibPlay('${s.id}')">▶ เล่นชุดนี้</button>
+        <button class="btn-big bb-cyan" onclick="qlibLoad('${s.id}')" title="โหลดมาแก้ไข">✏️</button>
+        <button class="btn-big bb-red" onclick="qlibDelete('${s.id}')" title="ลบ">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function qlibSave(asNew) {
+  if (QLIB.busy) return;
+  const snap = qlibSnapshot();
+  const st = qlibStats(snap);
+  if (st.qs === 0) { showNotif('⚠️ ยังไม่มีโจทย์ที่กรอกครบ (คำถาม + เฉลย)'); return; }
+  let name = (($('qlibName') || {}).value || '').trim();
+  const cur = !asNew ? QLIB.sets.find(s => s.id === QLIB.currentId) : null;
+  if (!name) name = cur ? cur.name : (snap.categories.filter(c => c.name.trim()).slice(0, 2).map(c => c.name.trim()).join(' • ') || 'ชุดโจทย์ใหม่');
+  const id = cur ? cur.id : 'qs' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const set = Object.assign({ id, name, updatedAt: Date.now(), createdAt: cur ? (cur.createdAt || Date.now()) : Date.now() }, snap);
+  set.cover = qlibCover(set) ? await shrinkImg(qlibCover(set), 320, 0.6) : '';
+  QLIB.busy = true;
+  showNotif('💾 กำลังบันทึกชุดโจทย์...');
+  try {
+    await qlibLocal('put', set);
+    QLIB.currentId = id;
+    const cloudOK = await qlibCloudSave(set);
+    showNotif(cloudOK ? `✅ บันทึก "${name}" แล้ว (ซิงก์คลาวด์ ☁️)` : `✅ บันทึก "${name}" ไว้ในเครื่องนี้แล้ว`);
+    if ($('qlibName')) $('qlibName').value = '';
+  } finally { QLIB.busy = false; }
+  qlibRefresh();
+}
+
+async function qlibGetFull(id) {
+  let s = QLIB.sets.find(x => x.id === id);
+  if (!s) return null;
+  s = JSON.parse(JSON.stringify(s));
+  const needs = (s.categories || []).some(c => (c.questions || []).some(q => q.img && q.img.startsWith('qsimg:')));
+  if (needs && qlibCloudOK()) {
+    showNotif('☁️ กำลังดาวน์โหลดรูปประกอบโจทย์...');
+    await qlibHydrateImgs(s);
+    delete s._cloud; delete s._local;
+    s.cover = qlibCover(s) ? await shrinkImg(qlibCover(s), 320, 0.6) : '';
+    qlibLocal('put', s); // cache locally
+  }
+  return s;
+}
+
+async function qlibLoad(id, silent) {
+  const s = await qlibGetFull(id);
+  if (!s) return false;
+  G.categories = JSON.parse(JSON.stringify(s.categories || []));
+  G.categories.forEach(c => { c.questions = (c.questions || []).map(q => ({ q: q.q || '', a: q.a || '', choices: (q.choices && q.choices.length ? q.choices : ['', '', '', '', '', '']).slice(0, 6), img: q.img || '' })); while (c.questions.length < 2) c.questions.push({ q: '', a: '', choices: ['', '', '', '', '', ''], img: '' }); });
+  G.bonusCategories = (s.bonusCategories || []).slice();
+  QLIB.currentId = id;
+  buildSetupUI();
+  renderQlib();
+  if (!silent) showNotif(`📂 โหลด "${s.name}" แล้ว — แก้ไขได้เลย`);
+  return true;
+}
+
+async function qlibPlay(id) {
+  const ok = await qlibLoad(id, true);
+  if (!ok) return;
+  const s = QLIB.sets.find(x => x.id === id);
+  const valid = G.categories.filter(c => c.name.trim() && c.questions.filter(q => q.q.trim() && q.a.trim()).length >= 2);
+  if (valid.length < 10) { showNotif(`⚠️ ชุด "${s ? s.name : ''}" มีหมวดที่พร้อมเล่น ${valid.length}/10 — เติมให้ครบก่อนนะ`); return; }
+  showNotif(`🚀 เริ่มเกมด้วยชุด "${s ? s.name : ''}"`);
+  createRoom();
+}
+
+async function qlibDelete(id) {
+  const s = QLIB.sets.find(x => x.id === id);
+  if (!s) return;
+  const card = [...document.querySelectorAll('.qset')].find(el => el.innerHTML.includes(`qlibDelete('${id}')`));
+  if (card && !card.dataset.confirm) {
+    card.dataset.confirm = '1';
+    const btn = card.querySelector('.bb-red');
+    if (btn) { btn.textContent = 'ยืนยันลบ?'; btn.style.flex = '1'; }
+    setTimeout(() => { if (card.isConnected) { delete card.dataset.confirm; renderQlib(); } }, 3000);
+    return;
+  }
+  await qlibLocal('del', id);
+  if (qlibCloudOK()) { try { await qlibCloudCol().doc(id).delete(); } catch (e) {} }
+  if (QLIB.currentId === id) QLIB.currentId = null;
+  showNotif(`🗑 ลบ "${s.name}" แล้ว`);
+  qlibRefresh();
 }
 </script>
 <!-- Leaderboard floating button -->
