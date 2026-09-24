@@ -5577,6 +5577,124 @@ body::after {
 /* drop to next multiplier: flash */
 .mult-bar-wrap.mb-v2.mb-drop .mult-bar-3d { animation: mzb-drop .6s ease; }
 @keyframes mzb-drop { 30% { box-shadow: 0 0 0 3px #fff, 0 0 44px var(--mbc, #fff), 0 12px 26px rgba(0,0,0,.55); } }
+/* ================= v11 ================= */
+/* --- question text: decode/scramble --- */
+.question-text .qc.scr { color: transparent !important; animation: none !important; opacity: 1 !important; position: relative; text-shadow: none !important; }
+.question-text .qc.scr::after { content: attr(data-s); position: absolute; left: 50%; top: 0; transform: translateX(-50%); opacity: 0;
+  color: #7fefff; text-shadow: 0 0 10px #00e5ff, 0 0 20px rgba(0,229,255,.6); }
+.question-text .qc.scr.scr-on::after { opacity: 1; }
+.question-text .qc.scr-land { opacity: 1; animation: qc-land .5s cubic-bezier(.2,1.8,.4,1) forwards !important; }
+@keyframes qc-land {
+  0% { transform: scale(1.7) translateY(-6px); color: #fff6c8; text-shadow: 0 0 22px #ffcc00, 0 0 40px rgba(255,200,0,.7); }
+  60% { transform: scale(.94); color: #ffe27a; }
+  100% { transform: none; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,.45), 0 0 14px rgba(0,229,255,.25); }
+}
+
+/* --- 6 choices: calm & clean --- */
+.ch-panel { background: linear-gradient(180deg, rgba(14,24,52,.92), rgba(6,11,28,.95)) !important; border-radius: 22px !important; padding: 16px 16px 18px !important;
+  box-shadow: 0 0 0 1px rgba(120,180,255,.18), 0 14px 30px rgba(0,0,0,.5) !important; animation: chp-in .5s cubic-bezier(.2,1.2,.4,1) both !important; }
+.ch-panel::before { animation: none !important; opacity: .55; background: linear-gradient(135deg, rgba(0,229,255,.7), rgba(43,80,255,.25) 40%, rgba(255,215,0,.5)) !important; }
+@keyframes chp-in { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: none; } }
+.ch-head { font-size: 13px !important; letter-spacing: .3em !important; color: #9fe8ff !important; text-shadow: 0 0 10px rgba(0,229,255,.5) !important; margin-bottom: 14px !important; }
+.ch-panel .choices-grid { gap: 12px !important; }
+.ch-panel .choice-opt { border-radius: 16px !important; padding: 14px 16px 14px 12px !important; gap: 12px !important; font-size: 16.5px !important; font-weight: 700;
+  border: 1px solid rgba(140,190,255,.22) !important; color: #eaf4ff !important;
+  background: linear-gradient(180deg, rgba(34,56,104,.9) 0%, rgba(16,30,64,.95) 100%) !important;
+  box-shadow: 0 5px 0 rgba(3,8,22,.9), 0 10px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14) !important;
+  animation: chx-in .55s cubic-bezier(.2,1.3,.4,1) forwards !important; animation-delay: calc(.15s + var(--k, 0) * .08s) !important; opacity: 0; }
+.ch-panel .choice-opt:nth-child(odd) { --dx: -26px; } .ch-panel .choice-opt:nth-child(even) { --dx: 26px; }
+@keyframes chx-in { from { opacity: 0; transform: translateX(var(--dx, 0)) scale(.94); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+.ch-panel .choice-opt::before { background: linear-gradient(180deg, rgba(255,255,255,.12), transparent) !important; }
+.ch-panel .choice-opt::after { animation: none !important; background: none !important; }
+.ch-panel .ch-key { width: 34px !important; height: 34px !important; border-radius: 50% !important; font-size: 15px !important;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffc21a 55%, #d98a00) !important; box-shadow: 0 3px 0 #6b3c00, 0 0 12px rgba(255,190,0,.35) !important;
+  animation: chk-pop .45s cubic-bezier(.2,1.8,.4,1) both; animation-delay: calc(.4s + var(--k, 0) * .08s); }
+@keyframes chk-pop { from { transform: scale(0) rotate(-90deg); } to { transform: none; } }
+.ch-panel .choice-opt:hover:not(.wrong-choice):not(.choice-locked) { transform: translateY(-3px) !important; border-color: rgba(0,229,255,.7) !important;
+  background: linear-gradient(180deg, rgba(40,72,130,.95), rgba(18,36,78,.98)) !important;
+  box-shadow: 0 8px 0 rgba(3,8,22,.9), 0 0 0 1px rgba(0,229,255,.4), 0 0 22px rgba(0,229,255,.28) !important; }
+.ch-panel .choice-opt:hover:not(.wrong-choice):not(.choice-locked) .ch-key { transform: scale(1.1) rotate(-8deg); transition: transform .2s; }
+.ch-panel .choice-opt.ch-picked { border-color: #ffd700 !important; background: linear-gradient(180deg, rgba(88,64,0,.9), rgba(42,30,0,.95)) !important;
+  box-shadow: 0 5px 0 #2a1d00, 0 0 0 2px rgba(255,215,0,.55), 0 0 22px rgba(255,200,0,.4) !important; }
+.ch-panel .choice-opt.choice-locked { opacity: .5 !important; filter: saturate(.6); }
+
+/* --- bonus time balls --- */
+.bt-wrap { width: 100%; max-width: 760px; display: flex; flex-direction: column; align-items: center; gap: 14px; animation: chp-in .6s ease both; }
+.bt-title { font-family: var(--font-th); font-weight: 800; font-size: clamp(18px, 3vw, 24px); color: #ffe27a; text-shadow: 0 2px 0 #6b3c00, 0 0 14px rgba(255,200,0,.6); text-align: center; }
+.bt-title small { display: block; font-size: 13px; font-weight: 600; color: #9fe8ff; text-shadow: none; margin-top: 4px; letter-spacing: .05em; }
+.bt-cabs { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; }
+.bt-cab { position: relative; width: 240px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 14px 16px; border-radius: 22px; isolation: isolate;
+  background: linear-gradient(180deg, #1b2b55, #0a1430); box-shadow: 0 8px 0 #030712, 0 16px 28px rgba(0,0,0,.55), inset 0 1px 0 rgba(200,230,255,.25), 0 0 0 2px rgba(0,229,255,.35); }
+.bt-cab.tens { box-shadow: 0 8px 0 #030712, 0 16px 28px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,230,160,.25), 0 0 0 2px rgba(255,200,0,.45); }
+.bt-cab-name { font: 400 13px/1 'Bungee', 'Orbitron', sans-serif; letter-spacing: .12em; color: #d8ffff; text-shadow: 0 0 8px rgba(0,229,255,.7); }
+.bt-cab.tens .bt-cab-name { color: #ffe9a8; text-shadow: 0 0 8px rgba(255,200,0,.7); }
+.bt-cab-name small { font-family: var(--font-th); font-size: 12px; margin-left: 6px; letter-spacing: 0; }
+.bt-dome { position: relative; width: 200px; height: 160px; border-radius: 90px 90px 20px 20px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 10%, rgba(180,230,255,.22), rgba(10,25,60,.6) 60%), #061028;
+  box-shadow: inset 0 0 0 3px rgba(190,230,255,.35), inset 0 -14px 24px rgba(0,0,0,.6), inset 0 8px 18px rgba(255,255,255,.12); }
+.bt-dome::after { content: ''; position: absolute; left: 14%; top: 8%; width: 22%; height: 55%; border-radius: 50%; background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0)); transform: rotate(18deg); pointer-events: none; }
+.bt-ball { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font: 400 12px/1 'Bungee', Arial, sans-serif; color: #1a1a1a; background: radial-gradient(circle at 32% 28%, #fff 0 12%, var(--bc1) 40%, var(--bc2) 100%);
+  box-shadow: inset -3px -4px 6px rgba(0,0,0,.35), 0 2px 3px rgba(0,0,0,.4); animation: bt-bob var(--t, 2s) ease-in-out infinite alternate; animation-delay: var(--dl, 0s); }
+.bt-ball b { width: 16px; height: 16px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 400; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.bt-cab.tens .bt-ball { --bc1: #ffc21a; --bc2: #c46a00; } .bt-cab.units .bt-ball { --bc1: #36d0ff; --bc2: #0a5cc4; }
+@keyframes bt-bob { from { transform: translate(0, 0) rotate(0); } to { transform: translate(var(--mx, 4px), var(--my, -6px)) rotate(var(--r, 40deg)); } }
+.bt-cab.mixing .bt-ball { animation: bt-mix .22s linear infinite alternate !important; }
+@keyframes bt-mix { from { transform: translate(calc(var(--mx) * -6), calc(var(--my) * 5)) rotate(0); } to { transform: translate(calc(var(--mx) * 6), calc(var(--my) * -7)) rotate(360deg); } }
+.bt-tray { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, #02050d 55%, #1a2a50 100%); box-shadow: inset 0 4px 10px rgba(0,0,0,.9), 0 0 0 2px rgba(120,180,255,.25); }
+.bt-out { width: 54px; height: 54px; font-size: 22px; animation: bt-drop .7s cubic-bezier(.3,1.6,.5,1) both; }
+.bt-out b { width: 30px; height: 30px; font-size: 20px; }
+@keyframes bt-drop { from { transform: translateY(-120px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.bt-cab .btn-random-big { font-size: 15px !important; padding: 12px 26px !important; }
+.bt-cab.done .btn-random-big { display: none; }
+.bt-cab .bt-done-txt { display: none; font-family: var(--font-th); font-size: 13px; font-weight: 700; color: #7dff5a; }
+.bt-cab.done .bt-done-txt { display: block; }
+.bt-cab.locked > :not(.bt-lock) { filter: saturate(.3) brightness(.6); }
+.bt-cab.locked .btn-random-big { display: none; }
+.bt-lock { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 22px; pointer-events: none; }
+.bt-lock svg { width: 120px; height: 120px; filter: drop-shadow(0 0 10px #ff1744) drop-shadow(0 4px 0 #5a0010); }
+.bt-lock svg path { fill: none; stroke: #ff2e55; stroke-width: 14; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: ch-x-draw .25s ease-out forwards .3s; }
+.bt-lock svg path + path { animation-delay: .55s; }
+.bt-lock span { font: 400 13px/1 'Bungee', sans-serif; color: #fff; background: #d0002a; padding: 5px 10px; border-radius: 8px; box-shadow: 0 3px 0 #5a0010; letter-spacing: .1em; }
+
+/* reveal board (red game-show panel) */
+.bt-board { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 30px 12px; isolation: isolate;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+  background: linear-gradient(180deg, #ff4a57 0%, #d3122a 45%, #9c0018 100%); animation: pz-in .8s cubic-bezier(.2,1.4,.4,1) both; }
+.bt-board-wrap { filter: drop-shadow(0 0 0 #ffcc1a) drop-shadow(0 0 16px rgba(255,60,80,.55)) drop-shadow(0 10px 18px rgba(0,0,0,.6)); }
+.bt-board-frame { padding: 3px; clip-path: polygon(17px 0, calc(100% - 17px) 0, 100% 17px, 100% calc(100% - 17px), calc(100% - 17px) 100%, 17px 100%, 0 calc(100% - 17px), 0 17px);
+  background: linear-gradient(90deg, #ffe27a, #ff9d00, #fff2a8, #ff9d00, #ffe27a); background-size: 200% 100%; animation: pz-run 3s linear infinite; }
+.bt-board::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(255,255,255,.28), transparent 45%); }
+.bt-slots { display: flex; gap: 34px; }
+.bt-slot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bt-bigball { position: relative; width: 74px; height: 74px; border-radius: 50%; display: flex; align-items: center; justify-content: center; perspective: 400px;
+  background: radial-gradient(circle at 32% 28%, #fff 0 10%, var(--bc1, #444) 38%, var(--bc2, #111) 100%); box-shadow: inset -5px -7px 10px rgba(0,0,0,.4), 0 4px 0 rgba(0,0,0,.35); }
+.bt-slot.tens .bt-bigball { --bc1: #ffc21a; --bc2: #b35a00; } .bt-slot.units .bt-bigball { --bc1: #36d0ff; --bc2: #0a4cb0; }
+.bt-slot.empty .bt-bigball { --bc1: #20283d; --bc2: #05070d; }
+.bt-bigball b { width: 44px; height: 44px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center;
+  font: 400 28px/1 'Bungee', Arial, sans-serif; color: #111; box-shadow: inset 0 -3px 0 rgba(0,0,0,.12); }
+.bt-slot.empty .bt-bigball b { background: #0b0f1a; color: #fff; }
+.bt-slot.revealing .bt-bigball { animation: bt-spin .9s cubic-bezier(.3,1.3,.5,1); }
+@keyframes bt-spin { 0% { transform: rotateY(0) scale(1); } 50% { transform: rotateY(540deg) scale(1.25); filter: brightness(1.8); } 100% { transform: rotateY(720deg) scale(1); } }
+.bt-slot.revealed .bt-bigball b { color: #b30022; animation: bt-num .6s cubic-bezier(.2,1.8,.4,1); }
+@keyframes bt-num { from { transform: scale(2.2); } to { transform: none; } }
+.bt-slot .bt-x { position: absolute; inset: -8px; pointer-events: none; }
+.bt-slot .bt-x path { fill: none; stroke: #ff1744; stroke-width: 12; stroke-linecap: round; filter: drop-shadow(0 0 6px #ff1744); stroke-dasharray: 100; stroke-dashoffset: 100; animation: ch-x-draw .22s ease-out forwards .6s; }
+.bt-slot .bt-x path + path { animation-delay: .85s; }
+.bt-slot.missed .bt-bigball { --bc1: #7a6030; --bc2: #241a0a; }
+.bt-slot.missed .bt-bigball b { background: #cfc6b0; color: #6b6150; }
+.bt-label { position: relative; font-family: var(--font-th); font-weight: 800; font-size: 15px; color: #fff; padding: 2px 14px 0; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.bt-label::before, .bt-label::after { content: ''; position: absolute; bottom: 4px; width: 12px; height: 12px; border: 3px solid #fff; border-top: 0; }
+.bt-label::before { left: -6px; border-right: 0; border-bottom-left-radius: 3px; } .bt-label::after { right: -6px; border-left: 0; border-bottom-right-radius: 3px; }
+.bt-result { font-family: var(--font-th); font-weight: 800; font-size: 16px; color: #fff6c8; text-shadow: 0 2px 0 rgba(0,0,0,.4); min-height: 22px; }
+.bt-result b { font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 22px; color: #fff; }
+.bt-result.pop { animation: mb-tag-pop .6s cubic-bezier(.2,1.8,.4,1); }
+.mc-ball-box .bt-board { padding: 12px 20px 10px; } .mc-ball-box .bt-bigball { width: 60px; height: 60px; } .mc-ball-box .bt-bigball b { width: 36px; height: 36px; font-size: 22px; }
+.mc-ball-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.mc-ball-btns .btn-mc { flex: 1; min-width: 120px; }
+.mc-ball-status { font-family: var(--font-th); font-size: 13px; color: #9fe8ff; margin-top: 8px; text-align: center; }
+.mc-ball-peek { font-family: var(--font-th); font-size: 11px; color: #6f87b8; text-align: center; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -7030,6 +7148,9 @@ function routeEvent(type, data) {
    ============================================================ */
 function handleEventMC(type, data) {
   switch(type) {
+    case 'ball_pick':
+      mcOnBallPick(data);
+      break;
     case 'player_bonus_rand':
       if (typeof mcRandomBonus === 'function') mcRandomBonus();
       break;
@@ -7479,7 +7600,17 @@ function handleEventPlayer(type, data) {
       }
       break;
     case 'bonus_start':
+      if (data.missCount != null) G.missCount = data.missCount;
       showBonusPlayer(data.total);
+      break;
+    case 'ball_pick':
+      btPlayerOnPick(data);
+      break;
+    case 'ball_reveal':
+      playerOnBallReveal(data);
+      break;
+    case 'ball_done':
+      playerOnBallDone(data);
       break;
     case 'bonus_slot_spin_mc':
       // MC started spinning bonus wheel — mirror on player side
@@ -9398,7 +9529,7 @@ function closeLadder() {
   G.currentQ++;
   if (G.currentQ >= 5) {
     if (G.isMC) {
-      broadcastEvent('bonus_start', { total: G.totalMoney });
+      broadcastEvent('bonus_start', { total: G.totalMoney, missCount: G.missCount || 0 });
       showBonusMC();
     }
     // player side handled by bonus_start event
@@ -10133,7 +10264,7 @@ function showBonusMC() {
   G.bonusCorrect = 0; G.bonusAnswers = []; G.bonusTimer = 120; G.bonusStarted = false;
   G.bonusPendingText = [null, null]; // pending text per player slot
   G.bonusCat = null; G._bonusRandBusy = false;
-  setTimeout(setupMCBonusWaitForPlayer, 0);
+  setTimeout(setupMCBallPhase, 0);
   $('bonusTimerMC').textContent = '120';
   $('bonusTotalDisplay').textContent = `฿${fmt(G.totalMoney)}`;
   $('btnStartBonus').disabled = false;
@@ -10272,13 +10403,14 @@ function showBonusPlayer(total) {
   } else {
     if (partnerWrap) partnerWrap.style.display = 'none';
   }
-  setupBonusPlayerRandCTA();
+  setupBallDraw();
 }
 
 function mcRandomBonus() {
   const cats = G.bonusCategories.filter(c => c.trim());
   if (!cats.length) { showNotif('⚠️ ไม่มีหมวดโบนัส'); return; }
   if (G._bonusRandBusy || G.bonusCat) return;
+  if (typeof BT !== 'undefined' && !BT.done) { showNotif('⏳ เปิดลูกบอลเพิ่มเวลาให้ครบก่อน'); return; }
   G._bonusRandBusy = true;
   { const w = $('mcBonusWaitRand'); if (w) w.style.display = 'none'; }
 
@@ -10454,9 +10586,9 @@ function startBonusTimer() {
 
   G.bonusTimerInterval = setInterval(() => {
     G.bonusTimer--;
-    const elapsed = 120 - G.bonusTimer;
+    const elapsed = bonusTotalSecs() - G.bonusTimer;
     const mult = getMultiplier(elapsed);
-    const pct = (elapsed / 120) * 100;
+    const pct = (elapsed / bonusTotalSecs()) * 100;
     const multChanged = mult !== prevMult;
     if (multChanged) prevMult = mult;
 
@@ -10513,18 +10645,15 @@ function launchConfettiSmall() {
 }
 
 function getMultiplier(elapsed) {
-  if (elapsed <= 30) return 'x10';
-  if (elapsed <= 50) return 'x5';
-  if (elapsed <= 70) return 'x3';
-  if (elapsed <= 90) return 'x2';
+  const E = G.bonusExtra || 0;
+  if (elapsed <= 30 + E) return 'x10';
+  if (elapsed <= 50 + E) return 'x5';
+  if (elapsed <= 70 + E) return 'x3';
+  if (elapsed <= 90 + E) return 'x2';
   return 'x1';
 }
 function getMultiplierNum(elapsed) {
-  if (elapsed <= 30) return 10;
-  if (elapsed <= 50) return 5;
-  if (elapsed <= 70) return 3;
-  if (elapsed <= 90) return 2;
-  return 1;
+  return +getMultiplier(elapsed).slice(1);
 }
 
 let bonusTypingVal = '';
@@ -10691,7 +10820,7 @@ function updateMultBarActiveZone(mult) {
 
 function endBonusRound() {
   clearInterval(G.bonusTimerInterval);
-  const elapsed = 120 - G.bonusTimer;
+  const elapsed = bonusTotalSecs() - G.bonusTimer;
   let finalTotal;
   if (G.bonusCorrect >= 10) {
     finalTotal = G.totalMoney * getMultiplierNum(elapsed);
@@ -13546,9 +13675,10 @@ function renderPlayerQuestion(q, cat, img, opts) {
     if (img) { const il = qb.querySelector('.q-illus'); if (il) fillQIllus(il.id, img); }
     void qb.offsetWidth;
     qb.classList.add(opts.swap ? 'qb-swap-in' : 'qb-open');
+    startQScramble(qb);
     const words = qb.querySelectorAll('.qw');
     const last = words.length ? parseFloat(words[words.length - 1].style.getPropertyValue('--d')) : 0.8;
-    setTimeout(() => { const tEl = qb.querySelector('.question-text'); if (tEl) tEl.classList.add('qt-done'); }, (last + 0.6) * 1000);
+    setTimeout(() => { const tEl = qb.querySelector('.question-text'); if (tEl) tEl.classList.add('qt-done'); }, (last + 1.0) * 1000);
     setTimeout(() => { const sc = qb.querySelector('.qb-scan'); if (sc) sc.remove(); }, 1100);
     qbSwoosh();
   };
@@ -14357,11 +14487,11 @@ function splitWordsHTML(text) {
   };
   const escH = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const total = words.reduce((n, w) => n + (/^\s+$/.test(w) ? 0 : graph(w).length), 0);
-  const step = Math.min(0.045, 1.7 / Math.max(1, total));
+  const step = Math.min(0.04, 1.5 / Math.max(1, total));
   let k = 0;
   return words.map(w => {
     if (/^\s+$/.test(w)) return ' ';
-    return `<span class="qw qw-c">${graph(w).map(ch => { const d = (0.8 + (k++) * step).toFixed(3); return `<span class="qc" style="--d:${d}s;--i:${k}">${escH(ch)}</span>`; }).join('')}</span>`;
+    return `<span class="qw qw-c">${graph(w).map(ch => { const d = (1.15 + (k++) * step).toFixed(3); return `<span class="qc" style="--d:${d}s;--i:${k}">${escH(ch)}</span>`; }).join('')}</span>`;
   }).join('');
 }
 
@@ -14409,6 +14539,208 @@ function showBonusOutcome(cleared, done) {
   else { playSnd(SND_WRONG); try { FX.crash(0.3); } catch (e) {} }
   setTimeout(() => ov.classList.add('bo-out'), 3000);
   setTimeout(() => { ov.remove(); if (done) done(); }, 3700);
+}
+
+/* ================= v11 JS ================= */
+/* --- question scramble decode --- */
+const SCR_POOL = 'กขคงจฉชซญฎฐณดตถทธนบปผพฟภมยรลวศษสหอฮ0123456789?!#$%&@ABCDEFGHKMNPRSTUVWXYZ';
+function startQScramble(root) {
+  const items = [...root.querySelectorAll('.qc')].map(el => ({ el, d: parseFloat(el.style.getPropertyValue('--d')) * 1000, done: false }));
+  if (!items.length) return;
+  items.forEach(it => { it.el.classList.add('scr'); it.el.dataset.s = ''; });
+  const t0 = performance.now();
+  let lastTick = 0;
+  function tick(now) {
+    const e = now - t0; let left = 0;
+    const flip = now - lastTick > 45; if (flip) lastTick = now;
+    for (const it of items) {
+      if (it.done) continue; left++;
+      if (e < it.d) continue;
+      if (e < it.d + 280) { if (flip) it.el.dataset.s = SCR_POOL[Math.floor(Math.random() * SCR_POOL.length)]; it.el.classList.add('scr-on'); }
+      else { it.done = true; it.el.classList.remove('scr', 'scr-on'); it.el.classList.add('scr-land'); }
+    }
+    if (left && root.isConnected) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+  // soft tick sound while decoding
+  try {
+    const C = new (window.AudioContext || window.webkitAudioContext)();
+    const n = Math.min(items.length, 40), start = C.currentTime + items[0].d / 1000;
+    const span = (items[items.length - 1].d - items[0].d) / 1000 + 0.28;
+    for (let i = 0; i < n; i++) {
+      const t = start + span * i / n; const o = C.createOscillator(), g = C.createGain();
+      o.type = 'square'; o.frequency.value = 1400 + Math.random() * 600;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.018, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.04);
+      o.connect(g); g.connect(C.destination); o.start(t); o.stop(t + 0.05);
+    }
+    setTimeout(() => C.close(), (start - C.currentTime + span + 1) * 1000);
+  } catch (e) {}
+}
+
+/* --- bonus time balls --- */
+const BT = { tensOK: true, tens: null, units: null, rev: { tens: false, units: false }, done: false };
+function btReset() {
+  const miss = G.missCount || 0;
+  BT.tensOK = miss === 0; BT.tens = null; BT.units = null; BT.rev = { tens: false, units: false }; BT.done = false;
+  if (!BT.tensOK) { BT.tens = 0; BT.rev.tens = true; }
+  G.bonusExtra = 0;
+}
+function btPool(kind) { const max = kind === 'tens' ? 3 : 5; const a = []; for (let v = 0; v <= max; v++) for (let k = 0; k < 3; k++) a.push(v); return a; }
+function btCabinetHTML(kind) {
+  const pool = btPool(kind);
+  const balls = pool.map((v, i) => {
+    const x = 12 + (i * 37) % 150, y = 30 + ((i * 53) % 95);
+    return `<div class="bt-ball" style="left:${x}px;top:${y}px;--t:${(1.4 + (i % 5) * .3).toFixed(1)}s;--dl:-${(i * .37).toFixed(2)}s;--mx:${(i % 2 ? 5 : -5)}px;--my:${(i % 3 ? -6 : 5)}px;--r:${(i % 2 ? 50 : -40)}deg"><b>${v}</b></div>`;
+  }).join('');
+  const locked = kind === 'tens' && !BT.tensOK;
+  return `<div class="bt-cab ${kind} ${locked ? 'locked' : ''}" id="btCab_${kind}">
+    <div class="bt-cab-name">${kind === 'tens' ? 'TENS' : 'UNITS'}<small>${kind === 'tens' ? 'หลักสิบ (0–3)' : 'หลักหน่วย (0–5)'}</small></div>
+    <div class="bt-dome">${balls}</div>
+    <div class="bt-tray" id="btTray_${kind}"></div>
+    <button class="btn-random-big" onclick="btPick('${kind}')">🎱 หยิบลูกบอล</button>
+    <div class="bt-done-txt">✓ หยิบแล้ว — รอพิธีกรเปิด</div>
+    ${locked ? `<div class="bt-lock"><svg viewBox="0 0 100 100"><path d="M18 18 L82 82"/><path d="M82 18 L18 82"/></svg><span>MISS TRACK</span></div>` : ''}
+  </div>`;
+}
+function btBoardHTML(id) {
+  const slot = (kind) => {
+    const val = BT[kind], rev = BT.rev[kind];
+    const missed = kind === 'tens' && !BT.tensOK;
+    const cls = ['bt-slot', kind, val === null ? 'empty' : '', rev && !missed ? 'revealed' : '', missed ? 'missed' : ''].join(' ');
+    const inner = missed ? '0' : (rev ? val : '?');
+    return `<div class="${cls}" id="${id}_${kind}"><div class="bt-bigball"><b>${inner}</b>${missed ? '<svg class="bt-x" viewBox="0 0 100 100"><path d="M16 16 L84 84"/><path d="M84 16 L16 84"/></svg>' : ''}</div>
+      <div class="bt-label">${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'}</div></div>`;
+  };
+  return `<div class="bt-board-wrap"><div class="bt-board-frame"><div class="bt-board"><div class="bt-slots">${slot('tens')}${slot('units')}</div>
+    <div class="bt-result" id="${id}_res">${BT.done ? btResultText() : 'โบนัสเวลาเพิ่มใน zone x10'}</div></div></div></div>`;
+}
+function btResultText() { const e = (BT.tens || 0) * 10 + (BT.units || 0); return `เพิ่มเวลา x10 <b>+${e}</b> วินาที`; }
+function btRefreshBoards() { document.querySelectorAll('.bt-board-host').forEach(h => { h.innerHTML = btBoardHTML(h.dataset.id); }); }
+
+/* player side */
+function setupBallDraw() {
+  btReset();
+  applyBonusExtraToBar(0);
+  const randArea = $('bonusRandArea'); if (!randArea) return;
+  let area = $('btArea');
+  if (!area) { area = document.createElement('div'); area.id = 'btArea'; randArea.parentNode.insertBefore(area, randArea); }
+  area.style.display = 'flex'; area.className = 'bt-wrap';
+  area.innerHTML = `<div class="bt-title">🎱 หยิบลูกบอลเพิ่มเวลา x10<small>${BT.tensOK ? 'หยิบได้ทั้งตู้หลักสิบและหลักหน่วย' : 'มี MISS TRACK 1 ครั้ง — หยิบได้เฉพาะตู้หลักหน่วย'}</small></div>
+    <div class="bt-cabs">${btCabinetHTML('tens')}${btCabinetHTML('units')}</div>
+    <div class="bt-board-host" data-id="btBoardP">${btBoardHTML('btBoardP')}</div>`;
+  const cta = $('bonusRandCta'); if (cta) cta.style.display = 'none';
+  const wait = $('bonusWaitMCRand'); if (wait) wait.style.display = 'none';
+}
+function btPick(kind) {
+  if (BT[kind] !== null) return;
+  if (kind === 'tens' && !BT.tensOK) return;
+  const cab = $('btCab_' + kind); if (!cab) return;
+  cab.classList.add('mixing');
+  const btn = cab.querySelector('.btn-random-big'); if (btn) btn.disabled = true;
+  try { FX.drumroll(1.3); } catch (e) {}
+  const pool = btPool(kind); const value = pool[Math.floor(Math.random() * pool.length)];
+  setTimeout(() => {
+    cab.classList.remove('mixing');
+    btShowPicked(kind);
+    broadcastEvent('ball_pick', { kind, value, by: G.myPlayerIndex });
+    BT[kind] = value; btRefreshBoards();
+  }, 1400);
+}
+function btShowPicked(kind) {
+  const cab = $('btCab_' + kind); if (!cab) return;
+  cab.classList.add('done');
+  const balls = cab.querySelectorAll('.bt-dome .bt-ball'); if (balls.length) balls[Math.floor(Math.random() * balls.length)].remove();
+  const tray = $('btTray_' + kind); if (tray) tray.innerHTML = `<div class="bt-ball bt-out" style="position:relative;left:0;top:0;animation:bt-drop .7s cubic-bezier(.3,1.6,.5,1) both"><b>?</b></div>`;
+  try { playSnd(SND_DING, .6); } catch (e) {}
+}
+function btPlayerOnPick(d) { if (BT[d.kind] === null) { BT[d.kind] = d.value; btShowPicked(d.kind); btRefreshBoards(); } }
+function btAnimateReveal(kind, value) {
+  BT[kind] = value; BT.rev[kind] = true;
+  document.querySelectorAll(`[id$="_${kind}"].bt-slot`).forEach(s => {
+    s.classList.remove('empty'); s.classList.add('revealing');
+    setTimeout(() => { s.classList.remove('revealing'); s.classList.add('revealed'); const b = s.querySelector('b'); if (b) b.textContent = value; }, 450);
+  });
+  try { FX.crash(0.4); FX.sparkle(0.45); } catch (e) {}
+  setTimeout(() => { const host = document.querySelector('.bt-board-host'); if (host) gsBurst(host, 30); }, 450);
+}
+function btFinish(extra) {
+  BT.done = true; G.bonusExtra = extra;
+  document.querySelectorAll('.bt-result').forEach(r => { r.innerHTML = btResultText(); r.classList.remove('pop'); void r.offsetWidth; r.classList.add('pop'); });
+  applyBonusExtraToBar(extra);
+  try { FX.fanfare(0); } catch (e) {}
+}
+function applyBonusExtraToBar(extra) {
+  const E = extra || 0;
+  document.querySelectorAll('.mult-bar-3d').forEach(bar => {
+    const f = { 'mz-x10': 30 + E, 'mz-x5': 20, 'mz-x3': 20, 'mz-x2': 20, 'mz-x1': 30 };
+    Object.keys(f).forEach(c => { const z = bar.querySelector('.' + c); if (z) z.style.flex = f[c]; });
+  });
+  const total = 120 + E;
+  ['bonusTimerMC', 'bonusTimerP'].forEach(id => { const el = $(id); if (el && !G.bonusStarted) el.textContent = total; });
+}
+function bonusTotalSecs() { return 120 + (G.bonusExtra || 0); }
+
+/* MC side */
+function setupMCBallPhase() {
+  btReset();
+  const catBox = $('bonusCatDisplay') && $('bonusCatDisplay').closest('.mc-panel-box');
+  if (!catBox) return;
+  let box = $('mcBallBox');
+  if (!box) { box = document.createElement('div'); box.id = 'mcBallBox'; box.className = 'mc-panel-box mc-ball-box'; catBox.parentNode.insertBefore(box, catBox); }
+  box.style.display = 'block';
+  renderMCBallBox();
+  const rb = $('mcBonusRandBtn'); if (rb) rb.style.display = 'none';
+  const w = $('mcBonusWaitRand'); if (w) w.style.display = 'none';
+  const sb = $('btnStartBonus'); if (sb) sb.disabled = true;
+  applyBonusExtraToBar(0);
+}
+function renderMCBallBox() {
+  const box = $('mcBallBox'); if (!box) return;
+  const can = (k) => BT[k] !== null && !BT.rev[k];
+  const status = BT.done ? '✅ เปิดครบแล้ว' : (BT.tensOK ? (BT.tens === null || BT.units === null ? '⏳ รอผู้เล่นหยิบลูกบอล...' : '🎯 ผู้เล่นหยิบครบแล้ว — เปิดทีละหลักได้เลย') : (BT.units === null ? '⏳ MISS TRACK — รอผู้เล่นหยิบตู้หลักหน่วย...' : '🎯 เปิดหลักหน่วยได้เลย'));
+  const peek = [BT.tensOK && BT.tens !== null && !BT.rev.tens ? `หลักสิบ = ${BT.tens}` : '', BT.units !== null && !BT.rev.units ? `หลักหน่วย = ${BT.units}` : ''].filter(Boolean).join(' • ');
+  box.innerHTML = `<div class="mc-panel-label">🎱 โบนัสเพิ่มเวลา (zone x10)</div>
+    <div style="display:flex;justify-content:center;margin-top:8px"><div class="bt-board-host" data-id="btBoardMC">${btBoardHTML('btBoardMC')}</div></div>
+    <div class="mc-ball-status">${status}</div>${peek ? `<div class="mc-ball-peek">👁 (เห็นเฉพาะพิธีกร) ${peek}</div>` : ''}
+    <div class="mc-ball-btns">
+      ${BT.tensOK ? `<button class="btn-mc bm-gold" ${can('tens') ? '' : 'disabled'} onclick="mcRevealBall('tens')">🔓 เปิดหลักสิบ</button>` : ''}
+      <button class="btn-mc bm-cyan" ${can('units') ? '' : 'disabled'} onclick="mcRevealBall('units')">🔓 เปิดหลักหน่วย</button>
+      ${BT.done ? '' : `<button class="btn-mc bm-gray" style="flex:0 0 auto;min-width:0" onclick="mcSkipBalls()" title="ข้ามโบนัสเวลา">ข้าม</button>`}
+    </div>`;
+}
+function mcOnBallPick(d) { if (BT[d.kind] === null) { BT[d.kind] = d.value; renderMCBallBox(); showNotif(`🎱 ผู้เล่นหยิบลูก${d.kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'}แล้ว`); } }
+function mcRevealBall(kind) {
+  if (BT[kind] === null || BT.rev[kind]) return;
+  broadcastEvent('ball_reveal', { kind, value: BT[kind] });
+  btAnimateReveal(kind, BT[kind]);
+  setTimeout(() => { renderMCBallBox(); mcCheckBallsDone(); }, 1000);
+}
+function mcCheckBallsDone() {
+  if (BT.done || !BT.rev.tens || !BT.rev.units) return;
+  const extra = (BT.tens || 0) * 10 + (BT.units || 0);
+  G.bonusTimer = 120 + extra;
+  btFinish(extra);
+  broadcastEvent('ball_done', { extra, tens: BT.tens, units: BT.units });
+  renderMCBallBox();
+  showNotif(`⏱️ เพิ่มเวลา x10 +${extra} วินาที`);
+  setTimeout(() => { const sb = $('btnStartBonus'); if (sb) sb.disabled = false; setupMCBonusWaitForPlayer(); }, 1200);
+}
+function mcSkipBalls() {
+  BT.tens = BT.tens === null ? 0 : BT.tens; BT.units = BT.units === null ? 0 : BT.units;
+  BT.rev = { tens: true, units: true };
+  mcCheckBallsDone();
+}
+/* player receives */
+function playerOnBallReveal(d) { btAnimateReveal(d.kind, d.value); }
+function playerOnBallDone(d) {
+  BT.tens = d.tens; BT.units = d.units; BT.rev = { tens: true, units: true };
+  G.bonusExtra = d.extra || 0;
+  btFinish(G.bonusExtra);
+  G.bonusTimer = 120 + G.bonusExtra;
+  setTimeout(() => {
+    const a = $('btArea'); if (a) { a.querySelector('.bt-cabs') && (a.querySelector('.bt-cabs').style.display = 'none'); }
+    setupBonusPlayerRandCTA();
+  }, 1600);
 }
 </script>
 <!-- Leaderboard floating button -->
