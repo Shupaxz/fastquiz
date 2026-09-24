@@ -5695,6 +5695,70 @@ body::after {
 .mc-ball-btns .btn-mc { flex: 1; min-width: 120px; }
 .mc-ball-status { font-family: var(--font-th); font-size: 13px; color: #9fe8ff; margin-top: 8px; text-align: center; }
 .mc-ball-peek { font-family: var(--font-th); font-size: 11px; color: #6f87b8; text-align: center; margin-top: 4px; }
+/* ================= v12: 3D balls ================= */
+.b3 { --s: 40px; position: absolute; width: var(--s); height: var(--s); border-radius: 50%; cursor: pointer; isolation: isolate;
+  background: radial-gradient(circle at 30% 26%, rgba(255,255,255,.95) 0 6%, rgba(255,255,255,0) 22%),
+              radial-gradient(circle at 50% 55%, var(--bc1) 0%, var(--bc2) 70%, var(--bc3) 100%);
+  box-shadow: inset -6px -8px 12px rgba(0,0,0,.45), inset 4px 5px 8px rgba(255,255,255,.25), 0 4px 6px rgba(0,0,0,.45);
+  animation: b3-float var(--t, 2s) ease-in-out infinite alternate; animation-delay: var(--dl, 0s); transition: transform .2s, filter .2s; }
+.b3::before { content: ''; position: absolute; inset: 0; border-radius: 50%; z-index: 2; pointer-events: none;
+  background: radial-gradient(circle at 30% 24%, rgba(255,255,255,.8) 0 5%, rgba(255,255,255,0) 16%); }
+.b3 .b3-face { position: absolute; left: 50%; top: 50%; width: 52%; height: 52%; margin: -26% 0 0 -26%; border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 40% 35%, #fff, #e6e9f0 70%, #c9ced9); box-shadow: inset 0 -2px 3px rgba(0,0,0,.2);
+  display: flex; align-items: center; justify-content: center; font: 400 calc(var(--s) * .3)/1 'Bungee', Arial, sans-serif; color: #222;
+  animation: b3-spin var(--sp, 2.4s) linear infinite; }
+@keyframes b3-spin { 0% { transform: translateX(-70%) scaleX(.2); opacity: 0; } 12% { opacity: 1; } 50% { transform: translateX(0) scaleX(1); } 88% { opacity: 1; } 100% { transform: translateX(70%) scaleX(.2); opacity: 0; } }
+@keyframes b3-float { from { transform: translate(0, 0); } to { transform: translate(var(--mx, 5px), var(--my, -8px)); } }
+.bt-cab.tens .b3, .b3.tens { --bc1: #ffe066; --bc2: #f29a00; --bc3: #8a4a00; }
+.bt-cab.units .b3, .b3.units { --bc1: #7fe3ff; --bc2: #1a8fff; --bc3: #0a3a8a; }
+.bt-cab:not(.done):not(.locked) .b3:hover { transform: scale(1.18) !important; filter: brightness(1.25) drop-shadow(0 0 10px #fff); z-index: 5; }
+.bt-cab.mixing .b3 { animation: bt-mix .22s linear infinite alternate !important; }
+.bt-cab.done .b3, .bt-cab.picking .b3 { pointer-events: none; }
+.bt-cab.picking .b3:not(.chosen) { filter: brightness(.55); transition: filter .3s; }
+.b3.fly { position: fixed; z-index: 9999; animation: none !important; transition: left .7s cubic-bezier(.5,-.3,.3,1.3), top .7s cubic-bezier(.5,-.3,.3,1.3), width .7s, height .7s; }
+.bt-dome { width: 220px !important; height: 170px !important; }
+.bt-cab { width: 270px !important; animation: btc-in .6s cubic-bezier(.2,1.3,.4,1) both; }
+.bt-cab.leave { animation: btc-out .45s ease forwards; }
+@keyframes btc-in { from { opacity: 0; transform: translateX(60px) rotateY(-30deg) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes btc-out { to { opacity: 0; transform: translateX(-60px) rotateY(30deg) scale(.9); } }
+.bt-hint { font-family: var(--font-th); font-size: 13px; color: #ffe27a; font-weight: 700; animation: qb-wait 1.4s ease-in-out infinite; }
+.bt-tray .b3 { position: relative; --s: 54px; animation: bt-drop .6s cubic-bezier(.3,1.6,.5,1) both; cursor: default; }
+.bt-steps { display: flex; gap: 8px; align-items: center; font-family: var(--font-th); font-size: 12.5px; color: #6f87b8; }
+.bt-steps span { padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(120,160,230,.3); }
+.bt-steps span.on { color: #2a1200; background: linear-gradient(180deg, #fff2a8, #ffc21a); border-color: transparent; font-weight: 800; }
+.bt-steps span.ok { color: #7dff5a; border-color: rgba(57,255,20,.45); }
+.bt-steps span.x { color: #ff8095; border-color: rgba(255,40,80,.45); text-decoration: line-through; }
+.bt-waitmc { font-family: var(--font-th); font-weight: 700; color: #9fe8ff; font-size: 15px; padding: 10px; animation: qb-wait 1.6s ease-in-out infinite; }
+/* board uses 3D balls */
+.bt-bigball.b3 { position: relative; --s: 76px; cursor: default; animation: none; }
+.mc-ball-box .bt-bigball.b3 { --s: 62px; }
+.bt-bigball.b3 .b3-face { animation: none; font-size: calc(var(--s) * .34); }
+.bt-slot.empty .bt-bigball.b3 { --bc1: #3a4460; --bc2: #151b2c; --bc3: #05070d; }
+.bt-slot.empty .bt-bigball.b3 .b3-face { background: #0b0f1a; color: #7a8bb0; }
+.bt-slot.hidden .bt-bigball.b3 .b3-face { animation: b3-spin 2.4s linear infinite; }
+.bt-slot.missed .bt-bigball.b3 { --bc1: #8a7440; --bc2: #3a2c10; --bc3: #1a1206; }
+.bt-slot.revealed .bt-bigball.b3 .b3-face { color: #b30022; }
+.bt-board-wrap.leave { animation: btb-out .7s cubic-bezier(.6,0,.9,.4) forwards; }
+@keyframes btb-out { 30% { transform: scale(1.06); filter: brightness(1.4); } 100% { opacity: 0; transform: scale(.2) translateY(-60px) rotate(-8deg); filter: blur(6px); } }
+.bt-wrap.leave { animation: btw-out .6s ease forwards .45s; }
+@keyframes btw-out { to { opacity: 0; max-height: 0; margin: 0; } }
+/* center reveal overlay */
+.br-ov { position: fixed; inset: 0; z-index: 9996; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(40,26,0,.72), rgba(2,4,12,.92) 70%); animation: gs-fade-in .3s ease both; overflow: hidden; }
+.br-ov.out { animation: gs-fade-out .5s ease forwards; }
+.br-ov .gs-rays { opacity: .9; }
+.br-title { position: relative; font-family: var(--font-th); font-weight: 800; font-size: clamp(20px, 3.4vw, 30px); color: #fff; letter-spacing: .1em; text-shadow: 0 0 16px rgba(255,200,0,.7); animation: gs-track-in .7s ease both; }
+.br-ball { position: relative; --s: min(46vw, 230px); animation: br-drop 1s cubic-bezier(.3,1.5,.5,1) both .2s; }
+.br-ball .b3 { position: relative; --s: min(46vw, 230px); cursor: default; animation: br-spin 1.6s ease-in-out both 1s; box-shadow: inset -18px -24px 36px rgba(0,0,0,.45), inset 10px 12px 20px rgba(255,255,255,.25), 0 20px 40px rgba(0,0,0,.6), 0 0 60px var(--glow, rgba(255,200,0,.5)); }
+.br-ball .b3 .b3-face { animation: b3-spin .5s linear infinite; font-size: calc(var(--s) * .34); }
+.br-ball.show .b3 .b3-face { animation: br-face .7s cubic-bezier(.2,1.8,.4,1) forwards; color: #b30022; }
+@keyframes br-drop { from { transform: translateY(-110vh) scale(.6); } to { transform: none; } }
+@keyframes br-spin { 0% { transform: rotate(0); } 70% { transform: rotate(-20deg) scale(1.05); } 100% { transform: none; } }
+@keyframes br-face { 0% { transform: scale(.2); opacity: 0; } 60% { transform: scale(1.25); opacity: 1; } 100% { transform: none; opacity: 1; } }
+.br-flash { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,250,220,.95), transparent 55%); opacity: 0; pointer-events: none; }
+.br-ov.hit .br-flash { animation: gs-flash .7s ease-out forwards; }
+.br-val { position: relative; font-family: var(--font-th); font-weight: 800; font-size: clamp(18px, 3vw, 26px); color: #ffe27a; opacity: 0; text-shadow: 0 2px 0 #6b3c00, 0 0 14px rgba(255,200,0,.6); }
+.br-ov.hit .br-val { animation: gs-track-in .7s ease forwards .2s; }
 </style>
 </head>
 <body>
@@ -14741,6 +14805,147 @@ function playerOnBallDone(d) {
     const a = $('btArea'); if (a) { a.querySelector('.bt-cabs') && (a.querySelector('.bt-cabs').style.display = 'none'); }
     setupBonusPlayerRandCTA();
   }, 1600);
+}
+/* ================= v12 JS: 3D balls ================= */
+function b3HTML(kind, face, extraCls, style) { return `<div class="b3 ${kind} ${extraCls || ''}" style="${style || ''}"><div class="b3-face">${face}</div></div>`; }
+function btBoardHTML(id) {
+  const slot = (kind) => {
+    const val = BT[kind], rev = BT.rev[kind];
+    const missed = kind === 'tens' && !BT.tensOK;
+    const cls = ['bt-slot', kind, val === null ? 'empty' : '', val !== null && !rev && !missed ? 'hidden' : '', rev && !missed ? 'revealed' : '', missed ? 'missed' : ''].join(' ');
+    const inner = missed ? '0' : (rev ? val : '?');
+    return `<div class="${cls}" id="${id}_${kind}"><div class="bt-bigball b3 ${kind}"><div class="b3-face">${inner}</div>${missed ? '<svg class="bt-x" viewBox="0 0 100 100"><path d="M16 16 L84 84"/><path d="M84 16 L16 84"/></svg>' : ''}</div>
+      <div class="bt-label">${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'}</div></div>`;
+  };
+  return `<div class="bt-board-wrap"><div class="bt-board-frame"><div class="bt-board"><div class="bt-slots">${slot('tens')}${slot('units')}</div>
+    <div class="bt-result" id="${id}_res">${BT.done ? btResultText() : 'โบนัสเวลาเพิ่มใน zone x10'}</div></div></div></div>`;
+}
+function btCabinetHTML(kind) {
+  const pool = shuffleArr(btPool(kind));
+  const n = pool.length;
+  const balls = pool.map((v, i) => {
+    const col = i % 6, row = Math.floor(i / 6);
+    const x = 10 + col * 32 + (row % 2) * 14, y = 34 + row * 34 + ((i * 7) % 9);
+    return `<div class="b3" data-v="${v}" onclick="btChooseBall(this,'${kind}')" style="left:${x}px;top:${y}px;--t:${(1.2 + (i % 5) * .3).toFixed(1)}s;--dl:-${(i * .31).toFixed(2)}s;--mx:${(i % 2 ? 5 : -5)}px;--my:${(i % 3 ? -7 : 6)}px;--sp:${(1.8 + (i % 4) * .4).toFixed(1)}s"><div class="b3-face">?</div></div>`;
+  }).join('');
+  return `<div class="bt-cab ${kind}" id="btCab_${kind}">
+    <div class="bt-cab-name">${kind === 'tens' ? 'TENS' : 'UNITS'}<small>${kind === 'tens' ? 'ตู้หลักสิบ (0–3)' : 'ตู้หลักหน่วย (0–5)'}</small></div>
+    <div class="bt-dome">${balls}</div>
+    <div class="bt-hint">👆 แตะเลือกลูกบอล 1 ลูก</div>
+    <div class="bt-tray" id="btTray_${kind}"></div>
+    <button class="btn-random-big" onclick="btPick('${kind}')">🎲 สุ่มหยิบให้</button>
+    <div class="bt-done-txt">✓ หยิบแล้ว</div></div>`;
+}
+function btStepsHTML() {
+  const t = !BT.tensOK ? 'x' : (BT.tens !== null ? 'ok' : 'on');
+  const u = BT.units !== null ? 'ok' : ((BT.tens !== null || !BT.tensOK) ? 'on' : '');
+  return `<div class="bt-steps"><span class="${t}">① ตู้หลักสิบ</span>›<span class="${u}">② ตู้หลักหน่วย</span></div>`;
+}
+function setupBallDraw() {
+  btReset();
+  applyBonusExtraToBar(0);
+  const randArea = $('bonusRandArea'); if (!randArea) return;
+  let area = $('btArea');
+  if (!area) { area = document.createElement('div'); area.id = 'btArea'; randArea.parentNode.insertBefore(area, randArea); }
+  area.style.display = 'flex'; area.className = 'bt-wrap';
+  area.innerHTML = `<div class="bt-title">🎱 หยิบลูกบอลเพิ่มเวลา x10<small>${BT.tensOK ? 'เลือกทีละตู้: หลักสิบก่อน แล้วต่อด้วยหลักหน่วย' : 'มี MISS TRACK 1 ครั้ง — ตู้หลักสิบถูกตัดสิทธิ์ เลือกได้เฉพาะหลักหน่วย'}</small></div>
+    <div id="btStepsHost">${btStepsHTML()}</div>
+    <div class="bt-cabs" id="btStage"></div>
+    <div class="bt-board-host" data-id="btBoardP">${btBoardHTML('btBoardP')}</div>`;
+  const cta = $('bonusRandCta'); if (cta) cta.style.display = 'none';
+  const wait = $('bonusWaitMCRand'); if (wait) wait.style.display = 'none';
+  btShowStage();
+}
+function btShowStage() {
+  const stage = $('btStage'); if (!stage) return;
+  const hs = $('btStepsHost'); if (hs) hs.innerHTML = btStepsHTML();
+  const next = (BT.tensOK && BT.tens === null) ? 'tens' : (BT.units === null ? 'units' : null);
+  const old = stage.querySelector('.bt-cab');
+  const put = () => { stage.innerHTML = next ? btCabinetHTML(next) : '<div class="bt-waitmc">⏳ หยิบครบแล้ว — รอพิธีกรเปิดลูกบอล...</div>'; };
+  if (old && old.id !== 'btCab_' + next) { old.classList.add('leave'); setTimeout(put, 420); } else if (!old || !next) put();
+}
+function btChooseBall(el, kind) {
+  const cab = $('btCab_' + kind);
+  if (!cab || cab.classList.contains('picking') || cab.classList.contains('done') || BT[kind] !== null) return;
+  cab.classList.add('picking'); el.classList.add('chosen');
+  const value = +el.dataset.v;
+  const r = el.getBoundingClientRect(), tray = $('btTray_' + kind), tr = tray.getBoundingClientRect();
+  const fly = el.cloneNode(true); fly.classList.add('fly'); fly.removeAttribute('onclick');
+  fly.querySelector('.b3-face').textContent = '?';
+  fly.style.cssText += `;left:${r.left}px;top:${r.top}px;--s:${r.width}px;`;
+  document.body.appendChild(fly); el.style.visibility = 'hidden';
+  try { FX.sparkle(0); } catch (e) {}
+  requestAnimationFrame(() => requestAnimationFrame(() => { fly.style.left = (tr.left + tr.width / 2 - 27) + 'px'; fly.style.top = (tr.top + tr.height / 2 - 27) + 'px'; fly.style.setProperty('--s', '54px'); }));
+  setTimeout(() => { fly.remove(); btCommitPick(kind, value, true); }, 750);
+}
+function btPick(kind) {
+  const cab = $('btCab_' + kind); if (!cab || BT[kind] !== null || cab.classList.contains('mixing')) return;
+  cab.classList.add('mixing');
+  try { FX.drumroll(1.2); } catch (e) {}
+  setTimeout(() => {
+    cab.classList.remove('mixing');
+    const balls = [...cab.querySelectorAll('.bt-dome .b3')];
+    btChooseBall(balls[Math.floor(Math.random() * balls.length)], kind);
+  }, 1250);
+}
+function btCommitPick(kind, value, mine) {
+  if (BT[kind] !== null) return;
+  BT[kind] = value;
+  const cab = $('btCab_' + kind);
+  if (cab) { cab.classList.remove('picking'); cab.classList.add('done'); const tray = $('btTray_' + kind); if (tray) tray.innerHTML = b3HTML(kind, '?'); }
+  try { playSnd(SND_DING, .6); } catch (e) {}
+  if (mine) broadcastEvent('ball_pick', { kind, value, by: G.myPlayerIndex });
+  btRefreshBoards();
+  setTimeout(btShowStage, 900);
+}
+function btPlayerOnPick(d) { btCommitPick(d.kind, d.value, false); }
+function btShowPicked() {}
+
+/* center reveal */
+function showBallRevealOverlay(kind, value, done) {
+  const old = document.querySelector('.br-ov'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.className = 'br-ov';
+  const glow = kind === 'tens' ? 'rgba(255,200,0,.6)' : 'rgba(0,180,255,.6)';
+  ov.innerHTML = `<div class="gs-rays"></div><div class="br-flash"></div>
+    <div class="br-title">🎱 เปิดลูกบอล${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'}</div>
+    <div class="br-ball">${b3HTML(kind, '?', '', '--glow:' + glow)}</div>
+    <div class="br-val">${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'} ได้เลข <b style="font-family:Bungee,sans-serif;font-weight:400;font-size:1.3em;color:#fff">${value}</b></div>`;
+  document.body.appendChild(ov);
+  try { FX.drumroll(1.9); } catch (e) {}
+  setTimeout(() => {
+    const ball = ov.querySelector('.br-ball'); ball.classList.add('show'); ball.querySelector('.b3-face').textContent = value;
+    ov.classList.add('hit'); gsBurst(ov, 50);
+    try { FX.crash(); FX.sparkle(0.1); playSnd(SND_DING, .8); } catch (e) {}
+  }, 2600);
+  setTimeout(() => { ov.classList.add('out'); }, 4600);
+  setTimeout(() => { ov.remove(); if (done) done(); }, 5100);
+}
+function btAnimateReveal(kind, value) {
+  BT[kind] = value;
+  showBallRevealOverlay(kind, value, () => {
+    BT.rev[kind] = true;
+    btRefreshBoards();
+    document.querySelectorAll(`[id$="_${kind}"].bt-slot`).forEach(s => { s.classList.add('revealing'); setTimeout(() => s.classList.remove('revealing'), 900); });
+  });
+}
+function mcRevealBall(kind) {
+  if (BT[kind] === null || BT.rev[kind] || BT._revealing) return;
+  BT._revealing = true;
+  broadcastEvent('ball_reveal', { kind, value: BT[kind] });
+  btAnimateReveal(kind, BT[kind]);
+  document.querySelectorAll('#mcBallBox .btn-mc').forEach(b => b.disabled = true);
+  setTimeout(() => { BT._revealing = false; renderMCBallBox(); mcCheckBallsDone(); }, 5400);
+}
+function btBoardLeave(cb) {
+  document.querySelectorAll('#btArea .bt-board-wrap').forEach(w => w.classList.add('leave'));
+  const a = $('btArea'); if (a) a.classList.add('leave');
+  setTimeout(() => { if (a) a.style.display = 'none'; if (cb) cb(); }, 1100);
+}
+function playerOnBallDone(d) {
+  BT.tens = d.tens; BT.units = d.units; BT.rev = { tens: true, units: true };
+  G.bonusExtra = d.extra || 0;
+  const finish = () => { btFinish(G.bonusExtra); G.bonusTimer = 120 + G.bonusExtra; setTimeout(() => btBoardLeave(setupBonusPlayerRandCTA), 2200); };
+  if (document.querySelector('.br-ov')) setTimeout(finish, 5300); else finish();
 }
 </script>
 <!-- Leaderboard floating button -->
