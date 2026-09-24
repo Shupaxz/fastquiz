@@ -6008,6 +6008,46 @@ body::after {
 
 #g2BarHost { width: 100%; display: flex; justify-content: center; }
 .g2-prob.small .g2-img { width: min(100%, 520px); transition: width .6s ease; }
+/* ================= v15: price bar fix + sweep + 3D timer ================= */
+.pb { padding: 78px 16px 96px !important; }
+.pb-labels { left: 16px !important; right: 16px !important; height: 72px !important; }
+.pb-lab { bottom: 6px !important; padding: 4px 10px 5px; border-radius: 10px; background: rgba(5,10,28,.88); box-shadow: 0 0 0 1px rgba(255,200,0,.35), 0 6px 14px rgba(0,0,0,.5); }
+.pb-lab.lo { transform: translateX(calc(-100% + 2px)) !important; text-align: right; border-bottom-right-radius: 0; }
+.pb-lab.hi { transform: translateX(-2px) !important; text-align: left; border-bottom-left-radius: 0; }
+.pb-lab small { font-size: 11px !important; line-height: 1.3; }
+.pb-lab b { font-size: clamp(17px, 2.3vw, 24px) !important; -webkit-text-stroke: 0 !important; color: #ffd84a !important; text-shadow: 0 2px 0 #7a4200, 0 0 10px rgba(255,180,0,.45) !important; }
+.pb-lab::after { content: ''; position: absolute; bottom: -12px; width: 3px; height: 12px; background: rgba(255,200,0,.6); }
+.pb-lab.lo::after { right: 0; } .pb-lab.hi::after { left: 0; }
+.pb-guess { left: calc(16px + (100% - 32px) * var(--x) / 100) !important; top: 124px !important; transition: opacity .3s, transform .6s cubic-bezier(.3,1.8,.5,1) !important; will-change: left; }
+.pb-glab { margin-top: 6px !important; padding: 4px 10px; border-radius: 10px; background: rgba(40,0,8,.85); box-shadow: 0 0 0 1px rgba(255,60,90,.5); }
+.pb-guess.sweeping .pb-tri { animation: none; filter: drop-shadow(0 0 14px #ff1744) drop-shadow(0 3px 0 #5a0010) brightness(1.3); }
+.pb-guess.landed { animation: pb-land .6s cubic-bezier(.2,1.8,.4,1); }
+@keyframes pb-land { 0% { transform: translateX(-50%) scale(1.6); } 100% { transform: translateX(-50%) scale(1); } }
+.pb-guess.landed .pb-glab { animation: mb-tag-pop .6s cubic-bezier(.2,1.8,.4,1); }
+.pb-guess.in .pb-glab { background: rgba(0,40,0,.85); box-shadow: 0 0 0 1px rgba(57,255,20,.6), 0 0 16px rgba(57,255,20,.4); color: #9dff7e; }
+.pb-trail { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: #fff; box-shadow: 0 0 12px #fff, 0 0 24px #ff1744; opacity: 0; border-radius: 2px; pointer-events: none; z-index: 4; }
+.pb.sweep .pb-trail { opacity: .9; }
+/* 3D timer */
+.g2-timer { width: 150px !important; height: 150px !important; }
+.g2-timer::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #1a2a5a, #050a1c 70%); box-shadow: inset 0 -8px 16px rgba(0,0,0,.7), inset 0 6px 12px rgba(120,200,255,.15); }
+.g2-timer::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px dashed rgba(0,229,255,.35); animation: gs-rays 12s linear infinite; }
+.g2-timer svg { position: relative; z-index: 1; }
+.g2-timer .t-bg { fill: none !important; stroke: rgba(120,160,230,.18) !important; stroke-width: 7 !important; }
+.g2-timer .t-fg { stroke-width: 7 !important; }
+.g2-timer b { z-index: 2; font-size: 50px !important; color: #06304a !important; letter-spacing: .02em;
+  text-shadow: .02em .02em 0 #00a8d8, .04em .04em 0 #0088b8, .06em .06em 0 #006890, .08em .08em 0 #004c6a, .1em .13em .2em rgba(0,0,0,.8); }
+.g2-timer b::after { content: attr(data-t); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: transparent; text-shadow: none;
+  background: linear-gradient(180deg, #ffffff 10%, #bff6ff 40%, #00d4ff 70%, #0090d0); -webkit-background-clip: text; background-clip: text; }
+.g2-timer b.tick { animation: t-tick .45s cubic-bezier(.2,1.8,.4,1); }
+@keyframes t-tick { 0% { transform: scale(1.35) rotateX(60deg); filter: brightness(1.8); } 100% { transform: none; filter: none; } }
+.g2-timer.urgent b { color: #4a0010 !important; animation: none !important;
+  text-shadow: .02em .02em 0 #d0002a, .04em .04em 0 #a8001f, .06em .06em 0 #800018, .08em .08em 0 #5a0010, .1em .13em .2em rgba(0,0,0,.8) !important; }
+.g2-timer.urgent b::after { background: linear-gradient(180deg, #fff 10%, #ffc0cb 40%, #ff3355 75%, #c4002a); -webkit-background-clip: text; background-clip: text; }
+.g2-timer.urgent { animation: t-urgent .5s ease-in-out infinite; } .g2-timer.urgent::after { border-color: rgba(255,40,80,.6); animation-duration: 3s; }
+@keyframes t-urgent { 50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(255,23,68,.8)); } }
+.g2-timer.stopped { opacity: .4; filter: grayscale(.6); }
+
+.wh-pointer.flick { animation: wh-flick .12s ease; } @keyframes wh-flick { 50% { transform: rotate(-14deg); } }
 </style>
 </head>
 <body>
@@ -15488,7 +15528,7 @@ routeEvent = function (type, data) {
 };
 function xgOnMC(type, d) {
   if (type === 'stage_chosen') mcOnStageChosen(d.g);
-  else if (type === 'g2_wheel_stop') g2WheelStop(d.final, false);
+  else if (type === 'g2_wheel_stop') g2WheelStop(d.final, true, d.tol);
   else if (type === 'g2_pick') g2McPick(d.idx);
   else if (type === 'g2_typing') { const t = $('g2Live'); if (t) t.textContent = d.text ? '฿' + d.text : '—'; }
   else if (type === 'g2_submit') g2McSubmit(d.guess);
@@ -15496,7 +15536,7 @@ function xgOnMC(type, d) {
   else if (type === 'g3_guess') g3McGuess(d.n, d.word);
 }
 function xgOnPartner(type, d) {
-  if (type === 'g2_wheel_stop') g2WheelStop(d.final, false);
+  if (type === 'g2_wheel_stop') g2WheelStop(d.final, true, d.tol);
   else if (type === 'g3_guess') g3AddRow(d.n, d.word, null);
 }
 function xgOnPlayer(type, d) {
@@ -15574,7 +15614,7 @@ function xgHeader(title) {
 /* ================= GAME 2: มโนราห์(คา) ================= */
 const G2 = {};
 const WHEEL_SEG = [10, 15, 20, 25, 30, 35, 40];
-function g2Reset() { clearInterval(G2.tIv); cancelAnimationFrame(G2.raf); Object.assign(G2, { tol: null, idx: null, guess: null, submitted: false, geo: null, rot: 0, spinning: false, stopped: false, prob: null, done: false }); }
+function g2Reset() { G2.gen = (G2.gen || 0) + 1; clearInterval(G2.tIv); cancelAnimationFrame(G2.raf); Object.assign(G2, { tol: null, idx: null, guess: null, submitted: false, geo: null, rot: 0, spinning: false, stopped: false, prob: null, done: false, barStage: 0, swept: false }); }
 function g2StartMC() { g2Reset(); xgEnsureData(); broadcastEvent('g2_start', { total: G.totalMoney }); g2Show(true); }
 function g2Show(isMC) {
   g2Reset();
@@ -15668,7 +15708,7 @@ function g2ShowProblem(d) {
   const st = $('g2Stage'); if (!st) return;
   st.innerHTML = `<div class="g2-phase-title">③ ทายราคารวม <span class="g2-tolchip">±${G2.tol}%</span> <span class="g2-tolchip">ข้อ ${d.idx + 1}</span></div>
     <div class="g2-prob"><div class="g2-ptitle">${xgEsc(d.title)}</div><div class="g2-img loading" id="g2Img"><img alt=""></div></div>
-    <div class="g2-timer" id="g2Timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="t-bg"/><circle cx="50" cy="50" r="44" class="t-fg" id="g2TArc"/></svg><b id="g2TNum">120</b></div>
+    <div class="g2-timer" id="g2Timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="t-bg"/><circle cx="50" cy="50" r="44" class="t-fg" id="g2TArc"/></svg><b id="g2TNum" data-t="120">120</b></div>
     <div id="g2AnsArea">${G.isMC ? '<div class="wh-res">ผู้เล่นกำลังพิมพ์: <b id="g2Live">—</b></div>' : `
       <div class="g2-ans"><span class="g2-baht">฿</span><input id="g2Input" class="answer-input-cyber" inputmode="numeric" placeholder="พิมพ์ราคารวม" autocomplete="off" oninput="g2Typing(this)" onkeydown="if(event.key==='Enter')g2Submit()">
       <button class="btn-submit-cyber" onclick="g2Submit()">ส่ง</button></div>`}</div>
@@ -15678,8 +15718,8 @@ function g2ShowProblem(d) {
   if (arc) { arc.style.strokeDasharray = len; arc.style.strokeDashoffset = 0; }
   clearInterval(G2.tIv);
   G2.tIv = setInterval(() => {
-    if (G2.submitted || (G.isMC && G2.geo)) { clearInterval(G2.tIv); const tm = $('g2Timer'); if (tm) tm.style.opacity = '.35'; return; }
-    t--; const n = $('g2TNum'); if (n) n.textContent = Math.max(0, t);
+    if (G2.submitted || (G.isMC && G2.geo)) { clearInterval(G2.tIv); const tm = $('g2Timer'); if (tm) tm.classList.add('stopped'); return; }
+    t--; const n = $('g2TNum'); if (n) { const v = Math.max(0, t); n.textContent = v; n.dataset.t = v; n.classList.remove('tick'); void n.offsetWidth; n.classList.add('tick'); if (t <= 10 && t > 0) { try { const C = new (window.AudioContext || window.webkitAudioContext)(); const o = C.createOscillator(), g = C.createGain(); o.frequency.value = 1100; g.gain.setValueAtTime(.1, C.currentTime); g.gain.exponentialRampToValueAtTime(.001, C.currentTime + .12); o.connect(g); g.connect(C.destination); o.start(); o.stop(C.currentTime + .13); setTimeout(() => C.close(), 400); } catch (e) {} } }
     if (arc) arc.style.strokeDashoffset = len * (1 - t / 120);
     const tm = $('g2Timer'); if (tm && t <= 20) tm.classList.add('urgent');
     if (t <= 0) { clearInterval(G2.tIv); if (!G.isMC) g2Submit(true); }
@@ -15695,7 +15735,7 @@ function g2Submit(timeout) {
   if (G2.submitted) return;
   const el = $('g2Input'); const guess = +(el ? el.value : '').replace(/[^0-9]/g, '') || 0;
   if (!timeout && !guess) { showNotif('⚠️ พิมพ์ราคาก่อนนะ'); return; }
-  G2.submitted = true; clearInterval(G2.tIv);
+  G2.submitted = true; clearInterval(G2.tIv); { const tm = $('g2Timer'); if (tm) tm.classList.add('stopped'); }
   broadcastEvent('g2_submit', { guess, by: G.myPlayerIndex });
   const a = $('g2AnsArea'); if (a) a.innerHTML = `<div class="g2-sent">${timeout ? '⏰ หมดเวลา! ส่งคำตอบอัตโนมัติ' : '📩 ส่งคำตอบแล้ว'} — ราคาทาย <b>฿${xgFmt(guess)}</b><br><small>รอพิธีกรเปิดผล…</small></div>`;
 }
@@ -15725,7 +15765,7 @@ function g2Ctrl() {
     <div class="mc-ball-btns" style="flex-direction:column">
       <button class="btn-mc bm-cyan" ${gs && step < 1 ? '' : 'disabled'} onclick="g2McBar(1)">① เปิดช่วงราคา (Range)</button>
       <button class="btn-mc bm-gold" ${gs && step === 1 ? '' : 'disabled'} onclick="g2McBar(2)">② เปิดราคาทาย + ช่วงคลาดเคลื่อน</button>
-      <button class="btn-mc bm-green" ${gs && step === 2 ? '' : 'disabled'} onclick="g2McVerdict()">③ เฉลย!</button>
+      <button class="btn-mc bm-green" ${gs && step === 2 && G2.swept ? '' : 'disabled'} onclick="g2McVerdict()">③ เฉลย!</button>
     </div>
     ${!G2.prob && G2.tol ? '<div class="mc-ball-status">รอผู้เล่นเลือกโจทย์…</div>' : ''}
     ${G2.prob && !gs ? '<div class="mc-ball-status">รอผู้เล่นตอบ (หมดเวลาจะส่งอัตโนมัติ)</div>' : ''}
@@ -15745,7 +15785,7 @@ function g2Bar(stage, geo) {
         <div class="pb-lab hi" style="left:${geo.pHi}%"><small>ราคาจริง</small><b data-v="${geo.hi}">???</b></div></div>
       <div class="pb-track"><div class="pb-under"></div><div class="pb-zone" style="left:${geo.pLo}%;width:${geo.pHi - geo.pLo}%"><i></i></div><div class="pb-over" style="left:${geo.pHi}%"><span>OVER</span></div>
         <div class="pb-tick" style="left:${geo.pLo}%"></div><div class="pb-tick" style="left:${geo.pHi}%"></div></div>
-      <div class="pb-guess" style="--x:${geo.pG}"><div class="pb-tri"></div><div class="pb-glab">ราคาทาย<br><b>฿${xgFmt(geo.guess)}</b></div></div>
+      <div class="pb-guess" style="--x:50"><div class="pb-tri"></div><div class="pb-glab">ราคาทาย<br><b>฿${xgFmt(geo.guess)}</b></div></div>
       <div class="pb-stamp" id="pbStamp"></div></div>`;
   }
   const pb = host.querySelector('.pb');
@@ -15753,8 +15793,9 @@ function g2Bar(stage, geo) {
   const gp = document.querySelector('.g2-prob'); if (gp) gp.classList.add('small');
   setTimeout(() => pb.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   if (stage >= 2) {
+    setTimeout(() => g2SweepGuess(geo), 1300);
     pb.querySelectorAll('.pb-lab b').forEach(b => { const v = +b.dataset.v, t0 = performance.now(); (function cnt(now) { const p = Math.min(1, (now - t0) / 1200); b.textContent = '฿' + xgFmt(v * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(cnt); })(t0); });
-    try { FX.drumroll(1.2); } catch (e) {}
+    try { FX.drumroll(6); } catch (e) {}
   } else { try { FX.sparkle(0); } catch (e) {} }
 }
 function g2McVerdict() {
@@ -15927,6 +15968,67 @@ const _xgReset = resetSetup;
 resetSetup = function () { G.priceGames = []; G.secretWords = []; _xgReset(); };
 const _xgSnap = qlibSnapshot;
 qlibSnapshot = function () { const s = _xgSnap(); s.priceGames = JSON.parse(JSON.stringify(G.priceGames || [])); s.secretWords = JSON.parse(JSON.stringify(G.secretWords || [])); return s; };
+/* ================= v15 JS ================= */
+function g2TolFromRot(rot) { const seg = 360 / WHEEL_SEG.length, th = ((360 - (rot % 360)) % 360 + 360) % 360; return WHEEL_SEG[Math.floor(th / seg) % WHEEL_SEG.length]; }
+function g2WheelStop(final, exact, tolFromPeer) {
+  if (G2.stopped) return; G2.stopped = true; G2.spinning = false; cancelAnimationFrame(G2.raf);
+  const g = $('whRot'); if (!g) return;
+  const gen0 = G2.gen;
+  const sb = $('whStop'); if (sb) sb.style.display = 'none';
+  const from = G2.rot;
+  // land on EXACTLY the same absolute angle on every screen (mod 360)
+  const target = ((final % 360) + 360) % 360;
+  let to = from - (((from % 360) + 360) % 360) + target; while (to < from + 1080) to += 360;
+  const t0 = performance.now(), dur = 3600;
+  try { FX.drumroll(3.3); } catch (e) {}
+  let lastSeg = -1;
+  (function anim(now) {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+    G2.rot = from + (to - from) * e; g.setAttribute('transform', `rotate(${G2.rot % 360} 160 160)`);
+    const sg = Math.floor(G2.rot / (360 / WHEEL_SEG.length)); if (sg !== lastSeg) { lastSeg = sg; const pt = document.querySelector('.wh-pointer'); if (pt) { pt.classList.remove('flick'); void pt.offsetWidth; pt.classList.add('flick'); } }
+    if (G2.gen !== gen0) return;
+    if (p < 1) requestAnimationFrame(anim);
+    else {
+      G2.tol = tolFromPeer || g2TolFromRot(to);
+      const r = $('whRes'); if (r) { r.innerHTML = `ช่วงคลาดเคลื่อน <b>${G2.tol}%</b> <small>(ทายต่ำกว่าราคาจริงได้ไม่เกิน ${G2.tol}% • ทายเกิน = OVER)</small>`; r.classList.add('pop'); }
+      const wb = document.querySelector('.wh-box'); if (wb) wb.classList.add('won');
+      try { FX.crash(); FX.sparkle(.1); } catch (e) {}
+      if (G.isMC) g2Ctrl();
+      const gen = G2.gen; setTimeout(() => { if (G2.gen === gen) g2RenderPick(); }, 2400);
+    }
+  })(t0);
+}
+function g2PlayerStop() {
+  if (G2.stopped) return;
+  const final = ((G2.rot + 90 + Math.random() * 360) % 360 + 360) % 360;
+  const tol = g2TolFromRot(final);
+  broadcastEvent('g2_wheel_stop', { final, tol, by: G.myPlayerIndex });
+  g2WheelStop(final, true, tol);
+}
+/* guess arrow: sweep left-right ~5s then land */
+function g2SweepGuess(geo) {
+  const pb = document.querySelector('#g2BarHost .pb'); if (!pb) return;
+  const gEl = pb.querySelector('.pb-guess'); const lab = pb.querySelector('.pb-glab');
+  if (!gEl || gEl.dataset.swept) return; gEl.dataset.swept = '1';
+  lab.innerHTML = 'ราคาทาย<br><b>฿ ???</b>';
+  gEl.classList.add('sweeping'); pb.classList.add('sweep');
+  const T = 5000, L = 1300, t0 = performance.now(); let lastSide = 0;
+  (function loop(now) {
+    const t = now - t0; let x;
+    if (t < T) { const k = t / T; x = 50 + 44 * Math.sin(k * Math.PI * 2 * 3.2) * (1 - k * .35); }
+    else { const s = Math.min(1, (t - T) / L), e = 1 - Math.pow(1 - s, 3); const xEnd = 50 + 44 * Math.sin(Math.PI * 2 * 3.2) * .65; x = xEnd + (geo.pG - xEnd) * e; }
+    gEl.style.setProperty('--x', x);
+    const side = x > 50 ? 1 : -1; if (side !== lastSide && t < T) { lastSide = side; try { FX.sparkle(0); } catch (e) {} }
+    if (t < T + L) requestAnimationFrame(loop);
+    else {
+      gEl.classList.remove('sweeping'); pb.classList.remove('sweep'); gEl.classList.add('landed');
+      const inZone = geo.guess >= geo.lo && geo.guess <= geo.hi; if (inZone) gEl.classList.add('in');
+      const t1 = performance.now(); (function cnt(now) { const p = Math.min(1, (now - t1) / 900); lab.innerHTML = `ราคาทาย<br><b>฿${xgFmt(geo.guess * (1 - Math.pow(1 - p, 3)))}</b>`; if (p < 1) requestAnimationFrame(cnt); })(t1);
+      try { FX.crash(); } catch (e) {}
+      G2.swept = true; if (G.isMC) g2Ctrl();
+    }
+  })(t0);
+}
 </script>
 <!-- Leaderboard floating button -->
 <div class="lb-fab" onclick="openLeaderboard()" title="กระดานผู้นำ">
