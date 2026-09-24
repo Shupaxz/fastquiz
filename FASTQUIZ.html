@@ -5759,6 +5759,255 @@ body::after {
 .br-ov.hit .br-flash { animation: gs-flash .7s ease-out forwards; }
 .br-val { position: relative; font-family: var(--font-th); font-weight: 800; font-size: clamp(18px, 3vw, 26px); color: #ffe27a; opacity: 0; text-shadow: 0 2px 0 #6b3c00, 0 0 14px rgba(255,200,0,.6); }
 .br-ov.hit .br-val { animation: gs-track-in .7s ease forwards .2s; }
+/* ================= v13: air-blower + hand reveal ================= */
+.bt-cab.mixing .bt-dome .b3, .bt-cab .bt-dome .b3, .bt-dome .b3 { animation: none !important; left: 0 !important; top: 0 !important; will-change: transform; transition: none !important; }
+.bt-dome .b3:hover { filter: brightness(1.3) drop-shadow(0 0 8px #fff); }
+.bt-dome .b3.sucked { transition: transform .45s cubic-bezier(.5,0,.8,.4), opacity .3s .3s !important; opacity: 0; }
+.bt-dome { overflow: visible !important; }
+.bt-dome-clip { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; }
+.bt-chute { position: absolute; left: 50%; top: -34px; width: 34px; height: 40px; margin-left: -17px; border-radius: 8px 8px 0 0; z-index: 3;
+  background: linear-gradient(90deg, rgba(180,230,255,.18), rgba(255,255,255,.35), rgba(180,230,255,.12)); box-shadow: inset 0 0 0 2px rgba(190,230,255,.4); }
+.bt-chute::after { content: ''; position: absolute; left: -8px; right: -8px; top: -6px; height: 8px; border-radius: 4px; background: linear-gradient(180deg, #c9d6ee, #5a6a8a); }
+.bt-fan { position: absolute; left: 50%; bottom: 4px; width: 46px; height: 12px; margin-left: -23px; border-radius: 6px; z-index: 2;
+  background: repeating-linear-gradient(90deg, #7a8bb0 0 3px, #2a3450 3px 7px); animation: bt-fan .12s linear infinite; opacity: .8; }
+@keyframes bt-fan { to { background-position: 7px 0; } }
+.bt-air { position: absolute; left: 30%; right: 30%; bottom: 0; height: 70%; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(170,230,255,.25), transparent 70%); animation: bt-airp .6s ease-in-out infinite alternate; }
+@keyframes bt-airp { to { opacity: .4; transform: scaleX(1.3); } }
+.bt-cab.mixing .bt-air { animation-duration: .2s; }
+.bt-suck { position: absolute; left: 50%; top: -80px; z-index: 6; margin-left: -20px; }
+.bt-tray .b3 { animation: bt-drop-tube .7s cubic-bezier(.3,1.6,.5,1) both !important; }
+@keyframes bt-drop-tube { 0% { transform: translateY(-60px) scale(.5); opacity: 0; } 40% { opacity: 1; } 100% { transform: none; } }
+
+/* hand reveal */
+.hr-stage { position: relative; width: min(80vw, 320px); height: min(90vw, 368px); animation: hr-rise 1.1s cubic-bezier(.2,1.2,.4,1) both .15s; }
+@keyframes hr-rise { from { transform: translateY(80vh) rotate(8deg); } to { transform: none; } }
+.hr-ball { position: absolute; left: 50%; top: 0; width: min(62vw, 240px); height: min(62vw, 240px); margin-left: calc(min(62vw, 240px) / -2); border-radius: 50%; overflow: hidden; perspective: 600px;
+  background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.75) 0 5%, rgba(255,255,255,0) 20%), radial-gradient(circle at 50% 55%, var(--hb1) 0%, var(--hb2) 65%, var(--hb3) 100%);
+  box-shadow: inset -18px -26px 40px rgba(0,0,0,.5), inset 12px 14px 24px rgba(255,255,255,.2), 0 0 70px var(--hglow); animation: hr-wobble 2.2s ease-in-out infinite 1.3s; }
+.hr-ball.tens { --hb1: #a06bff; --hb2: #5a1fd1; --hb3: #26085e; --hglow: rgba(160,100,255,.55); }
+.hr-ball.units { --hb1: #5fd0ff; --hb2: #1566d6; --hb3: #062a66; --hglow: rgba(0,170,255,.55); }
+@keyframes hr-wobble { 50% { transform: rotate(-4deg); } }
+.hr-label { position: absolute; left: 50%; top: 48%; width: 56%; height: 56%; margin: -28% 0 0 -28%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 40% 35%, #fff59a, #ffd400 55%, #d9a400); box-shadow: inset 0 -6px 10px rgba(120,80,0,.35), 0 3px 8px rgba(0,0,0,.35);
+  transform: translateX(-160%) rotateY(-80deg) scale(.6); opacity: 0; }
+.hr-label b { font: 400 clamp(60px, 18vw, 96px)/1 'Bungee', 'Arial Black', sans-serif; color: #111;
+  text-shadow: 2px 2px 0 #5a4a00, 4px 4px 0 rgba(0,0,0,.25); transform: rotate(-8deg); }
+.hr-stage.turn .hr-label { animation: hr-turn 1.1s cubic-bezier(.3,1.3,.5,1) forwards; }
+@keyframes hr-turn { 0% { transform: translateX(-160%) rotateY(-80deg) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.hr-stage.turn .hr-ball { animation: hr-twist 1.1s ease-out forwards; }
+@keyframes hr-twist { 0% { transform: rotate(0); } 40% { transform: rotate(14deg); } 100% { transform: rotate(0); } }
+.hr-hand { position: absolute; left: 50%; bottom: 0; width: min(76vw, 300px); margin-left: calc(min(76vw, 300px) / -2); height: auto; z-index: 2; filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)); }
+.br-ov .br-val { margin-top: -6px; }
+/* ================= v14 ================= */
+/* --- lottery cabinet redesign --- */
+.bt-cab { width: 290px !important; padding: 0 0 14px !important; border-radius: 30px 30px 20px 20px !important; overflow: visible;
+  background: linear-gradient(90deg, #1a2140 0%, #3a4670 10%, #1b2345 22%, #0f1530 50%, #1b2345 78%, #3a4670 90%, #1a2140 100%) !important;
+  box-shadow: 0 10px 0 #03060f, 0 22px 40px rgba(0,0,0,.6), inset 0 2px 0 rgba(220,235,255,.35), inset 0 -3px 0 rgba(0,0,0,.6), 0 0 0 2px var(--cabc, #00e5ff), 0 0 30px color-mix(in srgb, var(--cabc, #00e5ff) 45%, transparent) !important; }
+.bt-cab.tens { --cabc: #ffc21a; } .bt-cab.units { --cabc: #00c8ff; }
+.bt-sign { position: relative; margin: -16px auto 10px; width: 78%; padding: 8px 10px 9px; border-radius: 14px; text-align: center; z-index: 4;
+  background: linear-gradient(180deg, #0b0f1e, #02040a); box-shadow: 0 0 0 3px #c9d6ee, 0 0 0 5px #3a4670, 0 6px 14px rgba(0,0,0,.6), 0 0 22px var(--cabc); }
+.bt-sign b { display: block; font: 400 22px/1 'Bungee', 'Orbitron', sans-serif; letter-spacing: .12em; color: var(--cabc); text-shadow: 0 0 8px var(--cabc), 0 0 18px var(--cabc); animation: bt-neon 2.4s ease-in-out infinite; }
+.bt-sign small { display: block; margin-top: 4px; font-family: var(--font-th); font-size: 12px; font-weight: 700; color: #cfe0ff; }
+@keyframes bt-neon { 0%,100% { opacity: 1; } 46% { opacity: 1; } 48% { opacity: .45; } 50% { opacity: 1; } 52% { opacity: .6; } 54% { opacity: 1; } }
+.bt-sign::before, .bt-sign::after { content: ''; position: absolute; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--cabc); box-shadow: 0 0 8px var(--cabc); animation: mbar-led-blink .8s steps(1) infinite; }
+.bt-sign::before { left: 8px; } .bt-sign::after { right: 8px; animation-delay: .4s; }
+.bt-cab .bt-cab-name { display: none !important; }
+.bt-cab .bt-dome { margin: 0 auto; border-radius: 110px 110px 26px 26px !important;
+  background: radial-gradient(90% 70% at 50% 20%, rgba(200,235,255,.18), rgba(8,18,44,.55) 60%), radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--cabc) 25%, transparent), transparent 60%), #040a1e !important;
+  box-shadow: inset 0 0 0 4px rgba(210,230,255,.55), inset 0 0 0 7px rgba(40,55,95,.9), inset 0 -18px 30px rgba(0,0,0,.65), inset 0 10px 24px rgba(255,255,255,.1), 0 0 0 3px #7c8bb0, 0 8px 18px rgba(0,0,0,.5) !important; }
+.bt-cab .bt-dome::after { z-index: 4; left: 12% !important; top: 7% !important; width: 18% !important; height: 60% !important; background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0)) !important; }
+.bt-cab .bt-dome::before { content: ''; position: absolute; right: 14%; top: 10%; width: 7%; height: 30%; border-radius: 50%; background: rgba(255,255,255,.18); transform: rotate(-18deg); z-index: 4; pointer-events: none; }
+.bt-cab .bt-chute { background: linear-gradient(90deg, #7c8bb0, #eef3ff 45%, #7c8bb0) !important; box-shadow: 0 0 10px rgba(255,255,255,.25); width: 38px !important; margin-left: -19px !important; }
+.bt-base { position: relative; margin: 10px 14px 0; padding: 10px 10px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, #151c36, #080c1c); box-shadow: inset 0 0 0 2px rgba(150,180,240,.2), inset 0 6px 14px rgba(0,0,0,.6); }
+.bt-lights { width: 100%; height: 12px; border-radius: 6px;
+  background: radial-gradient(circle, #fff 0 2.2px, var(--cabc) 3px 4px, transparent 5.5px) 0 50% / 18px 12px repeat-x; animation: gs-chase .5s steps(1) infinite; filter: drop-shadow(0 0 4px var(--cabc)); }
+.bt-cab .bt-tray { width: 70px !important; height: 70px !important; box-shadow: inset 0 5px 12px rgba(0,0,0,.95), 0 0 0 3px #7c8bb0, 0 0 0 5px #2a3456 !important; }
+.bt-cab .bt-hint { margin: 0; }
+.bt-cab .btn-random-big { font-size: 14px !important; padding: 11px 22px !important; }
+
+/* --- stage select --- */
+.ss-ov { position: fixed; inset: 0; z-index: 9993; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, rgba(40,18,70,.85), rgba(2,4,12,.96) 70%); animation: gs-fade-in .4s ease both; }
+.ss-ov.out { animation: gs-fade-out .6s ease forwards; }
+.ss-title { position: relative; font-family: 'Bungee', sans-serif; font-size: clamp(34px, 7vw, 72px); color: #3a0a5a; letter-spacing: .06em;
+  text-shadow: .02em .02em 0 #9c3dff, .04em .04em 0 #7a1cff, .06em .06em 0 #5000a0, .09em .12em .2em rgba(0,0,0,.8); animation: fs-slam .8s cubic-bezier(.2,1.4,.4,1) both; }
+.ss-title::after { content: attr(data-t); position: absolute; inset: 0; color: transparent; text-shadow: none; background: linear-gradient(180deg, #fff, #ffe27a 40%, #ff9d00); -webkit-background-clip: text; background-clip: text; }
+.ss-sub { position: relative; font-family: var(--font-th); font-weight: 700; color: #cfe0ff; font-size: 16px; animation: gs-track-in .8s ease both .4s; }
+.ss-cards { position: relative; display: flex; gap: clamp(12px, 3vw, 32px); margin-top: 16px; perspective: 1000px; flex-wrap: wrap; justify-content: center; }
+.ss-card { width: clamp(150px, 24vw, 220px); aspect-ratio: 3 / 4; cursor: pointer; animation: ss-in .8s cubic-bezier(.2,1.5,.4,1) both; animation-delay: calc(.4s + var(--i) * .15s); transition: transform .3s, filter .3s, opacity .3s; }
+@keyframes ss-in { from { opacity: 0; transform: translateY(80px) rotateX(60deg) scale(.7); } to { opacity: 1; transform: none; } }
+.ss-card-in { position: relative; height: 100%; border-radius: 22px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; isolation: isolate;
+  background: radial-gradient(100% 70% at 50% 0%, rgba(255,255,255,.14), transparent 60%), linear-gradient(180deg, #2a1a5e, #0f0a2c);
+  box-shadow: 0 10px 0 #05030f, 0 20px 36px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.25); animation: ss-float 3s ease-in-out infinite; animation-delay: calc(var(--i) * -.8s); }
+.ss-card-in::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 3px; z-index: -1; background: conic-gradient(from var(--gsa), #ffd700, #ff2fb9, #00e5ff, #ffd700);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: gs-spin 3s linear infinite; }
+@keyframes ss-float { 50% { transform: translateY(-8px); } }
+.ss-no { font: 400 14px/1 'Bungee', sans-serif; color: #9fe8ff; letter-spacing: .15em; }
+.ss-emoji { font-size: clamp(64px, 11vw, 100px); line-height: 1; filter: drop-shadow(0 8px 12px rgba(0,0,0,.6)); animation: ss-emo 2s ease-in-out infinite; }
+@keyframes ss-emo { 50% { transform: scale(1.1) rotate(-6deg); } }
+.ss-q { font: 400 26px/1 'Bungee', sans-serif; color: #ffe27a; text-shadow: 0 0 12px rgba(255,200,0,.6); }
+.ss-card:hover .ss-card-in { transform: translateY(-12px) scale(1.04); }
+.ss-card.picked { transform: scale(1.12); z-index: 3; } .ss-card.picked .ss-card-in { box-shadow: 0 10px 0 #05030f, 0 0 60px rgba(255,210,60,.8); }
+.ss-card.dim { opacity: .25; filter: grayscale(1); transform: scale(.9); pointer-events: none; }
+.ss-ov.revealing .ss-cards { animation: ss-cards-out .6s ease forwards; }
+@keyframes ss-cards-out { to { opacity: 0; transform: scale(.7) translateY(-40px); } }
+.ss-ov.revealing .ss-title, .ss-ov.revealing .ss-sub { display: none; }
+.sr-wrap { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.sr-emoji { font-size: clamp(80px, 14vw, 130px); animation: sr-emo 1s cubic-bezier(.2,1.8,.4,1) both; filter: drop-shadow(0 10px 20px rgba(0,0,0,.6)); }
+@keyframes sr-emo { from { transform: scale(0) rotate(-180deg); } to { transform: none; } }
+.sr-stage { font: 400 18px/1 'Bungee', sans-serif; color: #9fe8ff; letter-spacing: .3em; animation: gs-track-in .8s ease both .3s; }
+.sr-name { display: flex; flex-wrap: wrap; justify-content: center; max-width: 94vw; perspective: 800px; }
+.sr-sp { width: .35em; }
+.sr-ch { position: relative; display: inline-block; font-family: var(--font-th); font-weight: 800; font-size: clamp(40px, 8.5vw, 96px); line-height: 1.35; color: #4a2300; opacity: 0;
+  text-shadow: .02em .02em 0 #b36800, .04em .04em 0 #8f5200, .06em .06em 0 #6d3c00, .09em .12em .2em rgba(0,0,0,.85);
+  animation: sr-in .7s cubic-bezier(.2,1.7,.4,1) forwards; animation-delay: calc(.5s + var(--i) * .07s); }
+.sr-ch::after { content: attr(data-ch); position: absolute; inset: 0; color: transparent; text-shadow: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.95) 50%, transparent 60%) no-repeat, linear-gradient(180deg, #fffef2, #fff08a 25%, #ffcc00 52%, #ff9500 75%, #ffe27a);
+  background-size: 260% 100%, 100% 100%; background-position: 160% 0, 0 0; -webkit-background-clip: text; background-clip: text; animation: m3d-shine 2.4s ease-in-out infinite 1.6s; }
+@keyframes sr-in { 0% { opacity: 0; transform: translateY(-1.4em) rotateX(90deg) scale(2); filter: blur(6px); } 60% { opacity: 1; transform: translateY(.08em) scale(.92); filter: none; } 100% { opacity: 1; transform: none; } }
+
+/* --- game screens --- */
+.xg-screen { background: radial-gradient(ellipse at 50% 0%, rgba(60,20,110,.35), transparent 60%), var(--dark); }
+.xg-htitle { font-family: var(--font-th); font-weight: 800; font-size: 18px; background: linear-gradient(135deg, #ff5ad1, #ffd700); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.xg-htotal { font-family: var(--font-th); font-size: 13px; color: #9fe8ff; } .xg-htotal b { font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 18px; color: #ffd700; margin-left: 6px; text-shadow: 0 0 10px rgba(255,200,0,.5); }
+.xg-body { flex: 1; display: flex; gap: 18px; padding: 16px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+.xg-stage { flex: 1; min-width: min(100%, 520px); max-width: 900px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.xg-ctrl { width: min(100%, 380px); }
+.xg-kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgba(120,160,230,.2); font-family: var(--font-th); font-size: 14px; color: #a9c3f5; }
+.xg-kv b { color: #fff; text-align: right; }
+.g2-phase-title { font-family: var(--font-th); font-weight: 800; font-size: clamp(18px, 3vw, 24px); color: #ffe27a; text-shadow: 0 2px 0 #6b3c00, 0 0 12px rgba(255,200,0,.5); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.g2-tolchip { font-size: 14px; color: #00203a; background: linear-gradient(180deg, #d8ffff, #00c8ff); padding: 3px 10px; border-radius: 12px; text-shadow: none; }
+/* wheel */
+.wh-box { position: relative; width: min(86vw, 380px); aspect-ratio: 1; filter: drop-shadow(0 16px 30px rgba(0,0,0,.6)) drop-shadow(0 0 30px rgba(255,200,0,.25)); }
+.wh-svg { width: 100%; height: 100%; }
+.wh-pointer { position: absolute; left: 50%; top: -8px; z-index: 3; width: 0; height: 0; margin-left: -18px; border: 18px solid transparent; border-top: 34px solid #fff; filter: drop-shadow(0 3px 0 #b30022) drop-shadow(0 0 10px #fff); }
+.wh-pointer::after { content: ''; position: absolute; left: -12px; top: -30px; border: 12px solid transparent; border-top: 22px solid #ff2e55; }
+.wh-bulb { fill: #fff6b8; animation: wh-bulb .6s steps(1) infinite; animation-delay: calc(var(--k) * -.05s); }
+@keyframes wh-bulb { 50% { fill: #ff9d00; } }
+.wh-box.won { animation: wh-won .5s ease 3; }
+@keyframes wh-won { 50% { filter: drop-shadow(0 16px 30px rgba(0,0,0,.6)) drop-shadow(0 0 60px rgba(255,220,80,.95)); } }
+.wh-res { font-family: var(--font-th); font-size: 17px; color: #cfe0ff; text-align: center; }
+.wh-res b { font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 1.6em; color: #ffd700; text-shadow: 0 0 12px rgba(255,200,0,.6); }
+.wh-res small { display: block; font-size: 13px; color: #8fb6ff; margin-top: 4px; }
+.wh-res.pop { animation: mb-tag-pop .6s cubic-bezier(.2,1.8,.4,1); }
+/* pick cards */
+.pk-cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; perspective: 900px; }
+.pk-card { width: 108px; aspect-ratio: 3 / 4; cursor: pointer; animation: ss-in .7s cubic-bezier(.2,1.5,.4,1) both; animation-delay: calc(var(--i) * .1s); transition: transform .3s, opacity .3s; }
+.pk-in { height: 100%; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  background: repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 8px, transparent 8px 16px), linear-gradient(180deg, #ff4a57, #9c0018);
+  box-shadow: 0 8px 0 #4a000c, 0 14px 24px rgba(0,0,0,.5), inset 0 0 0 3px #ffcc1a; transition: transform .25s; }
+.pk-no { font: 400 48px/1 'Bungee', sans-serif; color: #fff; text-shadow: 0 3px 0 #5a0010, 0 0 16px rgba(255,255,255,.4); }
+.pk-tag { font-family: var(--font-th); font-weight: 800; font-size: 14px; color: #ffe27a; }
+.pk-card:hover .pk-in { transform: translateY(-8px) rotate(-3deg); }
+.pk-card.picked { transform: scale(1.15) rotateY(360deg); transition: transform .9s cubic-bezier(.3,1.3,.5,1); } .pk-card.dim { opacity: .2; pointer-events: none; }
+/* problem */
+.g2-prob { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; animation: chp-in .6s ease both; }
+.g2-ptitle { font-family: var(--font-th); font-weight: 800; font-size: 20px; color: #fff; }
+.g2-img { position: relative; width: min(100%, 760px); border-radius: 18px; padding: 3px; background: conic-gradient(from var(--gsa), #00e5ff, #ffd700, #ff2fb9, #00e5ff); animation: gs-spin 4s linear infinite; box-shadow: 0 14px 30px rgba(0,0,0,.55); }
+.g2-img img { display: block; width: 100%; border-radius: 15px; background: #050a1c; cursor: zoom-in; min-height: 120px; }
+.g2-img.loading img { opacity: 0; }
+.g2-timer { position: relative; width: 92px; height: 92px; }
+.g2-timer svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.g2-timer .t-bg { fill: rgba(5,10,28,.9); stroke: rgba(120,160,230,.2); stroke-width: 8; }
+.g2-timer .t-fg { fill: none; stroke: #00e5ff; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s linear; filter: drop-shadow(0 0 6px #00e5ff); }
+.g2-timer b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 400 28px/1 'Bungee', sans-serif; color: #fff; }
+.g2-timer.urgent .t-fg { stroke: #ff1744; filter: drop-shadow(0 0 8px #ff1744); } .g2-timer.urgent b { color: #ff8095; animation: urgent-blink .5s infinite; }
+.g2-ans { display: flex; gap: 10px; align-items: center; width: min(100%, 560px); }
+.g2-ans .answer-input-cyber { flex: 1; font-size: 22px; }
+.g2-baht { font: 400 26px/1 'Bungee', sans-serif; color: #ffd700; }
+.g2-sent { font-family: var(--font-th); font-size: 17px; color: #cfe0ff; text-align: center; padding: 10px 16px; border-radius: 14px; background: rgba(0,229,255,.06); border: 1px solid rgba(0,229,255,.25); }
+.g2-sent b { color: #ffd700; font-family: 'Bungee', sans-serif; font-weight: 400; }
+/* price bar */
+.pb { position: relative; width: min(100%, 860px); padding: 64px 10px 70px; margin-top: 6px; }
+.pb-track { position: relative; height: 38px; border-radius: 10px; overflow: visible; background: linear-gradient(180deg, #d9dfe9, #9aa6ba); box-shadow: 0 0 0 5px #0a0f1f, 0 0 0 7px rgba(0,229,255,.5), 0 10px 22px rgba(0,0,0,.55), 0 0 26px rgba(0,229,255,.25);
+  transform: scaleX(0); transform-origin: left; transition: transform .8s cubic-bezier(.2,1,.3,1); }
+.pb.s1 .pb-track { transform: none; }
+.pb-under { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(90deg, #6f7c96, #b8c2d4); }
+.pb-zone { position: absolute; top: 0; bottom: 0; background: linear-gradient(180deg, #9dff5a, #39e61a 50%, #1a9c00); box-shadow: 0 0 22px rgba(57,255,20,.8); transform: scaleX(0); transition: transform .9s cubic-bezier(.3,1.4,.5,1) .5s; overflow: hidden; }
+.pb.s1 .pb-zone { transform: none; }
+.pb-zone i { position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.3) 0 8px, transparent 8px 18px); animation: mb-flow .8s linear infinite; background-size: 25px 25px; }
+.pb-over { position: absolute; top: 0; bottom: 0; right: 0; border-radius: 0 10px 10px 0; background: repeating-linear-gradient(-45deg, #ffb3bf 0 8px, #ff8095 8px 16px); opacity: 0; transition: opacity .5s 1.1s; display: flex; align-items: center; justify-content: center; }
+.pb-over span { font: 400 13px/1 'Bungee', sans-serif; color: #7a0014; letter-spacing: .1em; }
+.pb.s1 .pb-over { opacity: .85; }
+.pb-tick { position: absolute; top: -14px; bottom: -8px; width: 5px; margin-left: -2.5px; border-radius: 3px; background: #0a0f1f; box-shadow: 0 0 0 1px rgba(255,255,255,.3); opacity: 0; transition: opacity .3s 1.2s; }
+.pb.s1 .pb-tick { opacity: 1; }
+.pb-labels { position: absolute; left: 10px; right: 10px; top: 0; height: 58px; }
+.pb-lab { position: absolute; bottom: 0; transform: translateX(-50%); text-align: center; white-space: nowrap; opacity: 0; transition: opacity .4s 1.3s; }
+.pb.s1 .pb-lab { opacity: 1; }
+.pb-lab small { display: block; font-family: var(--font-th); font-size: 12px; font-weight: 700; color: #cfe0ff; }
+.pb-lab b { font: 400 clamp(18px, 2.6vw, 26px)/1.1 'Bungee', sans-serif; color: #ffb300; -webkit-text-stroke: 1px #3a1400; text-shadow: 0 3px 0 #3a1400, 0 0 12px rgba(255,180,0,.5); }
+.pb-guess { position: absolute; left: calc(10px + (100% - 20px) * var(--x) / 100); top: 104px; transform: translateX(-50%) translateY(40px); opacity: 0; text-align: center; transition: opacity .3s, transform .9s cubic-bezier(.3,1.8,.5,1); }
+.pb.s2 .pb-guess { opacity: 1; transform: translateX(-50%); }
+.pb-tri { width: 0; height: 0; margin: 0 auto; border: 16px solid transparent; border-bottom: 28px solid #ff1744; border-top: 0; filter: drop-shadow(0 0 8px #ff1744) drop-shadow(0 3px 0 #5a0010); animation: pb-tri 1s ease-in-out infinite; }
+@keyframes pb-tri { 50% { transform: translateY(-4px); } }
+.pb-glab { margin-top: 4px; font-family: var(--font-th); font-size: 12px; font-weight: 700; color: #ffb3bf; white-space: nowrap; }
+.pb-glab b { font: 400 18px/1 'Bungee', sans-serif; color: #fff; }
+.pb-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-8deg) scale(3); opacity: 0; font: 400 clamp(40px, 8vw, 80px)/1 'Bungee', sans-serif; letter-spacing: .06em; pointer-events: none; z-index: 5; padding: 4px 22px; border-radius: 14px; border: 6px solid; }
+.pb.s3 .pb-stamp { animation: pb-stamp .6s cubic-bezier(.2,1.8,.4,1) forwards .3s; }
+@keyframes pb-stamp { to { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); } }
+.pb.ok .pb-stamp { color: #7dff5a; border-color: #39ff14; background: rgba(0,40,0,.8); text-shadow: 0 0 18px #39ff14; box-shadow: 0 0 40px rgba(57,255,20,.6); }
+.pb.bad .pb-stamp { color: #ff4d6a; border-color: #ff1744; background: rgba(50,0,8,.85); text-shadow: 0 0 18px #ff1744; box-shadow: 0 0 40px rgba(255,23,68,.6); }
+.pb.ok .pb-zone { animation: wh-won .4s ease 4; }
+/* game 3 */
+.g3-wrap { flex-direction: row !important; align-items: stretch !important; gap: 0 !important; min-height: 560px; border-radius: 22px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(14,24,52,.85), rgba(6,11,28,.9)); box-shadow: 0 0 0 1px rgba(120,180,255,.2), 0 16px 34px rgba(0,0,0,.5); }
+.g3-side { width: min(42%, 330px); padding: 16px 14px; border-right: 2px solid rgba(0,229,255,.25); background: rgba(3,8,22,.55); display: flex; flex-direction: column; gap: 10px; box-shadow: inset -12px 0 20px -12px rgba(0,229,255,.25); }
+.g3-side-h { font-family: var(--font-th); font-weight: 800; font-size: 17px; color: #9fe8ff; text-align: center; letter-spacing: .08em; text-shadow: 0 0 10px rgba(0,229,255,.5); }
+.g3-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 520px; }
+.g3-empty { text-align: center; color: #5a6f9a; font-family: var(--font-th); font-size: 13px; padding: 20px 0; }
+.g3-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; overflow: hidden; isolation: isolate;
+  background: linear-gradient(180deg, #16294d, #0a1631); border: 2px solid rgba(140,190,255,.28); animation: g3-row-in .5s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes g3-row-in { from { opacity: 0; transform: translateX(-40px) scale(.9); } to { opacity: 1; transform: none; } }
+.g3-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; z-index: -1; background: linear-gradient(90deg, hsla(var(--hue, 0), 90%, 45%, .15), hsla(var(--hue, 0), 95%, 50%, .5)); transition: width 1s cubic-bezier(.2,1,.3,1); }
+.g3-row.scored .g3-fill { width: var(--pct); }
+.g3-n { font: 400 12px/1 'Bungee', sans-serif; color: #6f87b8; width: 18px; }
+.g3-w { flex: 1; font-family: var(--font-th); font-weight: 700; font-size: 16px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g3-p { min-width: 58px; text-align: center; padding: 4px 6px; border-radius: 10px; background: rgba(0,0,0,.35); font: 400 16px/1 'Bungee', sans-serif; color: hsl(var(--hue, 200), 100%, 70%); }
+.g3-row.pending { border-color: rgba(255,210,60,.6); } .g3-row.pending .g3-p { animation: qb-wait 1s ease-in-out infinite; color: #ffe27a; }
+.g3-row.win { border-color: #39ff14; box-shadow: 0 0 20px rgba(57,255,20,.6); }
+.g3-main { flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+.g3-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.g3-dots { display: flex; gap: 6px; }
+.g3-dots i { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d8ffff, #00c8ff 60%, #0060b0); box-shadow: 0 0 8px rgba(0,200,255,.6); transition: all .4s; }
+.g3-dots i.used { background: #1a2340; box-shadow: inset 0 2px 4px rgba(0,0,0,.6); transform: scale(.8); }
+.g3-mult { text-align: center; } .g3-mult small { display: block; font-family: var(--font-th); font-size: 12px; color: #8fb6ff; }
+.g3-mult .current-mult { font-size: 44px !important; }
+.g3-rule { font-family: var(--font-th); font-size: 14px; color: #8fb6ff; }
+.g3-secret { margin-top: auto; align-self: flex-start; display: flex; flex-direction: column; gap: 6px; width: min(100%, 380px); }
+.g3-secret-l { font-family: var(--font-th); font-weight: 800; font-size: 16px; color: #ffe27a; text-align: center; }
+.g3-secret-box { position: relative; min-height: 90px; border-radius: 22px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; padding: 10px 16px; isolation: isolate;
+  background: linear-gradient(180deg, #2a1a5e, #0f0a2c); box-shadow: 0 8px 0 #05030f, 0 14px 26px rgba(0,0,0,.5); }
+.g3-secret-box::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 3px; z-index: -1; background: conic-gradient(from var(--gsa), #ffd700, #ff2fb9, #00e5ff, #ffd700);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: gs-spin 3s linear infinite; }
+.g3-q { font: 400 44px/1 'Bungee', sans-serif; color: #ffe27a; letter-spacing: .2em; animation: ml-q 1.4s ease-in-out infinite; text-shadow: 0 3px 0 #6b3c00, 0 0 18px rgba(255,200,0,.6); }
+.g3-secret-box .sr-ch { font-size: clamp(36px, 6vw, 60px); }
+.g3-secret-box.ok { box-shadow: 0 8px 0 #05030f, 0 0 50px rgba(57,255,20,.7); } .g3-secret-box.bad { box-shadow: 0 8px 0 #05030f, 0 0 50px rgba(255,23,68,.6); }
+.g3-pick { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.g3-judge { margin-top: 10px; padding: 12px; border-radius: 14px; background: rgba(255,210,60,.06); border: 1px solid rgba(255,210,60,.3); }
+.g3-jw { font-family: var(--font-th); font-size: 15px; color: #fff; margin-bottom: 6px; } .g3-jw b { color: #ffe27a; font-size: 20px; }
+.g3-sug { font-family: var(--font-th); font-size: 13px; color: #9fe8ff; margin-bottom: 8px; } .g3-sug b { font-family: 'Bungee', sans-serif; font-weight: 400; color: #7dff5a; }
+@media (max-width: 700px) { .g3-wrap { flex-direction: column !important; } .g3-side { width: auto; border-right: 0; border-bottom: 2px solid rgba(0,229,255,.25); } }
+/* setup */
+.xs-panel { margin-bottom: 14px; }
+.xs-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.xs-hint { font-family: var(--font-th); font-size: 12.5px; color: #8fb6ff; margin-bottom: 10px; }
+.xs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.xs-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: rgba(0,10,30,.65); border: 1px solid var(--border); }
+.xs-num { font-family: var(--font-th); font-weight: 800; color: #ffe27a; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.xs-lv { font-size: 11px; font-weight: 700; color: #00203a; background: linear-gradient(180deg, #d8ffff, #00c8ff); padding: 1px 8px; border-radius: 10px; }
+.xs-img { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; cursor: pointer; border: 1px dashed rgba(0,229,255,.4); background: #050a1c; color: #6fb8d8; font-family: var(--font-th); font-size: 13px; }
+.xs-img img { width: 100%; height: 100%; object-fit: contain; }
+.xs-rel { min-height: 56px; resize: vertical; font-size: 12px !important; }
+.xs-bank { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.xs-bitem { border-radius: 14px; overflow: hidden; cursor: pointer; background: linear-gradient(180deg, #16294d, #0a1631); border: 1px solid rgba(90,140,230,.3); transition: transform .15s; font-family: var(--font-th); color: #fff; }
+.xs-bitem:hover { transform: translateY(-3px); border-color: #ffd700; }
+.xs-bitem img { display: block; width: 100%; }
+.xs-bitem > div { padding: 8px 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .xs-bitem small { width: 100%; color: #7dff5a; }
+
+#g2BarHost { width: 100%; display: flex; justify-content: center; }
+.g2-prob.small .g2-img { width: min(100%, 520px); transition: width .6s ease; }
 </style>
 </head>
 <body>
@@ -6003,6 +6252,7 @@ body::after {
     </div>
   </div>
   <div class="setup-grid" id="setupGrid"></div>
+  <div style="max-width:1320px;margin:14px auto;padding:0 24px;width:100%;" id="xgSetup"></div>
   <div style="max-width:1320px;margin:14px auto;padding:0 24px;width:100%;">
     <div class="setup-panel">
       <div class="setup-panel-title">🏆 หมวดหมู่รอบโบนัส (10 หมวด)</div>
@@ -9592,11 +9842,8 @@ function closeLadder() {
   $('ladderOverlay').classList.remove('show');
   G.currentQ++;
   if (G.currentQ >= 5) {
-    if (G.isMC) {
-      broadcastEvent('bonus_start', { total: G.totalMoney, missCount: G.missCount || 0 });
-      showBonusMC();
-    }
-    // player side handled by bonus_start event
+    if (G.isMC) startStageSelect();
+    // player side handled by stage_select event
   } else {
     updateQStatusBar('mc');
     if (G.isMC) {
@@ -13240,6 +13487,7 @@ function shrinkImg(dataUrl, max, qual) {
 async function prepareQImgForBroadcast(imgSrc) {
   if (!imgSrc || imgSrc === '__img__') return '';
   if (!imgSrc.startsWith('data:')) return imgSrc; // URL image
+  if (imgSrc.startsWith('data:image/svg') && imgSrc.length < 45000) return imgSrc; // small vector image: send inline
   const key = qimgHash(imgSrc);
   try { localStorage.setItem('fq_qimg', imgSrc); localStorage.setItem('fq_qimg_key', key); } catch (e) { try { localStorage.removeItem('fq_qimg'); } catch (e2) {} }
   const ok = await withTimeout(uploadQImg(imgSrc), 6000);
@@ -13460,6 +13708,7 @@ async function qlibCloudSave(set) {
         q.img = 'qsimg:' + key;
       }
     }));
+    (lean.priceGames || []).forEach(p => { if (p.img && p.img.startsWith('data:image/jpeg')) { const key = qimgHash(p.img); uploads.push(qlibImgCol().doc(key).set({ img: p.img, ts: Date.now() })); p.img = 'qsimg:' + key; } });
     await Promise.all(uploads);
     delete lean.cover;
     lean.coverKey = (() => { for (const c of lean.categories) for (const q of c.questions) if (q.img) return q.img; return ''; })();
@@ -13484,6 +13733,7 @@ async function qlibHydrateImgs(set) {
       jobs.push(qlibImgCol().doc(key).get().then(s => { q.img = s.exists ? (s.data().img || '') : ''; }).catch(() => { q.img = ''; }));
     }
   }));
+  (set.priceGames || []).forEach(p => { if (p.img && p.img.startsWith('qsimg:')) jobs.push(qlibImgCol().doc(p.img.slice(6)).get().then(s => { p.img = s.exists ? (s.data().img || '') : ''; }).catch(() => { p.img = ''; })); });
   await Promise.all(jobs);
   return set;
 }
@@ -13563,7 +13813,7 @@ async function qlibGetFull(id) {
   let s = QLIB.sets.find(x => x.id === id);
   if (!s) return null;
   s = JSON.parse(JSON.stringify(s));
-  const needs = (s.categories || []).some(c => (c.questions || []).some(q => q.img && q.img.startsWith('qsimg:')));
+  const needs = (s.categories || []).some(c => (c.questions || []).some(q => q.img && q.img.startsWith('qsimg:'))) || (s.priceGames || []).some(p => p.img && p.img.startsWith('qsimg:'));
   if (needs && qlibCloudOK()) {
     showNotif('☁️ กำลังดาวน์โหลดรูปประกอบโจทย์...');
     await qlibHydrateImgs(s);
@@ -13580,6 +13830,8 @@ async function qlibLoad(id, silent) {
   G.categories = JSON.parse(JSON.stringify(s.categories || []));
   G.categories.forEach(c => { c.questions = (c.questions || []).map(q => ({ q: q.q || '', a: q.a || '', choices: (q.choices && q.choices.length ? q.choices : ['', '', '', '', '', '']).slice(0, 6), img: q.img || '' })); while (c.questions.length < 2) c.questions.push({ q: '', a: '', choices: ['', '', '', '', '', ''], img: '' }); });
   G.bonusCategories = (s.bonusCategories || []).slice();
+  G.priceGames = s.priceGames ? JSON.parse(JSON.stringify(s.priceGames)) : [];
+  G.secretWords = s.secretWords ? JSON.parse(JSON.stringify(s.secretWords)) : [];
   QLIB.currentId = id;
   buildSetupUI();
   renderQlib();
@@ -14589,7 +14841,7 @@ function setMultGaugeLabel(mult) {
 
 
 /* CLEAR / FAILED 3D outcome */
-function showBonusOutcome(cleared, done) {
+function showBonusOutcome(cleared, done, subText) {
   const old = $('bonusOutcome'); if (old) old.remove();
   const word = cleared ? 'CLEAR' : 'FAILED';
   const ov = document.createElement('div');
@@ -14597,7 +14849,7 @@ function showBonusOutcome(cleared, done) {
   ov.className = 'bo-overlay ' + (cleared ? 'bo-clear' : 'bo-fail');
   ov.innerHTML = `<div class="bo-rays"></div><div class="bo-flash"></div>
     <div class="bo-word">${[...word].map((c, i) => `<span class="bo-ch" data-ch="${c}" style="--i:${i}">${c}</span>`).join('')}</div>
-    <div class="bo-sub">${cleared ? '✦ ตอบถูกครบ 10 ข้อ! ✦' : 'ไม่สำเร็จ — ตอบไม่ครบ 10 ข้อ'}</div>`;
+    <div class="bo-sub">${subText || (cleared ? '✦ ตอบถูกครบ 10 ข้อ! ✦' : 'ไม่สำเร็จ — ตอบไม่ครบ 10 ข้อ')}</div>`;
   document.body.appendChild(ov);
   if (cleared) { try { FX.crash(0.25); FX.fanfare(0.3); FX.sparkle(0.5); } catch (e) {} gsBurst(ov, 60); setTimeout(() => { launchConfetti(); }, 400); }
   else { playSnd(SND_WRONG); try { FX.crash(0.3); } catch (e) {} }
@@ -14934,7 +15186,7 @@ function mcRevealBall(kind) {
   broadcastEvent('ball_reveal', { kind, value: BT[kind] });
   btAnimateReveal(kind, BT[kind]);
   document.querySelectorAll('#mcBallBox .btn-mc').forEach(b => b.disabled = true);
-  setTimeout(() => { BT._revealing = false; renderMCBallBox(); mcCheckBallsDone(); }, 5400);
+  setTimeout(() => { BT._revealing = false; renderMCBallBox(); mcCheckBallsDone(); }, 5800);
 }
 function btBoardLeave(cb) {
   document.querySelectorAll('#btArea .bt-board-wrap').forEach(w => w.classList.add('leave'));
@@ -14945,8 +15197,736 @@ function playerOnBallDone(d) {
   BT.tens = d.tens; BT.units = d.units; BT.rev = { tens: true, units: true };
   G.bonusExtra = d.extra || 0;
   const finish = () => { btFinish(G.bonusExtra); G.bonusTimer = 120 + G.bonusExtra; setTimeout(() => btBoardLeave(setupBonusPlayerRandCTA), 2200); };
-  if (document.querySelector('.br-ov')) setTimeout(finish, 5300); else finish();
+  if (document.querySelector('.br-ov')) setTimeout(finish, 5700); else finish();
 }
+/* ================= v13 JS: air-blower physics + hand reveal ================= */
+const AIR = {};
+function btCabinetHTML(kind) {
+  const pool = shuffleArr(btPool(kind));
+  const balls = pool.map((v, i) => `<div class="b3" data-v="${v}" data-i="${i}" onclick="btChooseBall(this,'${kind}')" style="--sp:${(1.6 + (i % 4) * .4).toFixed(1)}s"><div class="b3-face">?</div></div>`).join('');
+  return `<div class="bt-cab ${kind}" id="btCab_${kind}">
+    <div class="bt-cab-name">${kind === 'tens' ? 'TENS' : 'UNITS'}<small>${kind === 'tens' ? 'ตู้หลักสิบ (0–3)' : 'ตู้หลักหน่วย (0–5)'}</small></div>
+    <div class="bt-dome" id="btDome_${kind}"><div class="bt-chute"></div><div class="bt-dome-clip"><div class="bt-air"></div><div class="bt-fan"></div>${balls}</div></div>
+    <div class="bt-hint">👆 แตะคว้าลูกบอล 1 ลูก</div>
+    <div class="bt-tray" id="btTray_${kind}"></div>
+    <button class="btn-random-big" onclick="btPick('${kind}')">🌀 เป่าลม & สุ่มหยิบ</button>
+    <div class="bt-done-txt">✓ หยิบแล้ว</div></div>`;
+}
+function btStartAir(kind) {
+  const dome = $('btDome_' + kind); if (!dome) return;
+  const W = 220, H = 170, R = 20;
+  const st = AIR[kind] = { run: true, boost: 0, balls: [] };
+  dome.querySelectorAll('.b3').forEach((el, i) => {
+    st.balls.push({ el, x: 30 + Math.random() * (W - 60), y: H - R - Math.random() * 40, vx: (Math.random() - .5) * 3, vy: -Math.random() * 3, held: false });
+  });
+  let last = performance.now();
+  function step(now) {
+    if (!st.run || !dome.isConnected) return;
+    const dt = Math.min(2, (now - last) / 16.67); last = now;
+    const power = 1 + st.boost;
+    for (const b of st.balls) {
+      if (b.held) continue;
+      b.vy += 0.32 * dt;
+      if (b.y > H * 0.55) { const push = (b.y - H * 0.55) / (H * 0.45); b.vy -= (0.55 + Math.random() * 0.6) * push * power * dt; b.vx += (Math.random() - .5) * 0.9 * power * dt; }
+      b.vx += (W / 2 - b.x) * 0.0015 * dt;
+      b.vx *= 0.992; b.vy *= 0.992;
+      const vmax = 7 * power; b.vx = Math.max(-vmax, Math.min(vmax, b.vx)); b.vy = Math.max(-vmax, Math.min(vmax, b.vy));
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      // dome walls: rounded top (ellipse) + box bottom
+      if (b.x < R) { b.x = R; b.vx = Math.abs(b.vx) * .8; } if (b.x > W - R) { b.x = W - R; b.vx = -Math.abs(b.vx) * .8; }
+      if (b.y > H - R - 4) { b.y = H - R - 4; b.vy = -Math.abs(b.vy) * .6; }
+      const cx = W / 2, cy = 90, rx = W / 2 - R, ry = 90 - R;
+      if (b.y < cy) { const dx = (b.x - cx) / rx, dy = (b.y - cy) / ry, d = Math.hypot(dx, dy); if (d > 1) { b.x = cx + dx / d * rx; b.y = cy + dy / d * ry; const nx = dx / d, ny = dy / d, dot = b.vx * nx + b.vy * ny; b.vx -= 1.8 * dot * nx; b.vy -= 1.8 * dot * ny; } }
+    }
+    // simple ball-ball separation
+    const bs = st.balls;
+    for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) {
+      const a = bs[i], c = bs[j]; if (a.held || c.held) continue;
+      const dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy) || 1;
+      if (d < R * 2) { const o = (R * 2 - d) / 2, nx = dx / d, ny = dy / d; a.x -= nx * o; a.y -= ny * o; c.x += nx * o; c.y += ny * o; const t = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny; if (t < 0) { a.vx += t * nx; a.vy += t * ny; c.vx -= t * nx; c.vy -= t * ny; } }
+    }
+    for (const b of bs) if (!b.held) b.el.style.transform = `translate(${b.x - R}px, ${b.y - R}px) rotate(${b.x * 4}deg)`;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+const _btShowStagePrev = btShowStage;
+btShowStage = function () {
+  _btShowStagePrev();
+  setTimeout(() => { ['tens', 'units'].forEach(k => { if ($('btCab_' + k) && !(AIR[k] && AIR[k].run && $('btDome_' + k) && AIR[k].balls[0] && AIR[k].balls[0].el.isConnected)) btStartAir(k); }); }, 450);
+};
+function btChooseBall(el, kind) {
+  const cab = $('btCab_' + kind), st = AIR[kind];
+  if (!cab || cab.classList.contains('picking') || cab.classList.contains('done') || BT[kind] !== null || !st) return;
+  cab.classList.add('picking');
+  const b = st.balls.find(x => x.el === el); if (!b) return;
+  b.held = true; el.classList.add('chosen');
+  const value = +el.dataset.v;
+  try { FX.sparkle(0); } catch (e) {}
+  // glide to chute mouth, then get sucked up the tube
+  const from = { x: b.x, y: b.y }, to = { x: 110, y: 22 }; const t0 = performance.now();
+  (function glide(now) {
+    const p = Math.min(1, (now - t0) / 420), e = 1 - Math.pow(1 - p, 3);
+    const x = from.x + (to.x - from.x) * e, y = from.y + (to.y - from.y) * e;
+    el.style.transform = `translate(${x - 20}px, ${y - 20}px) scale(${1 + .15 * Math.sin(p * Math.PI)})`;
+    if (p < 1) requestAnimationFrame(glide);
+    else { el.classList.add('sucked'); el.style.transform = `translate(${x - 20}px, ${y - 90}px) scale(.8)`;
+      try { const C = new (window.AudioContext || window.webkitAudioContext)(); const o = C.createOscillator(), g = C.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(300, C.currentTime); o.frequency.exponentialRampToValueAtTime(1400, C.currentTime + .35); g.gain.setValueAtTime(.12, C.currentTime); g.gain.exponentialRampToValueAtTime(.001, C.currentTime + .4); o.connect(g); g.connect(C.destination); o.start(); o.stop(C.currentTime + .42); setTimeout(() => C.close(), 800); } catch (e) {}
+      setTimeout(() => { btCommitPick(kind, value, true); }, 550); }
+  })(performance.now());
+}
+function btPick(kind) {
+  const cab = $('btCab_' + kind), st = AIR[kind]; if (!cab || !st || BT[kind] !== null || cab.classList.contains('mixing')) return;
+  cab.classList.add('mixing'); st.boost = 1.6;
+  try { FX.drumroll(1.5); } catch (e) {}
+  setTimeout(() => {
+    cab.classList.remove('mixing'); st.boost = 0;
+    const cand = st.balls.filter(b => !b.held).sort((a, b) => a.y - b.y).slice(0, 4);
+    const pick = cand[Math.floor(Math.random() * cand.length)];
+    btChooseBall(pick.el, kind);
+  }, 1500);
+}
+
+/* hand-held reveal */
+const HAND_SVG = `<svg class="hr-hand" viewBox="0 0 300 220" aria-hidden="true"><defs>
+<linearGradient id="hrSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c7a1"/><stop offset=".6" stop-color="#e0a57c"/><stop offset="1" stop-color="#b9774f"/></linearGradient>
+<linearGradient id="hrSleeve" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a1f2e"/><stop offset=".5" stop-color="#2d3550"/><stop offset="1" stop-color="#141826"/></linearGradient></defs>
+<path d="M95 150 C90 190 92 210 95 220 L205 220 C208 205 210 185 205 150 Z" fill="url(#hrSleeve)"/>
+<path d="M70 70 C60 110 80 150 110 160 L195 160 C225 150 238 115 232 80 C228 60 214 58 208 72 L200 96 C196 70 186 66 180 76 L174 98 C170 72 158 70 152 82 L148 100 C144 78 130 78 126 92 L120 118 C112 96 96 60 80 58 C72 57 71 64 70 70 Z" fill="url(#hrSkin)"/>
+<path d="M126 92 C130 78 144 78 148 100 M152 82 C158 70 170 72 174 98 M180 76 C186 66 196 70 200 96" fill="none" stroke="#b9774f" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<path d="M208 72 C214 58 228 60 232 80" fill="none" stroke="#b9774f" stroke-width="2.5" opacity=".6"/>
+<ellipse cx="86" cy="64" rx="8" ry="5" fill="#fbe2cf" opacity=".8"/><ellipse cx="140" cy="84" rx="6" ry="4" fill="#fbe2cf" opacity=".7"/>
+<ellipse cx="165" cy="76" rx="6" ry="4" fill="#fbe2cf" opacity=".7"/><ellipse cx="191" cy="72" rx="6" ry="4" fill="#fbe2cf" opacity=".7"/></svg>`;
+function showBallRevealOverlay(kind, value, done) {
+  const old = document.querySelector('.br-ov'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.className = 'br-ov';
+  ov.innerHTML = `<div class="gs-rays"></div><div class="br-flash"></div>
+    <div class="br-title">🎱 เปิดลูกบอล${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'}</div>
+    <div class="hr-stage"><div class="hr-ball ${kind}"><div class="hr-label"><b>${value}</b></div></div>${HAND_SVG}</div>
+    <div class="br-val">${kind === 'tens' ? 'หลักสิบ' : 'หลักหน่วย'} ได้เลข <b style="font-family:Bungee,sans-serif;font-weight:400;font-size:1.3em;color:#fff">${value}</b></div>`;
+  document.body.appendChild(ov);
+  try { FX.drumroll(2.2); } catch (e) {}
+  const stage = ov.querySelector('.hr-stage');
+  setTimeout(() => stage.classList.add('turn'), 2300);
+  setTimeout(() => { ov.classList.add('hit'); gsBurst(ov, 50); try { FX.crash(); FX.sparkle(0.1); playSnd(SND_DING, .8); } catch (e) {} }, 2900);
+  setTimeout(() => { ov.classList.add('out'); }, 5000);
+  setTimeout(() => { ov.remove(); if (done) done(); }, 5500);
+}
+
+/* ================= v14 BANKS: price game + secret words ================= */
+/* ราคาในโจทย์เป็น "ราคาอ้างอิงของเกม" — MC แก้ไขได้ใน CREATE */
+const PRICE_BANK = [
+  { title: 'มื้อกลางวันสุดคุ้ม', level: 'ง่าย', items: [{ e: '🍗', n: 'ข้าวมันไก่', q: 1, p: 50 }, { e: '🧋', n: 'ชาเย็น', q: 1, p: 35 }, { e: '🥚', n: 'ไข่ต้ม', q: 2, p: 10 }] },
+  { title: 'อุปกรณ์การเรียน', level: 'ง่าย', items: [{ e: '✏️', n: 'ดินสอ', q: 3, p: 6 }, { e: '📓', n: 'สมุด', q: 4, p: 15 }, { e: '📏', n: 'ไม้บรรทัด', q: 1, p: 12 }, { e: '✂️', n: 'กรรไกร', q: 1, p: 25 }] },
+  { title: 'ตลาดผลไม้', level: 'ง่าย', items: [{ e: '🍌', n: 'กล้วย (หวี)', q: 1, p: 40 }, { e: '🍉', n: 'แตงโม', q: 1, p: 60 }, { e: '🥭', n: 'มะม่วง', q: 3, p: 25 }] },
+  { title: 'ของหวานยามบ่าย', level: 'ง่าย', items: [{ e: '🍦', n: 'ไอศกรีม', q: 2, p: 25 }, { e: '🍩', n: 'โดนัท', q: 3, p: 20 }, { e: '🥤', n: 'น้ำแข็งใส', q: 1, p: 35 }] },
+  { title: 'ปาร์ตี้วันเกิด', level: 'ปานกลาง', items: [{ e: '🎂', n: 'เค้ก 1 ปอนด์', q: 1, p: 450 }, { e: '🎈', n: 'ลูกโป่ง', q: 20, p: 5 }, { e: '🥤', n: 'น้ำอัดลม 1.5 ลิตร', q: 4, p: 35 }, { e: '🍕', n: 'พิซซ่าถาดใหญ่', q: 2, p: 399 }] },
+  { title: 'เที่ยวทะเล 1 วัน', level: 'ปานกลาง', items: [{ e: '⛽', n: 'น้ำมันรถ (ลิตร)', q: 30, p: 35 }, { e: '⛱️', n: 'เช่าร่มชายหาด', q: 1, p: 100 }, { e: '🦐', n: 'กุ้งเผา (กก.)', q: 1, p: 600 }, { e: '🥥', n: 'มะพร้าว', q: 4, p: 50 }] },
+  { title: 'จัดโต๊ะทำงาน', level: 'ปานกลาง', items: [{ e: '🖱️', n: 'เมาส์', q: 1, p: 390 }, { e: '⌨️', n: 'คีย์บอร์ด', q: 1, p: 890 }, { e: '💡', n: 'โคมไฟ', q: 1, p: 450 }, { e: '🪴', n: 'ต้นไม้เล็ก', q: 1, p: 150 }] },
+  { title: 'ตกแต่งห้องนอน', level: 'ยาก', items: [{ e: '🛏️', n: 'เตียง 5 ฟุต', q: 1, p: 8900 }, { e: '🪑', n: 'เก้าอี้', q: 1, p: 1290 }, { e: '🧸', n: 'ตุ๊กตาหมี', q: 2, p: 590 }, { e: '🕰️', n: 'นาฬิกาแขวน', q: 1, p: 490 }] },
+  { title: 'เปิดร้านกาแฟ', level: 'ยาก', items: [{ e: '☕', n: 'เครื่องชงกาแฟ', q: 1, p: 45000 }, { e: '🫘', n: 'เมล็ดกาแฟ (กก.)', q: 10, p: 650 }, { e: '🥛', n: 'นมสด (ลิตร)', q: 20, p: 55 }, { e: '🥤', n: 'แก้วพลาสติก', q: 500, p: 3 }] },
+  { title: 'ช้อปปิ้งไอที', level: 'ยากมาก (Unseen)', items: [{ e: '📱', n: 'สมาร์ตโฟน', q: 1, p: 32900 }, { e: '💻', n: 'โน้ตบุ๊ก', q: 1, p: 45900 }, { e: '🎧', n: 'หูฟังไร้สาย', q: 1, p: 8990 }, { e: '⌚', n: 'สมาร์ตวอทช์', q: 1, p: 12900 }] },
+  { title: 'ออกรถคันแรก', level: 'ยากมาก (Unseen)', items: [{ e: '🚗', n: 'รถยนต์', q: 1, p: 689000 }, { e: '🛞', n: 'ยางใหม่', q: 4, p: 3500 }, { e: '🛡️', n: 'ประกันชั้น 1', q: 1, p: 18500 }, { e: '🎀', n: 'พรมรถ', q: 1, p: 2500 }] },
+  { title: 'งานแต่งเล็กๆ', level: 'ยากมาก (Unseen)', items: [{ e: '💍', n: 'แหวนเพชร', q: 1, p: 59000 }, { e: '👗', n: 'ชุดเจ้าสาว (เช่า)', q: 1, p: 15000 }, { e: '🍽️', n: 'โต๊ะจีน', q: 10, p: 4500 }, { e: '💐', n: 'ช่อดอกไม้', q: 1, p: 2500 }] },
+];
+PRICE_BANK.forEach(p => { p.price = p.items.reduce((s, it) => s + it.q * it.p, 0); });
+
+const WORD_BANK = [
+  { w: 'น้ำตก', level: 'ง่าย', rel: 'น้ำ:70,ภูเขา:55,ป่า:50,ธรรมชาติ:55,หิน:35,ลำธาร:65,แม่น้ำ:60,เอราวัณ:85,ไหล:50,หน้าผา:45,อุทยาน:50,ท่องเที่ยว:30,ฝน:30' },
+  { w: 'ช้าง', level: 'ง่าย', rel: 'สัตว์:45,งวง:90,งา:80,ใหญ่:40,ไทย:45,ป่า:40,สัตว์ประจำชาติ:85,ควาญ:80,ปางช้าง:90,สวนสัตว์:40,แอฟริกา:45,หู:30,ม้า:25' },
+  { w: 'ทะเล', level: 'ง่าย', rel: 'น้ำเค็ม:80,ชายหาด:75,คลื่น:75,ปลา:50,เรือ:50,มหาสมุทร:85,ทราย:55,ภูเก็ต:55,เปลือกหอย:55,ปะการัง:60,เกาะ:55,ว่ายน้ำ:45,สีฟ้า:40' },
+  { w: 'โรงเรียน', level: 'ง่าย', rel: 'ครู:80,นักเรียน:85,ห้องเรียน:90,การบ้าน:70,สอบ:65,ชุดนักเรียน:80,เรียน:70,หนังสือ:55,กระดานดำ:70,ปิดเทอม:65,เพื่อน:40,มหาวิทยาลัย:55' },
+  { w: 'ฝน', level: 'ง่าย', rel: 'เมฆ:70,ร่ม:75,น้ำ:55,ฟ้าร้อง:70,ฟ้าผ่า:60,ฤดูฝน:90,เปียก:60,พายุ:65,รุ้ง:55,น้ำท่วม:60,หนาว:30,ตก:45' },
+  { w: 'กาแฟ', level: 'ปานกลาง', rel: 'คาเฟอีน:85,ง่วง:55,เช้า:45,ชา:50,เมล็ด:70,นม:45,ลาเต้:85,อเมริกาโน่:90,บาริสต้า:90,ขม:60,ร้าน:35,แก้ว:35,ดำ:45' },
+  { w: 'ดวงจันทร์', level: 'ปานกลาง', rel: 'พระจันทร์:98,จันทร์:90,กลางคืน:60,ดาว:55,อวกาศ:60,โลก:50,นีล อาร์มสตรอง:85,เต็มดวง:90,ข้างขึ้น:80,ข้างแรม:80,กระต่าย:60,นักบินอวกาศ:65,แสง:35' },
+  { w: 'ไฟฉาย', level: 'ปานกลาง', rel: 'แสง:70,แบตเตอรี่:75,ถ่าน:70,มืด:65,หลอดไฟ:55,ไฟ:50,ส่อง:80,ตั้งแคมป์:45,ไฟดับ:60,พกพา:40' },
+  { w: 'กระจก', level: 'ปานกลาง', rel: 'เงา:80,สะท้อน:90,แก้ว:60,หน้าต่าง:55,แตก:55,แต่งหน้า:50,ใส:55,มองตัวเอง:80,ห้องน้ำ:35,หวี:25' },
+  { w: 'วันหยุด', level: 'ปานกลาง', rel: 'พักผ่อน:80,เที่ยว:65,นอน:50,เสาร์อาทิตย์:85,ปิดเทอม:60,สงกรานต์:55,ลาพักร้อน:85,ครอบครัว:35,ทำงาน:35' },
+  { w: 'ภูเขาไฟ', level: 'ยาก', rel: 'ลาวา:90,แมกมา:90,ปะทุ:85,ระเบิด:70,ภูเขา:60,เถ้าถ่าน:75,ร้อน:45,ฟูจิ:65,ฮาวาย:50,ญี่ปุ่น:40,แผ่นดินไหว:50,ควัน:40' },
+  { w: 'นาฬิกาทราย', level: 'ยาก', rel: 'เวลา:75,ทราย:70,นาฬิกา:80,นับถอยหลัง:70,คว่ำ:60,แก้ว:45,ไหล:45,โบราณ:40' },
+  { w: 'สายรุ้ง', level: 'ยาก', rel: 'รุ้ง:95,สี:70,ฝน:65,แสงแดด:60,เจ็ดสี:90,ปริซึม:75,หักเห:60,ฟ้า:45,โค้ง:45,ม่วง:40' },
+  { w: 'เงา', level: 'ยาก', rel: 'มืด:60,แสง:70,ดวงอาทิตย์:45,ตาม:55,ดำ:50,หุ่นเงา:85,สะท้อน:40,กลางวัน:35' },
+  { w: 'ความฝัน', level: 'ยาก', rel: 'ฝัน:95,นอน:70,หลับ:75,ฝันร้าย:90,ตื่น:50,เป้าหมาย:60,หมอน:40,จินตนาการ:60,ละเมอ:75,กลางคืน:45' },
+  { w: 'เวลา', level: 'ยาก', rel: 'นาฬิกา:85,ชั่วโมง:80,นาที:80,วินาที:80,อดีต:55,อนาคต:55,ปฏิทิน:60,อายุ:45,สาย:40' },
+  { w: 'ความเงียบ', level: 'ยาก', rel: 'เงียบ:95,เสียง:60,สงบ:70,ห้องสมุด:60,ฟัง:40,ปิดปาก:55,ว่างเปล่า:45,สมาธิ:55,หลับ:35' },
+  { w: 'ลมหายใจ', level: 'ยาก', rel: 'หายใจ:95,ปอด:80,อากาศ:70,จมูก:65,ออกซิเจน:75,ชีวิต:55,ถอนหายใจ:80,ลม:60,เหนื่อย:40' },
+  { w: 'เส้นขอบฟ้า', level: 'ยากมาก (Unseen)', rel: 'ขอบฟ้า:95,ทะเล:60,ท้องฟ้า:75,พระอาทิตย์ตก:70,ไกล:60,เส้น:55,ฟ้า:60,ภูเขา:35,สายตา:40' },
+  { w: 'ความทรงจำ', level: 'ยากมาก (Unseen)', rel: 'อดีต:75,จำ:85,ลืม:70,รูปถ่าย:60,สมอง:60,คิดถึง:65,ความหลัง:90,อัลบั้ม:55' },
+  { w: 'เสียงสะท้อน', level: 'ยากมาก (Unseen)', rel: 'ก้อง:90,ถ้ำ:75,เสียง:80,ภูเขา:55,ตะโกน:65,หุบเขา:70,สะท้อน:85,ซ้ำ:45' },
+  { w: 'แรงโน้มถ่วง', level: 'ยากมาก (Unseen)', rel: 'นิวตัน:85,แอปเปิล:70,ดึงดูด:80,ตก:65,โลก:60,น้ำหนัก:60,อวกาศ:45,ลอย:45' },
+  { w: 'หมอก', level: 'ยากมาก (Unseen)', rel: 'ควัน:55,เมฆ:70,หนาว:55,เช้า:45,มองไม่เห็น:60,ภูเขา:45,ขาว:50,ชื้น:40,ดอย:50' },
+  { w: 'ตะเกียง', level: 'ยากมาก (Unseen)', rel: 'อะลาดิน:85,ยักษ์จีนี่:80,ไฟ:60,แสง:60,น้ำมัน:55,ไส้:55,โบราณ:40,มืด:40' },
+  { w: 'โลกคู่ขนาน', level: 'ยากมาก (Unseen)', rel: 'มัลติเวิร์ส:95,หลายโลก:90,มิติ:80,จักรวาล:65,ไซไฟ:55,ย้อนเวลา:45,วิทยาศาสตร์:40' },
+];
+
+/* ================= v14: bonus stage select + มโนราห์(คา) + 100% ================= */
+const XG_NAMES = ['หมวดหมู หมู่ หมู้ หมู๊ หมู๋', 'มโนราห์(คา)', '100%'];
+const XG_EMOJI = ['🐷', '💸', '💯'];
+const XG = {};
+try { HIGH_FREQ_EVENTS.add('g2_typing'); HIGH_FREQ_EVENTS.add('g3_typing'); } catch (e) {}
+function xgGraphemes(s) {
+  try { if (window.Intl && Intl.Segmenter) return [...new Intl.Segmenter('th', { granularity: 'grapheme' }).segment(s)].map(x => x.segment); } catch (e) {}
+  return Array.from(s);
+}
+function xgFmt(n) { return Math.round(+n || 0).toLocaleString('th-TH'); }
+function xgEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+/* ---------- price problem image (SVG) ---------- */
+function priceSVG(pb) {
+  const items = pb.items || [];
+  const n = items.length, W = 960, H = 540, cw = 190, gap = 48;
+  const total = n * cw + (n - 1) * gap, x0 = (W - total) / 2;
+  const cards = items.map((it, i) => {
+    const x = x0 + i * (cw + gap);
+    const plus = i < n - 1 ? `<g transform="translate(${x + cw + gap / 2},250)"><circle r="20" fill="#ffcc1a"/><text y="10" text-anchor="middle" font-size="34" font-weight="900" fill="#3a1400" font-family="Arial">+</text></g>` : '';
+    return `<g transform="translate(${x},120)"><rect width="${cw}" height="260" rx="22" fill="url(#cardg)" stroke="#5fd8ff" stroke-opacity=".55" stroke-width="2"/>
+      <rect x="10" y="10" width="${cw - 20}" height="150" rx="16" fill="#0a1433"/>
+      <text x="${cw / 2}" y="118" text-anchor="middle" font-size="92" font-family="Noto Color Emoji,Apple Color Emoji,Segoe UI Emoji,sans-serif">${it.e}</text>
+      <text x="${cw / 2}" y="200" text-anchor="middle" font-size="${it.n.length > 12 ? 19 : 23}" font-weight="700" fill="#fff" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">${xgEsc(it.n)}</text>
+      <rect x="${cw / 2 - 38}" y="218" width="76" height="30" rx="15" fill="#ffcc1a"/><text x="${cw / 2}" y="240" text-anchor="middle" font-size="20" font-weight="900" fill="#3a1400" font-family="Arial">x${it.q}</text></g>${plus}`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101d45"/><stop offset="1" stop-color="#050a1c"/></linearGradient>
+    <linearGradient id="cardg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f3a74"/><stop offset="1" stop-color="#0c1836"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/><rect x="8" y="8" width="${W - 16}" height="${H - 16}" rx="26" fill="none" stroke="#ffcc1a" stroke-width="4"/>
+    <text x="${W / 2}" y="78" text-anchor="middle" font-size="40" font-weight="800" fill="#ffe27a" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">${xgEsc(pb.title)}</text>
+    ${cards}
+    <text x="${W / 2}" y="475" text-anchor="middle" font-size="46" font-weight="900" fill="#fff" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">รวมทั้งหมด = <tspan fill="#ffcc1a">? บาท</tspan></text></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+function priceFromBank(pb) { return { title: pb.title, price: pb.price, img: priceSVG(pb), level: pb.level }; }
+function wordFromBank(wb) { return { word: wb.w, related: wb.rel, level: wb.level }; }
+function xgAutoFill(force) {
+  const lv = ['ง่าย', 'ปานกลาง', 'ยาก', 'ยากมาก (Unseen)'];
+  if (force || !(G.priceGames || []).filter(p => p && p.price > 0).length) {
+    const e = shuffleArr(PRICE_BANK.filter(p => p.level === lv[0]));
+    const pick = [e[0], e[1], shuffleArr(PRICE_BANK.filter(p => p.level === lv[1]))[0], shuffleArr(PRICE_BANK.filter(p => p.level === lv[2]))[0], shuffleArr(PRICE_BANK.filter(p => p.level === lv[3]))[0]].filter(Boolean);
+    G.priceGames = pick.map(priceFromBank);
+  }
+  if (force || !(G.secretWords || []).filter(w => w && w.word).length) {
+    const hard = shuffleArr(WORD_BANK.filter(w => w.level === lv[2]));
+    const pickW = [shuffleArr(WORD_BANK.filter(w => w.level === lv[0]))[0], shuffleArr(WORD_BANK.filter(w => w.level === lv[1]))[0], hard[0], hard[1], shuffleArr(WORD_BANK.filter(w => w.level === lv[3]))[0]].filter(Boolean);
+    G.secretWords = pickW.map(wordFromBank);
+  }
+}
+function xgEnsureData() {
+  G.priceGames = (G.priceGames || []).filter(p => p && p.price > 0);
+  G.secretWords = (G.secretWords || []).filter(w => w && (w.word || '').trim());
+  if (G.priceGames.length < 5) { const have = new Set(G.priceGames.map(p => p.title)); shuffleArr(PRICE_BANK).forEach(pb => { if (G.priceGames.length < 5 && !have.has(pb.title)) G.priceGames.push(priceFromBank(pb)); }); }
+  if (G.secretWords.length < 5) { const have = new Set(G.secretWords.map(w => w.word)); shuffleArr(WORD_BANK).forEach(wb => { if (G.secretWords.length < 5 && !have.has(wb.w)) G.secretWords.push(wordFromBank(wb)); }); }
+}
+
+/* ---------- CREATE panels ---------- */
+function renderXGSetup() {
+  const host = $('xgSetup'); if (!host) return;
+  G.priceGames = G.priceGames || []; G.secretWords = G.secretWords || [];
+  while (G.priceGames.length < 5) G.priceGames.push({ title: '', price: 0, img: '' });
+  while (G.secretWords.length < 5) G.secretWords.push({ word: '', related: '' });
+  host.innerHTML = `
+  <div class="setup-panel xs-panel">
+    <div class="xs-head"><div class="setup-panel-title">💸 ด่านโบนัส: มโนราห์(คา) — โจทย์ทายราคารวม 5 ข้อ</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-xs bx-gold" onclick="xgAutoFill(true);renderXGSetup()">🤖 สุ่มจากคลังทั้งหมด</button></div></div>
+    <div class="xs-grid">${G.priceGames.slice(0, 5).map((p, i) => `
+      <div class="xs-card">
+        <div class="xs-num">ข้อ ${i + 1}${p.level ? ` <span class="xs-lv">${xgEsc(p.level)}</span>` : ''}</div>
+        <label class="xs-img" for="xsImg${i}">${p.img ? `<img src="${p.img}" alt="">` : '<span>🖼 อัปโหลดรูปโจทย์</span>'}</label>
+        <input type="file" id="xsImg${i}" accept="image/*" style="display:none" onchange="xgLoadImg(this.files[0],${i})">
+        <input class="cyber-input" placeholder="ชื่อโจทย์" value="${xgEsc(p.title)}" oninput="G.priceGames[${i}].title=this.value">
+        <input class="cyber-input" inputmode="numeric" placeholder="ราคารวม (บาท)" value="${p.price ? xgFmt(p.price) : ''}" oninput="G.priceGames[${i}].price=+this.value.replace(/[^0-9]/g,'')||0">
+        <div style="display:flex;gap:6px"><button class="btn-xs bx-cyan" style="flex:1" onclick="xgOpenPriceBank(${i})">📚 คลัง</button>${p.img ? `<button class="btn-xs bx-red" onclick="G.priceGames[${i}].img='';renderXGSetup()">✕ รูป</button>` : ''}</div>
+      </div>`).join('')}</div>
+  </div>
+  <div class="setup-panel xs-panel">
+    <div class="xs-head"><div class="setup-panel-title">💯 ด่านโบนัส: 100% — คำปริศนา 5 คำ</div>
+      <button class="btn-xs bx-gold" onclick="G.secretWords=[];xgAutoFill(true);renderXGSetup()">🤖 สุ่มจากคลังทั้งหมด</button></div>
+    <div class="xs-hint">คำที่เกี่ยวข้อง (ไม่บังคับ) ใช้ช่วยคำนวณ % ให้พิธีกร รูปแบบ: <b>คำ:เปอร์เซ็นต์</b> คั่นด้วย , เช่น น้ำ:70,ภูเขา:55</div>
+    <div class="xs-grid">${G.secretWords.slice(0, 5).map((w, i) => `
+      <div class="xs-card">
+        <div class="xs-num">คำที่ ${i + 1}${w.level ? ` <span class="xs-lv">${xgEsc(w.level)}</span>` : ''}</div>
+        <input class="cyber-input xs-word" placeholder="คำปริศนา" value="${xgEsc(w.word)}" oninput="G.secretWords[${i}].word=this.value">
+        <textarea class="cyber-input xs-rel" placeholder="คำที่เกี่ยวข้อง:% ..." oninput="G.secretWords[${i}].related=this.value">${xgEsc(w.related)}</textarea>
+        <button class="btn-xs bx-cyan" onclick="xgOpenWordBank(${i})">📚 คลังคำ</button>
+      </div>`).join('')}</div>
+  </div>`;
+}
+function xgLoadImg(file, i) {
+  if (!file) return;
+  const url = URL.createObjectURL(file), im = new Image();
+  im.onload = () => {
+    let w = im.width, h = im.height; const m = 1000;
+    if (w > m || h > m) { if (w > h) { h = Math.round(h * m / w); w = m; } else { w = Math.round(w * m / h); h = m; } }
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(im, 0, 0, w, h);
+    let q = .82, d = c.toDataURL('image/jpeg', q); while (d.length > 320000 && q > .4) { q -= .1; d = c.toDataURL('image/jpeg', q); }
+    G.priceGames[i].img = d; URL.revokeObjectURL(url); renderXGSetup();
+  };
+  im.src = url;
+}
+function xgOpenPriceBank(slot) {
+  bankOverlay(`<div class="bk-head"><div class="bk-title">💸 คลังโจทย์ มโนราห์(คา) <small>${PRICE_BANK.length} โจทย์ • ใส่ลงข้อ ${slot + 1}</small>
+    <button class="gc-icon-btn close" style="margin-left:auto" onclick="closeBank()">✕</button></div></div>
+    <div class="bk-body"><div class="xs-bank">${PRICE_BANK.map((p, k) => `<div class="xs-bitem" onclick="G.priceGames[${slot}]=priceFromBank(PRICE_BANK[${k}]);closeBank();renderXGSetup()">
+      <img src="${priceSVG(p)}" alt=""><div><b>${xgEsc(p.title)}</b><span class="xs-lv">${p.level}</span><small>ราคารวม ฿${xgFmt(p.price)}</small></div></div>`).join('')}</div></div>`);
+}
+function xgOpenWordBank(slot) {
+  bankOverlay(`<div class="bk-head"><div class="bk-title">💯 คลังคำปริศนา <small>${WORD_BANK.length} คำ • ใส่ลงคำที่ ${slot + 1}</small>
+    <button class="gc-icon-btn close" style="margin-left:auto" onclick="closeBank()">✕</button></div></div>
+    <div class="bk-body"><div class="bk-grid">${WORD_BANK.map((w, k) => `<div class="bk-cat" onclick="G.secretWords[${slot}]=wordFromBank(WORD_BANK[${k}]);closeBank();renderXGSetup()"><b>${xgEsc(w.w)}</b><span>${w.level}</span></div>`).join('')}</div></div>`);
+}
+
+/* ---------- event routing (new types) ---------- */
+const XG_FROM_PLAYER = new Set(['stage_chosen', 'g2_wheel_stop', 'g2_pick', 'g2_typing', 'g2_submit', 'g3_typing', 'g3_guess']);
+const XG_FROM_MC = new Set(['stage_select', 'stage_reveal', 'g2_start', 'g2_problem', 'g2_bar', 'g2_verdict', 'g3_start', 'g3_ready', 'g3_score', 'g3_end']);
+const _xgRouteOld = routeEvent;
+routeEvent = function (type, data) {
+  if (XG_FROM_PLAYER.has(type)) {
+    if (G.isMC) xgOnMC(type, data || {});
+    else if (data && data.by !== undefined && data.by !== G.myPlayerIndex) xgOnPartner(type, data);
+    return;
+  }
+  if (XG_FROM_MC.has(type)) { if (!G.isMC) xgOnPlayer(type, data || {}); return; }
+  _xgRouteOld(type, data);
+};
+function xgOnMC(type, d) {
+  if (type === 'stage_chosen') mcOnStageChosen(d.g);
+  else if (type === 'g2_wheel_stop') g2WheelStop(d.final, false);
+  else if (type === 'g2_pick') g2McPick(d.idx);
+  else if (type === 'g2_typing') { const t = $('g2Live'); if (t) t.textContent = d.text ? '฿' + d.text : '—'; }
+  else if (type === 'g2_submit') g2McSubmit(d.guess);
+  else if (type === 'g3_typing') { const t = $('g3Live'); if (t) t.textContent = d.text || '—'; }
+  else if (type === 'g3_guess') g3McGuess(d.n, d.word);
+}
+function xgOnPartner(type, d) {
+  if (type === 'g2_wheel_stop') g2WheelStop(d.final, false);
+  else if (type === 'g3_guess') g3AddRow(d.n, d.word, null);
+}
+function xgOnPlayer(type, d) {
+  if (type === 'stage_select') { G.totalMoney = d.total; if (d.missCount != null) G.missCount = d.missCount; showStageSelect(false); }
+  else if (type === 'stage_reveal') { XG.picked = true; showStageReveal(d.g); }
+  else if (type === 'g2_start') { G.totalMoney = d.total; g2Show(false); }
+  else if (type === 'g2_problem') g2ShowProblem(d);
+  else if (type === 'g2_bar') g2Bar(d.stage, d.geo);
+  else if (type === 'g2_verdict') g2Verdict(d);
+  else if (type === 'g3_start') { G.totalMoney = d.total; g3Show(false); }
+  else if (type === 'g3_ready') g3Ready();
+  else if (type === 'g3_score') g3Score(d.n, d.word, d.pct);
+  else if (type === 'g3_end') g3End(d);
+}
+
+/* ---------- stage select ---------- */
+function startStageSelect() {
+  xgEnsureData();
+  XG.picked = false; XG.stageDone = false;
+  broadcastEvent('stage_select', { total: G.totalMoney, missCount: G.missCount || 0 });
+  showStageSelect(true);
+}
+function showStageSelect(isMC) {
+  XG.picked = false; XG.stageDone = false;
+  const old = $('stageSel'); if (old) old.remove();
+  const ov = document.createElement('div'); ov.id = 'stageSel'; ov.className = 'ss-ov';
+  ov.innerHTML = `<div class="gs-rays"></div>
+    <div class="ss-title" data-t="SELECT STAGE">SELECT STAGE</div>
+    <div class="ss-sub">${isMC ? 'รอผู้เล่นเลือกด่านโบนัส… (กดเลือกแทนผู้เล่นได้)' : 'เลือกด่านโบนัส 1 ด่าน — ดูคำใบ้จาก emoji!'}</div>
+    <div class="ss-cards">${[0, 1, 2].map(i => `<div class="ss-card" id="ssCard${i}" style="--i:${i}" onclick="xgPickStage(${i})">
+      <div class="ss-card-in"><div class="ss-no">STAGE ${i + 1}</div><div class="ss-emoji">${XG_EMOJI[i]}</div><div class="ss-q">???</div></div></div>`).join('')}</div>`;
+  document.body.appendChild(ov);
+  try { FX.sparkle(0.2); } catch (e) {}
+}
+function xgPickStage(i) {
+  if (XG.picked) return; XG.picked = true;
+  document.querySelectorAll('.ss-card').forEach((c, k) => c.classList.add(k === i ? 'picked' : 'dim'));
+  if (G.isMC) mcOnStageChosen(i); else broadcastEvent('stage_chosen', { g: i, by: G.myPlayerIndex });
+}
+function mcOnStageChosen(i) {
+  if (XG.stageDone) return; XG.stageDone = true; XG.picked = true; XG.game = i;
+  broadcastEvent('stage_reveal', { g: i });
+  showStageReveal(i, () => {
+    if (i === 0) { broadcastEvent('bonus_start', { total: G.totalMoney, missCount: G.missCount || 0 }); showBonusMC(); }
+    else if (i === 1) g2StartMC();
+    else g3StartMC();
+  });
+}
+function showStageReveal(i, done) {
+  const ov = $('stageSel'); if (!ov) { if (done) done(); return; }
+  document.querySelectorAll('.ss-card').forEach((c, k) => { c.classList.remove('picked', 'dim'); c.classList.add(k === i ? 'picked' : 'dim'); });
+  setTimeout(() => {
+    const chars = xgGraphemes(XG_NAMES[i]);
+    const rv = document.createElement('div'); rv.className = 'sr-wrap';
+    rv.innerHTML = `<div class="sr-emoji">${XG_EMOJI[i]}</div><div class="sr-stage">STAGE ${i + 1}</div>
+      <div class="sr-name">${chars.map((c, k) => c === ' ' ? '<span class="sr-sp"></span>' : `<span class="sr-ch" data-ch="${xgEsc(c)}" style="--i:${k}">${xgEsc(c)}</span>`).join('')}</div>`;
+    ov.classList.add('revealing'); ov.appendChild(rv);
+    try { FX.crash(0.2); FX.fanfare(0.3); FX.sparkle(0.6); } catch (e) {}
+    setTimeout(() => gsBurst(ov, 60), 300);
+  }, 900);
+  setTimeout(() => { ov.classList.add('out'); }, 4600);
+  setTimeout(() => { ov.remove(); if (done) done(); }, 5200);
+}
+
+/* ---------- game screens helper ---------- */
+function xgScreen(id, html) {
+  let s = $(id);
+  if (!s) { s = document.createElement('div'); s.id = id; s.className = 'screen xg-screen'; document.body.insertBefore(s, $('confettiWrap') || null); }
+  s.innerHTML = html; showScreen(id); return s;
+}
+function xgHeader(title) {
+  return `<div class="game-header"><div class="xg-htitle">${title}</div><div class="xg-htotal">รางวัลสะสม <b>฿${xgFmt(G.totalMoney)}</b></div></div>`;
+}
+
+/* ================= GAME 2: มโนราห์(คา) ================= */
+const G2 = {};
+const WHEEL_SEG = [10, 15, 20, 25, 30, 35, 40];
+function g2Reset() { clearInterval(G2.tIv); cancelAnimationFrame(G2.raf); Object.assign(G2, { tol: null, idx: null, guess: null, submitted: false, geo: null, rot: 0, spinning: false, stopped: false, prob: null, done: false }); }
+function g2StartMC() { g2Reset(); xgEnsureData(); broadcastEvent('g2_start', { total: G.totalMoney }); g2Show(true); }
+function g2Show(isMC) {
+  g2Reset();
+  xgScreen('g2Screen', `${xgHeader('💸 มโนราห์(คา)')}
+    <div class="xg-body ${isMC ? 'xg-mc' : ''}"><div class="xg-stage" id="g2Stage"></div>${isMC ? '<div class="xg-ctrl" id="g2Ctrl"></div>' : ''}</div>`);
+  g2RenderWheel(isMC);
+  if (isMC) g2Ctrl();
+}
+function wheelSVG() {
+  const n = WHEEL_SEG.length, seg = 360 / n, R = 150, c = 160;
+  const cols = ['#ff2e63', '#ffb300', '#00c2ff', '#8b3dff', '#39e61a', '#ff6a00', '#2b50ff'];
+  const pt = (a, r) => [c + r * Math.sin(a * Math.PI / 180), c - r * Math.cos(a * Math.PI / 180)];
+  const paths = WHEEL_SEG.map((v, i) => {
+    const a0 = i * seg, a1 = a0 + seg, [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), [tx, ty] = pt(a0 + seg / 2, R * .66);
+    return `<path d="M${c},${c} L${x0},${y0} A${R},${R} 0 0 1 ${x1},${y1} Z" fill="${cols[i]}" stroke="#fff" stroke-width="2"/>
+      <text x="${tx}" y="${ty}" transform="rotate(${a0 + seg / 2},${tx},${ty})" text-anchor="middle" dominant-baseline="middle" font-family="Bungee,Arial Black,sans-serif" font-size="26" fill="#fff" stroke="rgba(0,0,0,.35)" stroke-width="1">${v}%</text>`;
+  }).join('');
+  const bulbs = Array.from({ length: 28 }, (_, k) => { const [x, y] = pt(k * 360 / 28, 157); return `<circle class="wh-bulb" style="--k:${k}" cx="${x}" cy="${y}" r="4.5"/>`; }).join('');
+  return `<svg viewBox="0 0 320 320" class="wh-svg"><defs><radialGradient id="whHub" cx=".4" cy=".35"><stop offset="0" stop-color="#fff6b8"/><stop offset=".6" stop-color="#ffc21a"/><stop offset="1" stop-color="#a86a00"/></radialGradient>
+    <radialGradient id="whShade" cx=".5" cy=".5"><stop offset=".55" stop-color="rgba(0,0,0,0)"/><stop offset="1" stop-color="rgba(0,0,0,.35)"/></radialGradient></defs>
+    <circle cx="160" cy="160" r="158" fill="#0b1330" stroke="#ffcc1a" stroke-width="4"/>
+    <g id="whRot">${paths}<circle cx="160" cy="160" r="${R}" fill="url(#whShade)"/></g>${bulbs}
+    <circle cx="160" cy="160" r="30" fill="url(#whHub)" stroke="#fff" stroke-width="3"/><text x="160" y="166" text-anchor="middle" font-family="Bungee,Arial" font-size="15" fill="#5a3000">±%</text></svg>`;
+}
+function g2RenderWheel(isMC) {
+  const st = $('g2Stage'); if (!st) return;
+  st.innerHTML = `<div class="g2-phase-title">① หมุนวงล้อ — ช่วงราคาที่คลาดเคลื่อนได้</div>
+    <div class="wh-box"><div class="wh-pointer"></div>${wheelSVG()}</div>
+    <div class="wh-res" id="whRes">${isMC ? 'รอผู้เล่นกดหยุด…' : 'วงล้อกำลังหมุน…'}</div>
+    ${isMC ? '' : '<button class="btn-random-big" id="whStop" onclick="g2PlayerStop()">⏹ หยุด!</button>'}`;
+  G2.spinning = true; G2.rot = Math.random() * 360; let last = performance.now();
+  const g = $('whRot');
+  (function spin(now) {
+    if (!G2.spinning || !g.isConnected) return;
+    const dt = (now - last) / 1000; last = now; G2.rot += 620 * dt;
+    g.setAttribute('transform', `rotate(${G2.rot % 360} 160 160)`);
+    G2.raf = requestAnimationFrame(spin);
+  })(last);
+}
+function g2PlayerStop() {
+  if (G2.stopped) return;
+  const b = $('whStop'); if (b) b.style.display = 'none';
+  const final = G2.rot + 900 + Math.random() * 360;
+  broadcastEvent('g2_wheel_stop', { final, by: G.myPlayerIndex });
+  g2WheelStop(final, true);
+}
+function g2WheelStop(final, exact) {
+  if (G2.stopped) return; G2.stopped = true; G2.spinning = false; cancelAnimationFrame(G2.raf);
+  const g = $('whRot'); if (!g) return;
+  const from = G2.rot; let to = exact ? final : from + 900 + (((final - from) % 360) + 360) % 360;
+  const t0 = performance.now(), dur = 3200;
+  try { FX.drumroll(3); } catch (e) {}
+  (function anim(now) {
+    const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+    G2.rot = from + (to - from) * e; g.setAttribute('transform', `rotate(${G2.rot % 360} 160 160)`);
+    if (p < 1) requestAnimationFrame(anim);
+    else {
+      const seg = 360 / WHEEL_SEG.length, th = ((360 - (G2.rot % 360)) % 360 + 360) % 360;
+      G2.tol = WHEEL_SEG[Math.floor(th / seg) % WHEEL_SEG.length];
+      const sb = $('whStop'); if (sb) sb.style.display = 'none';
+      const r = $('whRes'); if (r) { r.innerHTML = `ช่วงคลาดเคลื่อน <b>${G2.tol}%</b> <small>(ทายต่ำกว่าราคาจริงได้ไม่เกิน ${G2.tol}% • ทายเกิน = OVER)</small>`; r.classList.add('pop'); }
+      document.querySelector('.wh-box') && document.querySelector('.wh-box').classList.add('won');
+      try { FX.crash(); FX.sparkle(.1); } catch (e) {}
+      if (G.isMC) g2Ctrl();
+      setTimeout(g2RenderPick, 2400);
+    }
+  })(t0);
+}
+function g2RenderPick() {
+  const st = $('g2Stage'); if (!st || G2.idx !== null) return;
+  st.innerHTML = `<div class="g2-phase-title">② เลือกโจทย์ 1 ข้อ <span class="g2-tolchip">±${G2.tol}%</span></div>
+    <div class="pk-cards">${[0, 1, 2, 3, 4].map(i => `<div class="pk-card" style="--i:${i}" onclick="g2PickCard(${i})"><div class="pk-in"><div class="pk-no">${i + 1}</div><div class="pk-tag">โจทย์</div></div></div>`).join('')}</div>
+    <div class="wh-res">${G.isMC ? 'รอผู้เล่นเลือกโจทย์… (กดเลือกแทนได้)' : 'แตะเลือกการ์ด 1 ใบ'}</div>`;
+}
+function g2PickCard(i) {
+  if (G2.idx !== null) return;
+  document.querySelectorAll('.pk-card').forEach((c, k) => c.classList.add(k === i ? 'picked' : 'dim'));
+  if (G.isMC) g2McPick(i); else { G2.idx = i; broadcastEvent('g2_pick', { idx: i, by: G.myPlayerIndex }); }
+}
+async function g2McPick(i) {
+  if (G2.prob) return;
+  G2.idx = i; G2.prob = G.priceGames[i];
+  document.querySelectorAll('.pk-card').forEach((c, k) => c.classList.add(k === i ? 'picked' : 'dim'));
+  const img = await prepareQImgForBroadcast(G2.prob.img || '');
+  const payload = { idx: i, title: G2.prob.title, img, tol: G2.tol };
+  broadcastEvent('g2_problem', payload);
+  setTimeout(() => { g2ShowProblem(Object.assign({}, payload, { img: G2.prob.img })); g2Ctrl(); }, 900);
+}
+function g2ShowProblem(d) {
+  G2.idx = d.idx; if (d.tol) G2.tol = d.tol;
+  const st = $('g2Stage'); if (!st) return;
+  st.innerHTML = `<div class="g2-phase-title">③ ทายราคารวม <span class="g2-tolchip">±${G2.tol}%</span> <span class="g2-tolchip">ข้อ ${d.idx + 1}</span></div>
+    <div class="g2-prob"><div class="g2-ptitle">${xgEsc(d.title)}</div><div class="g2-img loading" id="g2Img"><img alt=""></div></div>
+    <div class="g2-timer" id="g2Timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" class="t-bg"/><circle cx="50" cy="50" r="44" class="t-fg" id="g2TArc"/></svg><b id="g2TNum">120</b></div>
+    <div id="g2AnsArea">${G.isMC ? '<div class="wh-res">ผู้เล่นกำลังพิมพ์: <b id="g2Live">—</b></div>' : `
+      <div class="g2-ans"><span class="g2-baht">฿</span><input id="g2Input" class="answer-input-cyber" inputmode="numeric" placeholder="พิมพ์ราคารวม" autocomplete="off" oninput="g2Typing(this)" onkeydown="if(event.key==='Enter')g2Submit()">
+      <button class="btn-submit-cyber" onclick="g2Submit()">ส่ง</button></div>`}</div>
+    <div id="g2BarHost"></div>`;
+  resolveQImg(d.img).then(src => { const b = $('g2Img'); if (!b) return; const im = b.querySelector('img'); im.onload = () => b.classList.remove('loading'); im.src = src || ''; if (!src) b.classList.remove('loading'); im.onclick = () => openImgLightbox(im.src); });
+  let t = 120; const arc = $('g2TArc'); const len = 2 * Math.PI * 44;
+  if (arc) { arc.style.strokeDasharray = len; arc.style.strokeDashoffset = 0; }
+  clearInterval(G2.tIv);
+  G2.tIv = setInterval(() => {
+    if (G2.submitted || (G.isMC && G2.geo)) { clearInterval(G2.tIv); const tm = $('g2Timer'); if (tm) tm.style.opacity = '.35'; return; }
+    t--; const n = $('g2TNum'); if (n) n.textContent = Math.max(0, t);
+    if (arc) arc.style.strokeDashoffset = len * (1 - t / 120);
+    const tm = $('g2Timer'); if (tm && t <= 20) tm.classList.add('urgent');
+    if (t <= 0) { clearInterval(G2.tIv); if (!G.isMC) g2Submit(true); }
+  }, 1000);
+  setTimeout(() => { const i = $('g2Input'); if (i) i.focus(); }, 300);
+}
+function g2Typing(el) {
+  const v = el.value.replace(/[^0-9]/g, '').slice(0, 12);
+  el.value = v ? (+v).toLocaleString('th-TH') : '';
+  broadcastEvent('g2_typing', { text: el.value, by: G.myPlayerIndex });
+}
+function g2Submit(timeout) {
+  if (G2.submitted) return;
+  const el = $('g2Input'); const guess = +(el ? el.value : '').replace(/[^0-9]/g, '') || 0;
+  if (!timeout && !guess) { showNotif('⚠️ พิมพ์ราคาก่อนนะ'); return; }
+  G2.submitted = true; clearInterval(G2.tIv);
+  broadcastEvent('g2_submit', { guess, by: G.myPlayerIndex });
+  const a = $('g2AnsArea'); if (a) a.innerHTML = `<div class="g2-sent">${timeout ? '⏰ หมดเวลา! ส่งคำตอบอัตโนมัติ' : '📩 ส่งคำตอบแล้ว'} — ราคาทาย <b>฿${xgFmt(guess)}</b><br><small>รอพิธีกรเปิดผล…</small></div>`;
+}
+function g2McSubmit(guess) {
+  if (G2.guess !== null && G2.guess !== undefined) return;
+  G2.guess = guess; clearInterval(G2.tIv);
+  const actual = +G2.prob.price, lo = Math.round(actual * (1 - G2.tol / 100)), hi = actual;
+  const minV = Math.min(guess, lo), maxV = Math.max(guess, hi), span = Math.max(maxV - minV, actual * .1);
+  const vmin = Math.max(0, minV - span * .5), vmax = maxV + span * .5;
+  const P = v => ((v - vmin) / (vmax - vmin)) * 100;
+  G2.geo = { lo, hi, guess, pLo: P(lo), pHi: P(hi), pG: P(guess), tol: G2.tol };
+  const a = $('g2AnsArea'); if (a) a.innerHTML = `<div class="g2-sent">📩 ผู้เล่นตอบ <b>฿${xgFmt(guess)}</b></div>`;
+  showNotif('📩 ผู้เล่นส่งราคาแล้ว');
+  g2Ctrl();
+}
+function g2Ctrl() {
+  const c = $('g2Ctrl'); if (!c) return;
+  const p = G2.prob, gs = G2.geo;
+  const step = G2.barStage || 0;
+  c.innerHTML = `<div class="mc-panel-box">
+    <div class="mc-panel-label">🎛 MC PANEL — มโนราห์(คา)</div>
+    <div class="xg-kv"><span>ช่วงคลาดเคลื่อน</span><b>${G2.tol ? G2.tol + '%' : '—'}</b></div>
+    <div class="xg-kv"><span>โจทย์</span><b>${p ? 'ข้อ ' + (G2.idx + 1) + ' • ' + xgEsc(p.title) : '—'}</b></div>
+    <div class="xg-kv"><span>ราคาจริง 👁</span><b style="color:#7dff5a">${p ? '฿' + xgFmt(p.price) : '—'}</b></div>
+    <div class="xg-kv"><span>ช่วงที่ถูก</span><b>${gs ? '฿' + xgFmt(gs.lo) + ' – ฿' + xgFmt(gs.hi) : '—'}</b></div>
+    <div class="xg-kv"><span>ราคาทาย</span><b style="color:#ffe27a">${gs ? '฿' + xgFmt(gs.guess) : '—'}</b></div>
+    <div class="mc-ball-btns" style="flex-direction:column">
+      <button class="btn-mc bm-cyan" ${gs && step < 1 ? '' : 'disabled'} onclick="g2McBar(1)">① เปิดช่วงราคา (Range)</button>
+      <button class="btn-mc bm-gold" ${gs && step === 1 ? '' : 'disabled'} onclick="g2McBar(2)">② เปิดราคาทาย + ช่วงคลาดเคลื่อน</button>
+      <button class="btn-mc bm-green" ${gs && step === 2 ? '' : 'disabled'} onclick="g2McVerdict()">③ เฉลย!</button>
+    </div>
+    ${!G2.prob && G2.tol ? '<div class="mc-ball-status">รอผู้เล่นเลือกโจทย์…</div>' : ''}
+    ${G2.prob && !gs ? '<div class="mc-ball-status">รอผู้เล่นตอบ (หมดเวลาจะส่งอัตโนมัติ)</div>' : ''}
+  </div>`;
+}
+function g2McBar(stage) {
+  G2.barStage = stage;
+  broadcastEvent('g2_bar', { stage, geo: G2.geo });
+  g2Bar(stage, G2.geo); g2Ctrl();
+}
+function g2Bar(stage, geo) {
+  G2.geo = geo;
+  const host = $('g2BarHost'); if (!host) return;
+  if (!host.querySelector('.pb')) {
+    host.innerHTML = `<div class="pb">
+      <div class="pb-labels"><div class="pb-lab lo" style="left:${geo.pLo}%"><small>ต่ำสุดที่รับได้</small><b data-v="${geo.lo}">???</b></div>
+        <div class="pb-lab hi" style="left:${geo.pHi}%"><small>ราคาจริง</small><b data-v="${geo.hi}">???</b></div></div>
+      <div class="pb-track"><div class="pb-under"></div><div class="pb-zone" style="left:${geo.pLo}%;width:${geo.pHi - geo.pLo}%"><i></i></div><div class="pb-over" style="left:${geo.pHi}%"><span>OVER</span></div>
+        <div class="pb-tick" style="left:${geo.pLo}%"></div><div class="pb-tick" style="left:${geo.pHi}%"></div></div>
+      <div class="pb-guess" style="--x:${geo.pG}"><div class="pb-tri"></div><div class="pb-glab">ราคาทาย<br><b>฿${xgFmt(geo.guess)}</b></div></div>
+      <div class="pb-stamp" id="pbStamp"></div></div>`;
+  }
+  const pb = host.querySelector('.pb');
+  pb.classList.add('s' + stage);
+  const gp = document.querySelector('.g2-prob'); if (gp) gp.classList.add('small');
+  setTimeout(() => pb.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+  if (stage >= 2) {
+    pb.querySelectorAll('.pb-lab b').forEach(b => { const v = +b.dataset.v, t0 = performance.now(); (function cnt(now) { const p = Math.min(1, (now - t0) / 1200); b.textContent = '฿' + xgFmt(v * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(cnt); })(t0); });
+    try { FX.drumroll(1.2); } catch (e) {}
+  } else { try { FX.sparkle(0); } catch (e) {} }
+}
+function g2McVerdict() {
+  if (G2.done) return; G2.done = true;
+  const gs = G2.geo, ok = gs.guess >= gs.lo && gs.guess <= gs.hi, over = gs.guess > gs.hi;
+  const final = ok ? G.totalMoney * 10 : Math.floor(G.totalMoney / 2);
+  const d = { ok, over, final, actual: gs.hi };
+  broadcastEvent('g2_verdict', d); g2Verdict(d); G2.barStage = 3; g2Ctrl();
+}
+function g2Verdict(d) {
+  G2.done = true;
+  const pb = document.querySelector('#g2BarHost .pb'); if (pb) pb.classList.add('s3', d.ok ? 'ok' : 'bad');
+  const s = $('pbStamp'); if (s) s.textContent = d.ok ? 'CORRECT!' : (d.over ? 'OVER!' : 'LOW!');
+  if (d.ok) { try { FX.crash(); playSnd(SND_DING); } catch (e) {} } else { try { playSnd(SND_WRONG); } catch (e) {} }
+  setTimeout(() => showBonusOutcome(d.ok, () => showFinalScreen(d.final), d.ok ? `✦ ทายถูก! เงินรางวัล x10 ✦` : (d.over ? 'OVER! ทายเกินราคาจริง — เงินรางวัล ÷2' : 'ต่ำเกินช่วง — เงินรางวัล ÷2')), 2600);
+}
+
+/* ================= GAME 3: 100% ================= */
+const G3 = {};
+function g3Reset() { Object.assign(G3, { secret: null, n: 0, rows: [], pending: false, done: false, live: '' }); }
+function g3StartMC() { g3Reset(); xgEnsureData(); broadcastEvent('g3_start', { total: G.totalMoney }); g3Show(true); }
+function g3Show(isMC) {
+  g3Reset();
+  xgScreen('g3Screen', `${xgHeader('💯 100%')}
+    <div class="xg-body ${isMC ? 'xg-mc' : ''}"><div class="xg-stage g3-wrap">
+      <aside class="g3-side"><div class="g3-side-h">คำที่ตอบล่าสุด</div><div class="g3-list" id="g3List"><div class="g3-empty">ยังไม่มีคำตอบ</div></div></aside>
+      <main class="g3-main">
+        <div class="g3-top"><div class="g3-dots" id="g3Dots">${Array.from({ length: 10 }, (_, k) => `<i style="--k:${k}"></i>`).join('')}</div>
+          <div class="g3-mult"><small>ทายถูกครั้งนี้ได้</small><span class="current-mult" id="g3Mult" data-t="x10">x10</span></div></div>
+        <div class="g3-rule">ทายคำปริศนาให้ได้ภายใน 10 ครั้ง — ยิ่งทายถูกเร็ว ตัวคูณยิ่งสูง!</div>
+        ${isMC ? '<div class="wh-res">ผู้เล่นกำลังพิมพ์: <b id="g3Live">—</b></div>' : `<div class="g2-ans" id="g3AnsRow"><input id="g3Input" class="answer-input-cyber" placeholder="${'รอพิธีกรเลือกคำปริศนา…'}" disabled autocomplete="off" maxlength="40" oninput="broadcastEvent('g3_typing',{text:this.value,by:G.myPlayerIndex})" onkeydown="if(event.key==='Enter')g3Send()"><button class="btn-submit-cyber" id="g3Btn" disabled onclick="g3Send()">ทาย</button></div>`}
+        <div class="g3-secret"><div class="g3-secret-l">คำปริศนา</div><div class="g3-secret-box" id="g3Secret"><span class="g3-q">???</span></div></div>
+      </main></div>${isMC ? '<div class="xg-ctrl" id="g3Ctrl"></div>' : ''}</div>`);
+  if (isMC) g3Ctrl();
+}
+function g3Ctrl() {
+  const c = $('g3Ctrl'); if (!c) return;
+  if (!G3.secret) {
+    c.innerHTML = `<div class="mc-panel-box"><div class="mc-panel-label">🎛 MC PANEL — เลือกคำปริศนา 1 คำ</div>
+      <div class="g3-pick">${G.secretWords.map((w, i) => `<button class="btn-mc bm-blue" onclick="g3McChoose(${i})">${xgEsc(w.word)} <small style="opacity:.7">${xgEsc(w.level || '')}</small></button>`).join('')}
+      <button class="btn-mc bm-gold" onclick="g3McChoose(Math.floor(Math.random()*${G.secretWords.length}))">🎲 สุ่ม</button></div></div>`;
+    return;
+  }
+  const pend = G3.rows.find(r => r.pct === null);
+  const sug = pend ? g3Suggest(pend.word) : 0;
+  c.innerHTML = `<div class="mc-panel-box"><div class="mc-panel-label">🎛 MC PANEL — 100%</div>
+    <div class="xg-kv"><span>คำปริศนา 👁</span><b style="color:#7dff5a;font-size:22px">${xgEsc(G3.secret.word)}</b></div>
+    <div class="xg-kv"><span>ครั้งที่</span><b>${G3.n} / 10</b></div>
+    ${pend ? `<div class="g3-judge"><div class="g3-jw">คำที่ทาย #${pend.n}: <b>${xgEsc(pend.word)}</b></div>
+      <div class="g3-sug">🤖 ระบบช่วยคำนวณ ≈ <b>${sug}%</b></div>
+      <div class="g2-ans"><input id="g3PctIn" class="answer-input-cyber" type="number" min="0" max="100" value="${sug}"><span class="g2-baht">%</span>
+      <button class="btn-mc bm-cyan" style="min-width:90px" onclick="g3McScore(+$('g3PctIn').value)">ส่ง %</button></div>
+      <button class="btn-mc bm-green" style="width:100%;margin-top:8px" onclick="g3McScore(100)">✓ ถูกต้อง! (100%)</button></div>`
+      : `<div class="mc-ball-status">${G3.done ? 'จบเกมแล้ว' : 'รอผู้เล่นทายคำ…'}</div>`}
+  </div>`;
+}
+function g3McChoose(i) {
+  G3.secret = G.secretWords[i]; G3.relMap = {};
+  String(G3.secret.related || '').split(/[,\n]/).forEach(s => { const m = s.split(':'); if (m[0] && m[0].trim()) G3.relMap[m[0].trim()] = +m[1] || 50; });
+  broadcastEvent('g3_ready', {}); g3Ready(); g3Ctrl();
+  showNotif('✅ เลือกคำปริศนา: ' + G3.secret.word);
+}
+function g3Ready() {
+  const i = $('g3Input'), b = $('g3Btn');
+  if (i) { i.disabled = false; i.placeholder = 'พิมพ์คำที่คิดว่าใช่…'; i.focus(); } if (b) b.disabled = false;
+  const box = $('g3Secret'); if (box) box.classList.add('ready');
+}
+function g3Norm(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ''); }
+function g3Suggest(guess) {
+  const s = g3Norm(G3.secret && G3.secret.word), g = g3Norm(guess);
+  if (!g) return 0; if (g === s) return 100;
+  let best = 0;
+  Object.keys(G3.relMap || {}).forEach(k => { const kk = g3Norm(k); const v = G3.relMap[k];
+    if (kk === g) best = Math.max(best, v); else if (kk.length >= 2 && (g.includes(kk) || kk.includes(g))) best = Math.max(best, Math.round(v * .8)); });
+  if (s.length >= 2 && (g.includes(s) || s.includes(g))) best = Math.max(best, Math.min(95, 55 + Math.round(35 * Math.min(g.length, s.length) / Math.max(g.length, s.length))));
+  const A = xgGraphemes(s), B = xgGraphemes(g); const bag = {}; A.forEach(c => bag[c] = (bag[c] || 0) + 1);
+  let common = 0; B.forEach(c => { if (bag[c] > 0) { common++; bag[c]--; } });
+  best = Math.max(best, Math.round(2 * common / (A.length + B.length) * 45));
+  return Math.min(99, best);
+}
+function g3Send() {
+  const i = $('g3Input'); if (!i || G3.pending || G3.done) return;
+  const w = i.value.trim(); if (!w) return;
+  if (G3.n >= 10) return;
+  G3.n++; G3.pending = true; i.value = ''; i.disabled = true; $('g3Btn').disabled = true;
+  broadcastEvent('g3_guess', { n: G3.n, word: w, by: G.myPlayerIndex });
+  broadcastEvent('g3_typing', { text: '', by: G.myPlayerIndex });
+  g3AddRow(G3.n, w, null);
+}
+function g3AddRow(n, word, pct) {
+  G3.n = Math.max(G3.n, n);
+  if (!G3.rows.find(r => r.n === n)) G3.rows.push({ n, word, pct });
+  const list = $('g3List'); if (!list) return;
+  const e = list.querySelector('.g3-empty'); if (e) e.remove();
+  const row = document.createElement('div'); row.className = 'g3-row pending'; row.id = 'g3Row' + n;
+  row.innerHTML = `<i class="g3-fill"></i><span class="g3-n">${n}</span><span class="g3-w">${xgEsc(word)}</span><span class="g3-p">⏳</span>`;
+  list.prepend(row);
+  g3UpdateTop();
+}
+function g3UpdateTop() {
+  if (G3.done) return;
+  document.querySelectorAll('#g3Dots i').forEach((d, k) => { d.classList.toggle('used', k < G3.n); });
+  const m = $('g3Mult'); const next = Math.max(1, 10 - (G3.rows.filter(r => r.pct !== null).length + (G3.rows.some(r => r.pct === null) ? 0 : 0)));
+  const mult = Math.max(1, 11 - Math.min(10, G3.pending ? G3.n : G3.n + 1));
+  if (m) { m.textContent = 'x' + mult; m.dataset.t = 'x' + mult; }
+}
+function g3McGuess(n, word) {
+  if (G3.rows.find(r => r.n === n) || G3.done) return;
+  G3.pending = true; g3AddRow(n, word, null); g3Ctrl();
+  try { FX.sparkle(0); } catch (e) {}
+}
+function g3McScore(pct) {
+  const pend = G3.rows.find(r => r.pct === null); if (!pend || G3.done) return;
+  pct = Math.max(0, Math.min(100, Math.round(pct || 0)));
+  broadcastEvent('g3_score', { n: pend.n, word: pend.word, pct });
+  g3Score(pend.n, pend.word, pct);
+  if (pct >= 100) { const mult = 11 - pend.n; g3McEnd(true, pend.n, mult); }
+  else if (pend.n >= 10) g3McEnd(false, pend.n, 0);
+  g3Ctrl();
+}
+function g3Score(n, word, pct) {
+  const r = G3.rows.find(x => x.n === n); if (r) r.pct = pct; else G3.rows.push({ n, word, pct });
+  if (!$('g3Row' + n)) g3AddRow(n, word, pct);
+  const row = $('g3Row' + n); G3.pending = false;
+  if (row) {
+    row.classList.remove('pending'); row.classList.add('scored');
+    row.style.setProperty('--pct', pct + '%'); row.style.setProperty('--hue', Math.round(pct * 1.2));
+    const p = row.querySelector('.g3-p'); const t0 = performance.now();
+    (function c(now) { const k = Math.min(1, (now - t0) / 900); p.textContent = Math.round(pct * k) + '%'; if (k < 1) requestAnimationFrame(c); })(t0);
+    if (pct >= 100) row.classList.add('win');
+  }
+  if (pct >= 70 && pct < 100) { try { FX.sparkle(0); } catch (e) {} }
+  if (!G.isMC && !G3.done && pct < 100 && G3.n < 10) { const i = $('g3Input'), b = $('g3Btn'); if (i) { i.disabled = false; i.focus(); } if (b) b.disabled = false; }
+  g3UpdateTop();
+}
+function g3McEnd(ok, n, mult) {
+  if (G3.done) return; G3.done = true;
+  const final = ok ? G.totalMoney * mult : Math.floor(G.totalMoney / 2);
+  const d = { ok, n, mult, final, secret: G3.secret.word };
+  setTimeout(() => { broadcastEvent('g3_end', d); g3End(d); }, 900);
+}
+function g3End(d) {
+  G3.done = true;
+  const i = $('g3Input'), b = $('g3Btn'); if (i) i.disabled = true; if (b) b.disabled = true;
+  const mm = $('g3Mult'); if (mm) { const t = d.ok ? 'x' + d.mult : '÷2'; mm.textContent = t; mm.dataset.t = t; }
+  const box = $('g3Secret');
+  if (box) { box.classList.add('open', d.ok ? 'ok' : 'bad');
+    box.innerHTML = xgGraphemes(d.secret).map((c, k) => `<span class="sr-ch" data-ch="${xgEsc(c)}" style="--i:${k}">${xgEsc(c)}</span>`).join(''); }
+  try { d.ok ? (FX.crash(), FX.fanfare(.2)) : playSnd(SND_WRONG); } catch (e) {}
+  setTimeout(() => showBonusOutcome(d.ok, () => showFinalScreen(d.final), d.ok ? `✦ ทายถูกในครั้งที่ ${d.n} — เงินรางวัล x${d.mult} ✦` : 'ทายไม่ถูกใน 10 ครั้ง — เงินรางวัล ÷2'), 3000);
+}
+/* ---------- v14 wiring ---------- */
+function btCabinetHTML(kind) {
+  const pool = shuffleArr(btPool(kind));
+  const balls = pool.map((v, i) => `<div class="b3" data-v="${v}" data-i="${i}" onclick="btChooseBall(this,'${kind}')" style="--sp:${(1.6 + (i % 4) * .4).toFixed(1)}s"><div class="b3-face">?</div></div>`).join('');
+  return `<div class="bt-cab ${kind}" id="btCab_${kind}">
+    <div class="bt-sign"><b>${kind === 'tens' ? 'TENS' : 'UNITS'}</b><small>${kind === 'tens' ? 'ตู้หลักสิบ • 0–3' : 'ตู้หลักหน่วย • 0–5'}</small></div>
+    <div class="bt-dome" id="btDome_${kind}"><div class="bt-chute"></div><div class="bt-dome-clip"><div class="bt-air"></div><div class="bt-fan"></div>${balls}</div></div>
+    <div class="bt-base"><div class="bt-lights"></div>
+      <div class="bt-hint">👆 แตะคว้าลูกบอล 1 ลูก</div>
+      <div class="bt-tray" id="btTray_${kind}"></div>
+      <button class="btn-random-big" onclick="btPick('${kind}')">🌀 เป่าลม & สุ่มหยิบ</button>
+      <div class="bt-done-txt">✓ หยิบแล้ว</div></div></div>`;
+}
+const _xgBuildSetupUI = buildSetupUI;
+buildSetupUI = function () { _xgBuildSetupUI(); renderXGSetup(); };
+const _xgAutoGen = autoGenerate;
+autoGenerate = function () { _xgAutoGen(); xgAutoFill(true); renderXGSetup(); };
+const _xgReset = resetSetup;
+resetSetup = function () { G.priceGames = []; G.secretWords = []; _xgReset(); };
+const _xgSnap = qlibSnapshot;
+qlibSnapshot = function () { const s = _xgSnap(); s.priceGames = JSON.parse(JSON.stringify(G.priceGames || [])); s.secretWords = JSON.parse(JSON.stringify(G.secretWords || [])); return s; };
 </script>
 <!-- Leaderboard floating button -->
 <div class="lb-fab" onclick="openLeaderboard()" title="กระดานผู้นำ">
