@@ -5449,6 +5449,87 @@ body::after {
 .bo-overlay.bo-out .bo-sub { animation: gs-fade-out .4s ease forwards; opacity: 1; }
 .bo-overlay.bo-out { animation: gs-fade-out .7s ease forwards .35s; }
 @keyframes bo-out { to { opacity: 0; transform: translateY(-40px) scale(1.8); filter: blur(10px); } }
+/* ================= v9: bonus energy gauge ================= */
+@property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
+.mult-bar-wrap.mb-v2 { --mbc: #ffd700; position: relative; margin-top: 34px; padding: 12px 14px !important; border-radius: 44px;
+  background: linear-gradient(180deg, #2a3a60 0%, #121c38 40%, #0a1128 60%, #1d2a4c 100%);
+  box-shadow: 0 10px 0 #03060f, 0 18px 34px rgba(0,0,0,.65), inset 0 2px 0 rgba(200,230,255,.3), inset 0 -3px 0 rgba(0,0,0,.6), 0 0 0 2px var(--mbc), 0 0 34px color-mix(in srgb, var(--mbc) 55%, transparent);
+  transition: --p .95s cubic-bezier(.22,1,.36,1), box-shadow .6s ease; }
+.mult-bar-wrap.mb-v2[data-m="x5"] { --mbc: #ff7a00; } .mult-bar-wrap.mb-v2[data-m="x3"] { --mbc: #ff1744; }
+.mult-bar-wrap.mb-v2[data-m="x2"] { --mbc: #b36bff; } .mult-bar-wrap.mb-v2[data-m="x1"] { --mbc: #2b8cff; }
+.mult-bar-wrap.mb-v2::before, .mult-bar-wrap.mb-v2::after { content: ''; position: absolute; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #9fb3d9 45%, #3a4a6e 100%); box-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.mult-bar-wrap.mb-v2::before { left: 3px; } .mult-bar-wrap.mb-v2::after { right: 3px; }
+.mb-v2 .mult-bar-3d { box-shadow: inset 0 0 0 2px rgba(0,0,0,.6), inset 0 6px 14px rgba(0,0,0,.9) !important; background: #02050d !important; }
+.mb-v2 .mult-zone { position: relative; }
+.mb-v2 .mult-zone + .mult-zone::after { content: ''; }
+.mb-drain { width: calc((100% - 10px) * var(--p) / 100) !important; transition: none !important;
+  background: repeating-linear-gradient(90deg, rgba(2,5,13,.82) 0 5px, rgba(2,5,13,.7) 5px 7px) !important; box-shadow: none !important; }
+.mb-drain::after { display: none; }
+.mb-energy { position: absolute; top: 5px; bottom: 5px; right: 5px; left: calc(5px + (100% - 10px) * var(--p) / 100); z-index: 5; pointer-events: none; border-radius: 0 25px 25px 0; overflow: hidden; mix-blend-mode: screen; }
+.mb-energy::before { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,.55), rgba(255,255,255,0) 12%), linear-gradient(90deg, transparent 0%, rgba(255,255,255,.45) 50%, transparent 100%);
+  background-size: 100% 100%, 35% 100%; background-repeat: no-repeat; animation: mb-plasma 1.6s linear infinite; }
+@keyframes mb-plasma { from { background-position: 0 0, -40% 0; } to { background-position: 0 0, 140% 0; } }
+.mb-energy::after { content: ''; position: absolute; inset: 0; opacity: .5;
+  background: radial-gradient(circle at 20% 50%, rgba(255,255,255,.5) 0 2px, transparent 3px) 0 0 / 22px 14px; animation: mb-dots .6s linear infinite; }
+@keyframes mb-dots { to { background-position: 22px 0; } }
+.mb-head { position: absolute; top: 4px; bottom: 4px; left: calc(19px + (100% - 38px) * var(--p) / 100); width: 0; z-index: 9; pointer-events: none; }
+.mb-head .mb-line { position: absolute; left: -3px; top: 6px; bottom: 6px; width: 6px; border-radius: 3px; background: #fff;
+  box-shadow: 0 0 10px #fff, 0 0 20px var(--mbc), 0 0 40px var(--mbc); animation: mb-flick .18s steps(2) infinite; }
+@keyframes mb-flick { 50% { opacity: .75; box-shadow: 0 0 6px #fff, 0 0 14px var(--mbc), 0 0 28px #00e5ff; } }
+.mb-head .mb-bolt { position: absolute; left: -13px; bottom: -22px; width: 26px; height: 26px; filter: drop-shadow(0 0 6px var(--mbc)) drop-shadow(0 2px 0 rgba(0,0,0,.6)); animation: mb-bolt 1s ease-in-out infinite; }
+@keyframes mb-bolt { 50% { transform: translateY(2px) scale(1.12); } }
+.mb-head .mb-tag { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); padding: 3px 11px 4px; border-radius: 12px; white-space: nowrap;
+  font: 400 19px/1 'Bungee', 'Supermercado One', sans-serif; color: #1a0e00; background: linear-gradient(180deg, #fff, var(--mbc)); box-shadow: 0 4px 0 rgba(0,0,0,.55), 0 0 18px var(--mbc); }
+.mb-head .mb-tag::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--mbc); }
+.mb-head .mb-tag.pop { animation: mb-tag-pop .6s cubic-bezier(.2,1.8,.4,1); }
+@keyframes mb-tag-pop { 0% { transform: translateX(-50%) scale(1.8); } 100% { transform: translateX(-50%) scale(1); } }
+.mb-head i { position: absolute; left: 0; top: 50%; width: 4px; height: 4px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff, 0 0 10px var(--mbc); animation: mb-sp 0.9s ease-out infinite; }
+.mb-head i:nth-of-type(2) { animation-delay: .3s; --dy: -18px; } .mb-head i:nth-of-type(3) { animation-delay: .6s; --dy: 16px; }
+@keyframes mb-sp { 0% { transform: translate(0, 0); opacity: 1; } 100% { transform: translate(-26px, var(--dy, 0px)) scale(.3); opacity: 0; } }
+.mb-v2 .mult-zone.mz-active { box-shadow: 0 0 0 2px #fff, 0 0 24px var(--mbc) !important; }
+
+/* ================= v9: debug console ================= */
+#fqDbgBtn { width: 48px !important; height: 48px !important; border: 0 !important; background: radial-gradient(circle at 35% 30%, #1d3a6e, #07122a 70%) !important;
+  box-shadow: 0 0 0 2px rgba(0,229,255,.55), 0 0 18px rgba(0,229,255,.45), 0 6px 14px rgba(0,0,0,.6) !important; transition: transform .2s cubic-bezier(.34,1.56,.64,1) !important; }
+#fqDbgBtn:hover { transform: scale(1.1) rotate(-8deg); }
+#fqDbgBtn svg { width: 26px; height: 26px; filter: drop-shadow(0 0 4px #00e5ff); }
+#fqDbgBtn .dbg-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ff1744; color: #fff;
+  font: 700 10px/18px 'Orbitron', sans-serif; text-align: center; box-shadow: 0 0 10px rgba(255,23,68,.8); display: none; }
+#fqDbgBtn .dbg-badge.show { display: block; animation: mb-tag-pop .5s cubic-bezier(.2,1.8,.4,1); }
+#fqDbgPanel { width: min(94vw, 480px) !important; height: min(64vh, 440px) !important; border: 0 !important; border-radius: 18px !important; isolation: isolate;
+  background: linear-gradient(180deg, rgba(8,16,36,.97), rgba(3,7,18,.98)) !important; box-shadow: 0 20px 44px rgba(0,0,0,.7), 0 0 30px rgba(0,229,255,.2);
+  backdrop-filter: blur(10px); font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace !important; animation: dbg-in .35s cubic-bezier(.2,1.4,.4,1); }
+#fqDbgPanel::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; z-index: -1;
+  background: conic-gradient(from var(--gsa), #00e5ff, #2b50ff 30%, #39ff14 55%, #00e5ff 80%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; animation: gs-spin 5s linear infinite; }
+@keyframes dbg-in { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+.dbg-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid rgba(0,229,255,.15);
+  background: linear-gradient(90deg, rgba(0,229,255,.12), transparent 70%); }
+.dbg-title { font: 400 14px/1 'Bungee', 'Orbitron', sans-serif; letter-spacing: .08em; color: #d8ffff; text-shadow: 0 0 10px rgba(0,229,255,.7); }
+.dbg-title small { display: block; margin-top: 4px; font: 500 10px/1 ui-monospace, monospace; color: #6f9fc4; letter-spacing: .05em; text-shadow: none; }
+.dbg-dot { width: 9px; height: 9px; border-radius: 50%; background: #39ff14; box-shadow: 0 0 8px #39ff14; animation: mbar-led-blink 1.6s steps(1) infinite; }
+.dbg-dot.off { background: #ff1744; box-shadow: 0 0 8px #ff1744; }
+.dbg-actions { margin-left: auto; display: flex; gap: 6px; }
+.dbg-actions button { border: 1px solid rgba(0,229,255,.35); background: rgba(0,229,255,.08); color: #bfefff; border-radius: 8px; padding: 5px 9px; cursor: pointer; font: 600 11px/1 ui-monospace, monospace; transition: background .15s; }
+.dbg-actions button:hover { background: rgba(0,229,255,.22); }
+.dbg-actions button.x { border-color: rgba(255,80,110,.4); color: #ffb3bf; background: rgba(255,23,68,.08); }
+.dbg-chips { display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid rgba(0,229,255,.1); flex-wrap: wrap; }
+.dbg-chip { font: 600 10.5px/1 ui-monospace, monospace; padding: 5px 9px; border-radius: 10px; cursor: pointer; color: #8fb6ff; border: 1px solid rgba(90,140,230,.3); background: rgba(90,140,230,.08); }
+.dbg-chip.on { color: #00203a; background: linear-gradient(180deg, #d8ffff, #00c8ff); border-color: transparent; }
+.dbg-chip b { opacity: .7; margin-left: 4px; }
+#fqDbgBody { padding: 8px 10px 10px !important; font-size: 11.5px !important; line-height: 1.45; white-space: normal !important; }
+#fqDbgBody::-webkit-scrollbar { width: 6px; } #fqDbgBody::-webkit-scrollbar-thumb { background: rgba(0,229,255,.35); border-radius: 3px; }
+.dbg-ln { display: flex; gap: 8px; padding: 3px 6px; border-radius: 6px; border-left: 2px solid transparent; animation: gc-in .25s ease both; word-break: break-word; }
+.dbg-ln:hover { background: rgba(255,255,255,.04); }
+.dbg-ln .t { color: #4c6f94; flex-shrink: 0; }
+.dbg-ln .m { color: #cfe8ff; }
+.dbg-ln.err { border-left-color: #ff1744; background: rgba(255,23,68,.06); } .dbg-ln.err .m { color: #ff8095; }
+.dbg-ln.ok { border-left-color: #39ff14; } .dbg-ln.ok .m { color: #9dff7e; }
+.dbg-ln.ev { border-left-color: #ffcc1a; } .dbg-ln.ev .m { color: #ffe27a; }
+.dbg-ln.net { border-left-color: #00e5ff; } .dbg-ln.net .m { color: #7fefff; }
+.dbg-empty { text-align: center; color: #4c6f94; padding: 40px 10px; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -7657,53 +7738,70 @@ function hideBanner() { const b = document.getElementById('fqStatusBanner'); if 
    DEBUG LOG OVERLAY — ช่วยวินิจฉัยบัค (เปิด/ปิดด้วยปุ่ม 🐞 มุมขวาล่าง)
    ============================================================ */
 const _fqDebug = { lines: [], on: false };
+
+const DBG_UI = { filter: 'all', unread: 0 };
+function dbgKind(line) {
+  const s = line.toLowerCase();
+  if (/error|err\b|fail|✗|denied|invalid/.test(s)) return 'err';
+  if (/ ok|✓|verified|success/.test(s)) return 'ok';
+  if (/broadcast|queue|event|listener/.test(s)) return 'ev';
+  if (/firestore|room|join|snapshot|server/.test(s)) return 'net';
+  return '';
+}
+function renderDbgBody() {
+  const body = document.getElementById('fqDbgBody'); if (!body) return;
+  const lines = _fqDebug.lines.map(l => ({ l, k: dbgKind(l) }));
+  const cnt = { all: lines.length, err: lines.filter(x => x.k === 'err').length, ev: lines.filter(x => x.k === 'ev').length, net: lines.filter(x => x.k === 'net').length };
+  const chips = document.getElementById('fqDbgChips');
+  if (chips) chips.innerHTML = [['all', 'ALL'], ['err', 'ERROR'], ['ev', 'EVENT'], ['net', 'NETWORK']].map(([k, n]) =>
+    `<span class="dbg-chip ${DBG_UI.filter === k ? 'on' : ''}" onclick="DBG_UI.filter='${k}';renderDbgBody()">${n}<b>${cnt[k]}</b></span>`).join('');
+  const shown = lines.filter(x => DBG_UI.filter === 'all' || x.k === DBG_UI.filter);
+  const esc2 = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  body.innerHTML = shown.length ? shown.map(x => {
+    const m = x.l.match(/^\[([^\]]+)\]\s?(.*)$/);
+    return `<div class="dbg-ln ${x.k}"><span class="t">${m ? esc2(m[1]) : ''}</span><span class="m">${esc2(m ? m[2] : x.l)}</span></div>`;
+  }).join('') : '<div class="dbg-empty">— ยังไม่มี log —</div>';
+  body.scrollTop = body.scrollHeight;
+  const sub = document.getElementById('fqDbgSub');
+  if (sub) sub.textContent = `ROOM ${G.roomCode || '—'} • ${G.isMC ? 'MC' : 'PLAYER'} • ${window._db ? 'FIRESTORE ON' : 'OFFLINE'}`;
+  const dot = document.getElementById('fqDbgDot'); if (dot) dot.classList.toggle('off', !window._db);
+}
 function dbg(msg, obj) {
   const t = new Date().toLocaleTimeString();
   let line = '[' + t + '] ' + msg;
-  if (obj !== undefined) {
-    try { line += ' ' + (typeof obj === 'string' ? obj : JSON.stringify(obj)); } catch(e) { line += ' [obj]'; }
-  }
+  if (obj !== undefined) { try { line += ' ' + (typeof obj === 'string' ? obj : JSON.stringify(obj)); } catch (e) { line += ' [obj]'; } }
   _fqDebug.lines.push(line);
   if (_fqDebug.lines.length > 200) _fqDebug.lines.shift();
   console.log('[FQDBG]', msg, obj !== undefined ? obj : '');
-  const body = document.getElementById('fqDbgBody');
-  if (body) { body.textContent = _fqDebug.lines.join('\n'); body.scrollTop = body.scrollHeight; }
+  const p = document.getElementById('fqDbgPanel');
+  if (p && p.style.display === 'flex') renderDbgBody();
+  else if (dbgKind(line) === 'err') { DBG_UI.unread++; const b = document.querySelector('#fqDbgBtn .dbg-badge'); if (b) { b.textContent = DBG_UI.unread; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); } }
 }
 function ensureDebugUI() {
   if (document.getElementById('fqDbgBtn')) return;
   const btn = document.createElement('div');
-  btn.id = 'fqDbgBtn';
-  btn.textContent = '🐞';
-  btn.title = 'Debug log';
-  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:100000;width:44px;height:44px;border-radius:50%;background:#111a;border:1px solid #0af;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;backdrop-filter:blur(4px);';
+  btn.id = 'fqDbgBtn'; btn.title = 'Debug console';
+  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:100000;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#7fefff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 0 1 8 0"/><rect x="7" y="7" width="10" height="12" rx="5" fill="rgba(0,229,255,.15)"/><path d="M12 11v8M3 13h4M17 13h4M4 7l3 2M20 7l-3 2M4 19l3-2M20 19l-3-2"/></svg><span class="dbg-badge"></span>`;
   btn.onclick = () => {
     const p = document.getElementById('fqDbgPanel');
-    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
-    const body = document.getElementById('fqDbgBody');
-    if (body) { body.textContent = _fqDebug.lines.join('\n'); body.scrollTop = body.scrollHeight; }
+    const open = !(p.style.display === 'flex');
+    p.style.display = open ? 'flex' : 'none';
+    if (open) { DBG_UI.unread = 0; btn.querySelector('.dbg-badge').classList.remove('show'); renderDbgBody(); }
   };
   const panel = document.createElement('div');
   panel.id = 'fqDbgPanel';
-  panel.style.cssText = 'position:fixed;right:14px;bottom:66px;z-index:100000;width:min(92vw,420px);height:min(60vh,360px);background:#000d;border:1px solid #0af;border-radius:10px;display:none;flex-direction:column;font-family:monospace;font-size:11px;color:#9fe;overflow:hidden;';
-  const head = document.createElement('div');
-  head.style.cssText = 'padding:6px 8px;background:#0af2;display:flex;gap:8px;align-items:center;';
-  head.innerHTML = '<b style="flex:1;">FASTQUIZ DEBUG</b>';
-  const copyBtn = document.createElement('button');
-  copyBtn.textContent = 'Copy';
-  copyBtn.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;';
-  copyBtn.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(_fqDebug.lines.join('\n')); copyBtn.textContent='Copied!'; setTimeout(()=>copyBtn.textContent='Copy',1200); };
-  const clrBtn = document.createElement('button');
-  clrBtn.textContent = 'Clear';
-  clrBtn.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;';
-  clrBtn.onclick = () => { _fqDebug.lines = []; document.getElementById('fqDbgBody').textContent=''; };
-  head.appendChild(copyBtn); head.appendChild(clrBtn);
-  const body = document.createElement('div');
-  body.id = 'fqDbgBody';
-  body.style.cssText = 'flex:1;padding:8px;overflow:auto;white-space:pre-wrap;word-break:break-all;';
-  panel.appendChild(head); panel.appendChild(body);
+  panel.style.cssText = 'position:fixed;right:14px;bottom:72px;z-index:100000;display:none;flex-direction:column;overflow:hidden;';
+  panel.innerHTML = `<div class="dbg-head"><span class="dbg-dot" id="fqDbgDot"></span><div class="dbg-title">FASTQUIZ DEBUG<small id="fqDbgSub"></small></div>
+    <div class="dbg-actions"><button id="fqDbgCopy">Copy</button><button id="fqDbgClear">Clear</button><button class="x" id="fqDbgClose">✕</button></div></div>
+    <div class="dbg-chips" id="fqDbgChips"></div><div id="fqDbgBody" style="flex:1;overflow:auto;"></div>`;
   document.body.appendChild(btn);
   document.body.appendChild(panel);
+  $('fqDbgCopy').onclick = (e) => { navigator.clipboard && navigator.clipboard.writeText(_fqDebug.lines.join('\n')); e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy', 1200); };
+  $('fqDbgClear').onclick = () => { _fqDebug.lines = []; renderDbgBody(); };
+  $('fqDbgClose').onclick = () => { panel.style.display = 'none'; };
 }
+
 document.addEventListener('DOMContentLoaded', ensureDebugUI);
 setTimeout(ensureDebugUI, 1500);
 
@@ -10519,6 +10617,7 @@ const MULT_ORDER = ['x10', 'x5', 'x3', 'x2', 'x1'];
 
 function updateMultBarActiveZone(mult) {
   ['bonusMultMC', 'bonusMultP'].forEach(id => { const el = $(id); if (el) el.dataset.t = el.textContent; });
+  setMultGaugeLabel(mult);
   const activeIdx = MULT_ORDER.indexOf(mult);
   document.querySelectorAll('.mult-bar-3d').forEach(bar => {
     bar.querySelectorAll('.mult-zone').forEach(zone => {
@@ -14219,20 +14318,32 @@ function splitWordsHTML(text) {
   }).join('');
 }
 
-/* multiplier energy needle sync + decoration */
+
+const BOLT_SVG = '<svg class="mb-bolt" viewBox="0 0 24 24"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z" fill="#fff6b8" stroke="#ffb300" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 function decorateMultBars() {
-  document.querySelectorAll('.mult-bar-wrap:not(.mb-v2)').forEach(w => {
+  document.querySelectorAll('.mult-bar-wrap').forEach(w => {
     w.classList.add('mb-v2');
     const bar = w.querySelector('.mult-bar-3d');
-    if (bar && !bar.querySelector('.mb-energy')) bar.insertAdjacentHTML('beforeend', '<div class="mb-drain"></div><div class="mb-energy-glint"></div>');
+    if (bar && !bar.querySelector('.mb-drain')) bar.insertAdjacentHTML('beforeend', '<div class="mb-drain"></div><div class="mb-energy-glint"></div>');
+    if (bar && !bar.querySelector('.mb-energy')) bar.insertAdjacentHTML('beforeend', '<div class="mb-energy"></div>');
+    if (!w.querySelector('.mb-head')) w.insertAdjacentHTML('beforeend', `<div class="mb-head"><div class="mb-line"></div><i></i><i></i><i></i>${BOLT_SVG}<span class="mb-tag">${w.dataset.m || 'x10'}</span></div>`);
+    if (!w.dataset.m) w.dataset.m = 'x10';
   });
 }
-setTimeout(decorateMultBars, 0);
-document.addEventListener('DOMContentLoaded', decorateMultBars);
 function syncMultDrain(pct) {
   decorateMultBars();
-  document.querySelectorAll('.mb-drain').forEach(d => { d.style.width = Math.max(0, Math.min(100, pct)) + '%'; });
+  document.querySelectorAll('.mult-bar-wrap.mb-v2').forEach(w => w.style.setProperty('--p', Math.max(0, Math.min(100, pct))));
 }
+function setMultGaugeLabel(mult) {
+  decorateMultBars();
+  document.querySelectorAll('.mult-bar-wrap.mb-v2').forEach(w => {
+    const changed = w.dataset.m !== mult;
+    w.dataset.m = mult;
+    const tag = w.querySelector('.mb-tag');
+    if (tag) { tag.textContent = mult; if (changed) { tag.classList.remove('pop'); void tag.offsetWidth; tag.classList.add('pop'); } }
+  });
+}
+
 
 /* CLEAR / FAILED 3D outcome */
 function showBonusOutcome(cleared, done) {
