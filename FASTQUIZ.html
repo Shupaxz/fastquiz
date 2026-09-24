@@ -6048,6 +6048,12 @@ body::after {
 .g2-timer.stopped { opacity: .4; filter: grayscale(.6); }
 
 .wh-pointer.flick { animation: wh-flick .12s ease; } @keyframes wh-flick { 50% { transform: rotate(-14deg); } }
+
+.pb-lab b { animation: ml-q 1.4s ease-in-out infinite; display: inline-block; }
+.pb-lab.reveal { animation: pb-lab-rev .7s cubic-bezier(.2,1.8,.4,1); box-shadow: 0 0 0 2px #ffd700, 0 0 24px rgba(255,200,0,.7) !important; }
+.pb-lab.reveal b { animation: none; }
+.pb-lab.lo.reveal { transform: translateX(calc(-100% + 2px)) !important; } .pb-lab.hi.reveal { transform: translateX(-2px) !important; }
+@keyframes pb-lab-rev { 0% { filter: brightness(2.5); } 100% { filter: none; } }
 </style>
 </head>
 <body>
@@ -15794,7 +15800,6 @@ function g2Bar(stage, geo) {
   setTimeout(() => pb.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
   if (stage >= 2) {
     setTimeout(() => g2SweepGuess(geo), 1300);
-    pb.querySelectorAll('.pb-lab b').forEach(b => { const v = +b.dataset.v, t0 = performance.now(); (function cnt(now) { const p = Math.min(1, (now - t0) / 1200); b.textContent = '฿' + xgFmt(v * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(cnt); })(t0); });
     try { FX.drumroll(6); } catch (e) {}
   } else { try { FX.sparkle(0); } catch (e) {} }
 }
@@ -16025,7 +16030,12 @@ function g2SweepGuess(geo) {
       const inZone = geo.guess >= geo.lo && geo.guess <= geo.hi; if (inZone) gEl.classList.add('in');
       const t1 = performance.now(); (function cnt(now) { const p = Math.min(1, (now - t1) / 900); lab.innerHTML = `ราคาทาย<br><b>฿${xgFmt(geo.guess * (1 - Math.pow(1 - p, 3)))}</b>`; if (p < 1) requestAnimationFrame(cnt); })(t1);
       try { FX.crash(); } catch (e) {}
-      G2.swept = true; if (G.isMC) g2Ctrl();
+      pb.querySelectorAll('.pb-lab').forEach((lb, k) => setTimeout(() => {
+        lb.classList.add('reveal'); const b = lb.querySelector('b'), v = +b.dataset.v, t2 = performance.now();
+        (function cnt(now) { const p = Math.min(1, (now - t2) / 1200); b.textContent = '฿' + xgFmt(v * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(cnt); })(t2);
+        try { FX.sparkle(0); } catch (e) {}
+      }, 700 + k * 900));
+      setTimeout(() => { G2.swept = true; if (G.isMC) g2Ctrl(); }, 700 + 2 * 900 + 1200);
     }
   })(t0);
 }
