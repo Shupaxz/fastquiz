@@ -6159,6 +6159,75 @@ body:has(:is(#game-player,#game-mc,#bonus-mc,#bonus-player,#final-screen,#lobby,
 }
 @media (max-height: 640px) { .lx-wrap { gap: 20px; } .lx-wrap .logo-bolt { font-size: 56px; } .lx-wrap .logo-main { font-size: 54px; } }
 @media (prefers-reduced-motion: reduce) { .lx-grid, #login-screen::before, .lx-pill .btn-cyber-gold { animation: none !important; } }
+/* ================= v20: มโนราห์(คา) price breakdown reveal ================= */
+.rc-ov { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: radial-gradient(ellipse at 50% 35%, rgba(0,60,140,.55), rgba(2,6,18,.94) 70%); backdrop-filter: blur(6px);
+  animation: rc-fade .45s ease both; overflow: hidden; }
+.rc-ov.out { animation: rc-fade .5s ease reverse forwards; }
+@keyframes rc-fade { from { opacity: 0; } to { opacity: 1; } }
+.rc-rays { position: absolute; left: 50%; top: 45%; width: 180vmax; height: 180vmax; margin: -90vmax 0 0 -90vmax; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255,210,60,.10) 0deg 6deg, transparent 6deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 4%, transparent 50%); mask: radial-gradient(circle, #000 4%, transparent 50%); animation: rc-spin 30s linear infinite; }
+@keyframes rc-spin { to { transform: rotate(360deg); } }
+.rc-card { position: relative; width: min(760px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; border-radius: 26px; padding: 3px;
+  background: conic-gradient(from var(--rca, 0deg), #ffd700, #ff8a00, #00e5ff, #7a5cff, #ffd700); animation: rc-border 4s linear infinite, rc-pop .7s cubic-bezier(.2,1.5,.4,1) both;
+  box-shadow: 0 0 60px rgba(255,200,0,.35), 0 30px 80px rgba(0,0,0,.7); perspective: 1000px; }
+@property --rca { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes rc-border { to { --rca: 360deg; } }
+@keyframes rc-pop { from { opacity: 0; transform: translateY(40px) scale(.7) rotateX(30deg); } to { opacity: 1; transform: none; } }
+.rc-in { border-radius: 23px; background: linear-gradient(180deg, #0f1f4a, #060d24 70%); padding: 18px 20px 16px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
+.rc-in::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(0,229,255,.06) 1px, transparent 1px) 0 0/100% 26px; }
+.rc-head { text-align: center; position: relative; }
+.rc-kicker { font-family: var(--font-en); font-size: 13px; letter-spacing: 6px; color: #9fe8ff; text-shadow: 0 0 10px #00e5ff; }
+.rc-title { font-family: var(--font-th); font-weight: 800; font-size: clamp(20px, 4vw, 30px); margin-top: 4px;
+  background: linear-gradient(180deg, #fff 0%, #ffe27a 45%, #ff9d00 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(140,60,0,.7)); }
+.rc-line { height: 2px; margin: 12px auto 10px; width: 70%; background: linear-gradient(90deg, transparent, #00e5ff, #ffd700, #00e5ff, transparent); box-shadow: 0 0 10px #00e5ff; }
+.rc-rows { display: flex; flex-direction: column; gap: 9px; overflow-y: auto; min-height: 0; padding: 4px 2px; position: relative; }
+.rc-row { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border-radius: 16px;
+  background: linear-gradient(90deg, rgba(31,58,116,.85), rgba(12,24,54,.85)); border: 1px solid rgba(95,216,255,.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.35); opacity: 0; transform: translateX(80px) rotateY(-35deg); transform-origin: left center; position: relative; overflow: hidden; }
+.rc-row.on { animation: rc-row-in .65s cubic-bezier(.2,1.4,.4,1) forwards; }
+@keyframes rc-row-in { 0% { opacity: 0; transform: translateX(80px) rotateY(-35deg); } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+.rc-row.on::after { content: ''; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%); transform: translateX(-120%); animation: rc-shine .9s ease .25s forwards; pointer-events: none; }
+@keyframes rc-shine { to { transform: translateX(120%); } }
+.rc-row.done { border-color: rgba(255,215,0,.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 18px rgba(255,200,0,.25); }
+.rc-em { width: 54px; height: 54px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px; background: #0a1433; box-shadow: inset 0 0 0 1px rgba(95,216,255,.35); }
+.rc-row.on .rc-em { animation: rc-em .7s cubic-bezier(.2,1.8,.4,1) .15s both; }
+@keyframes rc-em { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
+.rc-nm { min-width: 0; }
+.rc-nm b { display: block; font-family: var(--font-th); font-size: 16px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-nm small { display: block; font-family: var(--font-th); font-size: 12px; color: #8fe6ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-calc { font-family: var(--font-th); font-size: 12.5px; color: #cfe0ff; margin-top: 2px; }
+.rc-calc .q { display: inline-block; background: #ffcc1a; color: #3a1400; font-weight: 900; border-radius: 8px; padding: 0 7px; margin-right: 4px; font-family: Arial, sans-serif; }
+.rc-sub { text-align: right; font-family: 'Bungee', var(--font-en), sans-serif; font-size: clamp(18px, 3.4vw, 26px); color: #ffe27a; letter-spacing: 1px;
+  text-shadow: 0 2px 0 #8a4e00, 0 0 14px rgba(255,200,0,.55); min-width: 110px; }
+.rc-sub small { font-family: var(--font-th); font-size: 11px; color: #9fb6e6; display: block; letter-spacing: 0; text-shadow: none; }
+.rc-row.done .rc-sub b { animation: rc-bump .45s cubic-bezier(.2,1.8,.4,1); display: inline-block; }
+@keyframes rc-bump { 50% { transform: scale(1.35); color: #fff; } }
+.rc-total { margin-top: 12px; position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-radius: 18px;
+  background: linear-gradient(180deg, #fff6b8 0%, #ffd84a 40%, #ffae00 80%, #ff9100 100%); box-shadow: 0 6px 0 #8a4e00, 0 0 40px rgba(255,180,0,.5);
+  opacity: 0; transform: scale(.6); }
+.rc-total.on { animation: rc-total-in .7s cubic-bezier(.2,1.6,.4,1) forwards; }
+@keyframes rc-total-in { to { opacity: 1; transform: none; } }
+.rc-total .l { font-family: var(--font-th); font-weight: 800; font-size: clamp(16px, 3vw, 22px); color: #3a1400; }
+.rc-total .v { font-family: 'Bungee', var(--font-en), sans-serif; font-size: clamp(28px, 6vw, 48px); color: #fff; letter-spacing: 1px;
+  text-shadow: 0 2px 0 #c26a00, 0 4px 0 #8a4e00, 0 6px 0 #5a3000, 0 10px 18px rgba(0,0,0,.45); }
+.rc-total.on .v { animation: rc-pulse 1.4s ease-in-out 1s infinite; }
+@keyframes rc-pulse { 50% { transform: scale(1.06); } }
+.rc-guess { margin-top: 12px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; font-family: var(--font-th); font-size: 15px; color: #cfe0ff; opacity: 0; }
+.rc-guess.on { animation: rc-fade .5s ease forwards; }
+.rc-guess b { color: #fff; } .rc-chip { padding: 4px 12px; border-radius: 999px; font-weight: 800; }
+.rc-chip.ok { background: rgba(57,255,20,.15); color: #7dff5a; box-shadow: inset 0 0 0 1px #39ff14; }
+.rc-chip.bad { background: rgba(255,40,60,.15); color: #ff7a88; box-shadow: inset 0 0 0 1px #ff2a44; }
+.rc-skip { position: absolute; top: 10px; right: 12px; z-index: 2; border: 0; border-radius: 999px; padding: 5px 12px; font-family: var(--font-th); font-size: 12px; color: #cfe0ff; background: rgba(255,255,255,.1); cursor: pointer; }
+@media (max-width: 560px) {
+  .rc-in { padding: 14px 12px 12px; }
+  .rc-row { grid-template-columns: 42px 1fr auto; gap: 8px; padding: 7px 9px 7px 7px; }
+  .rc-em { width: 42px; height: 42px; font-size: 24px; border-radius: 11px; }
+  .rc-nm b { font-size: 14px; } .rc-sub { min-width: 84px; } .rc-head { padding-top: 24px; } .rc-kicker { letter-spacing: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .rc-rays, .rc-card { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -16452,6 +16521,73 @@ function g2SweepGuess(geo) {
     }
   })(t0);
 }
+/* ================= v20: มโนราห์(คา) price breakdown reveal ================= */
+priceFromBank = function (pb) { return { title: pb.title, price: pb.price, img: priceSVG(pb), level: pb.level, items: (pb.items || []).map(it => ({ e: it.e, n: it.n, q: it.q, p: it.p, s: it.s || '' })) }; };
+function rcItemsFor(prob) {
+  let items = prob && prob.items;
+  if (!items || !items.length) { const pb = PRICE_BANK.find(b => b.title === (prob && prob.title) && b.price === +prob.price); items = pb ? pb.items : null; }
+  if (!items || !items.length) return null;
+  const sum = items.reduce((s, it) => s + it.q * it.p, 0);
+  return sum === +prob.price ? items.map(it => ({ e: it.e, n: it.n, q: it.q, p: it.p, s: it.s || '' })) : null;
+}
+function rcBlip(f, dur, vol) {
+  try { const C = window._rcCtx || (window._rcCtx = new (window.AudioContext || window.webkitAudioContext)()); if (C.state === 'suspended') C.resume();
+    const o = C.createOscillator(), g = C.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(f, C.currentTime); o.frequency.exponentialRampToValueAtTime(f * 1.5, C.currentTime + dur);
+    g.gain.setValueAtTime(vol || .12, C.currentTime); g.gain.exponentialRampToValueAtTime(.001, C.currentTime + dur); o.connect(g); g.connect(C.destination); o.start(); o.stop(C.currentTime + dur); } catch (e) {}
+}
+function rcKaching() { rcBlip(1320, .12, .14); setTimeout(() => rcBlip(1980, .25, .12), 90); }
+function rcCount(el, to, ms) {
+  const t0 = performance.now();
+  (function step(t) { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3); el.textContent = '฿' + xgFmt(to * e); if (k < 1) requestAnimationFrame(step); })(t0);
+}
+function showPriceBreakdown(d, done) {
+  const items = d.items; const old = document.querySelector('.rc-ov'); if (old) old.remove();
+  const guess = G2.geo ? G2.geo.guess : null;
+  const ov = document.createElement('div'); ov.className = 'rc-ov';
+  ov.innerHTML = `<div class="rc-rays"></div><div class="rc-card"><div class="rc-in">
+    <button class="rc-skip">ข้าม ⏭</button>
+    <div class="rc-head"><div class="rc-kicker">PRICE BREAKDOWN</div><div class="rc-title">🧾 เฉลยราคาทีละชิ้น — ${xgEsc(d.title || '')}</div></div>
+    <div class="rc-line"></div>
+    <div class="rc-rows">${items.map((it, i) => `<div class="rc-row" data-i="${i}"><div class="rc-em">${it.e}</div>
+      <div class="rc-nm"><b>${xgEsc(it.n)}</b>${it.s ? `<small>${xgEsc(it.s)}</small>` : ''}<div class="rc-calc"><span class="q">x${it.q}</span> ชิ้นละ ฿${xgFmt(it.p)}</div></div>
+      <div class="rc-sub"><small>รวม</small><b>฿0</b></div></div>`).join('')}</div>
+    <div class="rc-total"><span class="l">💰 รวมทั้งหมด</span><span class="v">฿0</span></div>
+    ${guess != null ? `<div class="rc-guess">ผู้เล่นทาย <b>฿${xgFmt(guess)}</b> <span class="rc-chip ${d.ok ? 'ok' : 'bad'}">${d.ok ? '✔ อยู่ในช่วง ±' + (G2.geo.tol || '') + '%' : (d.over ? '✘ ทายเกินราคาจริง' : '✘ ต่ำเกินช่วง')}</span></div>` : ''}
+  </div></div>`;
+  document.body.appendChild(ov);
+  let finished = false; const timers = [];
+  const finish = () => { if (finished) return; finished = true; timers.forEach(clearTimeout); ov.classList.add('out'); setTimeout(() => { ov.remove(); if (done) done(); }, 480); };
+  ov.querySelector('.rc-skip').onclick = finish;
+  try { FX.sparkle(0); } catch (e) {}
+  const rows = [...ov.querySelectorAll('.rc-row')], step = items.length > 4 ? 850 : 1000, t0 = 700;
+  rows.forEach((r, i) => {
+    timers.push(setTimeout(() => { r.classList.add('on'); rcBlip(520 + i * 90, .12, .08); r.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, t0 + i * step));
+    timers.push(setTimeout(() => { const b = r.querySelector('.rc-sub b'); rcCount(b, items[i].q * items[i].p, 450); }, t0 + i * step + 250));
+    timers.push(setTimeout(() => { r.classList.add('done'); rcKaching(); }, t0 + i * step + 720));
+  });
+  const tT = t0 + rows.length * step + 300;
+  timers.push(setTimeout(() => {
+    const t = ov.querySelector('.rc-total'); t.classList.add('on'); rcCount(t.querySelector('.v'), +d.actual, 1100);
+    try { FX.drumroll(1); } catch (e) {}
+  }, tT));
+  timers.push(setTimeout(() => { try { FX.crash(); } catch (e) {} gsBurst(ov, 44); const g = ov.querySelector('.rc-guess'); if (g) g.classList.add('on'); }, tT + 1150));
+  timers.push(setTimeout(finish, tT + 4600));
+}
+g2McVerdict = function () {
+  if (G2.done) return; G2.done = true;
+  const gs = G2.geo, ok = gs.guess >= gs.lo && gs.guess <= gs.hi, over = gs.guess > gs.hi;
+  const final = ok ? G.totalMoney * 10 : Math.floor(G.totalMoney / 2);
+  const d = { ok, over, final, actual: gs.hi, title: G2.prob ? G2.prob.title : '', items: rcItemsFor(G2.prob) };
+  broadcastEvent('g2_verdict', d); g2Verdict(d); G2.barStage = 3; g2Ctrl();
+};
+g2Verdict = function (d) {
+  G2.done = true;
+  const pb = document.querySelector('#g2BarHost .pb'); if (pb) pb.classList.add('s3', d.ok ? 'ok' : 'bad');
+  const s = $('pbStamp'); if (s) s.textContent = d.ok ? 'CORRECT!' : (d.over ? 'OVER!' : 'LOW!');
+  if (d.ok) { try { FX.crash(); playSnd(SND_DING); } catch (e) {} } else { try { playSnd(SND_WRONG); } catch (e) {} }
+  const next = () => showBonusOutcome(d.ok, () => showFinalScreen(d.final), d.ok ? `✦ ทายถูก! เงินรางวัล x10 ✦` : (d.over ? 'OVER! ทายเกินราคาจริง — เงินรางวัล ÷2' : 'ต่ำเกินช่วง — เงินรางวัล ÷2'));
+  setTimeout(() => { if (d.items && d.items.length) showPriceBreakdown(d, next); else next(); }, 2600);
+};
 </script>
 <!-- Leaderboard floating button -->
 <div class="lb-fab" onclick="openLeaderboard()" title="กระดานผู้นำ">
