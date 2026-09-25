@@ -6056,6 +6056,109 @@ body::after {
 @keyframes pb-lab-rev { 0% { filter: brightness(2.5); } 100% { filter: none; } }
 
 body:has(:is(#game-player,#game-mc,#bonus-mc,#bonus-player,#final-screen,#lobby,#g2Screen,#g3Screen,#mc-lobby-screen,#join-screen).active) #userPill, body:has(.ss-ov) #userPill, body:has(.bo-overlay) #userPill, body:has(.br-ov) #userPill { display: none !important; }
+
+/* ================= LOGIN v2 ================= */
+#login-screen { background: radial-gradient(ellipse at 50% 20%, #13235a 0%, #070b22 55%, #03050f 100%) !important; overflow: hidden; padding: 16px; }
+.lg-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.lg-rays { position: absolute; left: 50%; top: 38%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; opacity: .55;
+  background: repeating-conic-gradient(from 0deg, rgba(0,200,255,.07) 0deg 6deg, transparent 6deg 16deg);
+  -webkit-mask: radial-gradient(circle, #000, transparent 55%); mask: radial-gradient(circle, #000, transparent 55%); animation: gs-rays 60s linear infinite; }
+.lg-floor { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 55%; transform: perspective(500px) rotateX(62deg); transform-origin: 50% 100%;
+  background: linear-gradient(rgba(0,229,255,.28) 1px, transparent 1px) 0 0 / 60px 60px, linear-gradient(90deg, rgba(0,229,255,.22) 1px, transparent 1px) 0 0 / 60px 60px;
+  -webkit-mask: linear-gradient(0deg, #000 10%, transparent 90%); mask: linear-gradient(0deg, #000 10%, transparent 90%); animation: lg-grid 3s linear infinite; }
+@keyframes lg-grid { to { background-position: 0 60px, 0 0; } }
+.lg-fl { position: absolute; left: var(--x); bottom: -60px; font: 400 var(--s)/1 'Bungee', sans-serif; color: rgba(255,210,80,.35); text-shadow: 0 0 14px rgba(255,200,0,.5); animation: lg-float 11s linear infinite; animation-delay: var(--d); }
+@keyframes lg-float { 0% { transform: translateY(0) rotate(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-115vh) rotate(200deg); opacity: 0; } }
+.lg-card { position: relative; z-index: 1; width: min(94vw, 400px); padding: 34px 28px 24px; border-radius: 28px; text-align: center; isolation: isolate;
+  background: linear-gradient(180deg, rgba(20,34,78,.78), rgba(8,13,34,.86)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12); animation: lg-in .8s cubic-bezier(.2,1.3,.4,1) both; }
+.lg-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; z-index: -1;
+  background: conic-gradient(from var(--gsa), rgba(0,229,255,.9), rgba(43,80,255,.3) 30%, rgba(255,215,0,.9) 55%, rgba(255,47,185,.35) 80%, rgba(0,229,255,.9));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: gs-spin 6s linear infinite; }
+@keyframes lg-in { from { opacity: 0; transform: translateY(40px) scale(.94); } to { opacity: 1; transform: none; } }
+.lg-bolt { width: 74px; height: 74px; margin: -70px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 40% 35%, #20336e, #080d22 70%); box-shadow: 0 0 0 3px rgba(255,204,26,.6), 0 0 30px rgba(255,190,0,.55), 0 10px 20px rgba(0,0,0,.5); animation: lg-bolt 2.6s ease-in-out infinite; }
+.lg-bolt svg { width: 46px; height: 46px; filter: drop-shadow(0 0 8px rgba(255,200,0,.8)); }
+@keyframes lg-bolt { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.lg-title { position: relative; display: inline-block; font-family: 'Bungee', 'Supermercado One', sans-serif; font-size: clamp(38px, 11vw, 52px); line-height: 1.1; letter-spacing: .03em; color: #5c2d00;
+  text-shadow: .02em .02em 0 #b36800, .04em .04em 0 #8f5200, .06em .06em 0 #6d3c00, .08em .1em .16em rgba(0,0,0,.7); }
+.lg-title::after { content: attr(data-t); position: absolute; inset: 0; color: transparent; text-shadow: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.95) 50%, transparent 60%) no-repeat, linear-gradient(180deg, #fffef2, #fff08a 30%, #ffcc00 55%, #ff9500 80%);
+  background-size: 260% 100%, 100% 100%; background-position: 160% 0, 0 0; -webkit-background-clip: text; background-clip: text; animation: m3d-shine 3.5s ease-in-out infinite 1s; }
+.lg-sub { margin-top: 2px; font-family: var(--font-th); font-weight: 700; font-size: 16px; letter-spacing: .3em; color: #9fe8ff; text-shadow: 0 0 12px rgba(0,229,255,.5); }
+.lg-chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 18px 0 22px; }
+.lg-chips span { font-family: var(--font-th); font-size: 12px; font-weight: 600; color: #cfe0ff; padding: 5px 10px; border-radius: 20px; background: rgba(120,170,255,.1); border: 1px solid rgba(120,170,255,.22); }
+.lg-google { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 0; border-radius: 16px; cursor: pointer;
+  background: #fff; color: #1f1f1f; font-family: var(--font-th); font-weight: 700; font-size: 16px;
+  box-shadow: 0 5px 0 #c9d3e6, 0 12px 26px rgba(0,0,0,.4), 0 0 0 0 rgba(0,229,255,.6); transition: transform .15s, box-shadow .2s; animation: lg-pulse 2.8s ease-in-out infinite 1s; }
+.lg-google:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #c9d3e6, 0 16px 30px rgba(0,0,0,.45), 0 0 0 4px rgba(0,229,255,.35); }
+.lg-google:active { transform: translateY(4px); box-shadow: 0 1px 0 #c9d3e6, 0 6px 14px rgba(0,0,0,.4); }
+@keyframes lg-pulse { 0%,100% { box-shadow: 0 5px 0 #c9d3e6, 0 12px 26px rgba(0,0,0,.4), 0 0 0 0 rgba(0,229,255,.5); } 50% { box-shadow: 0 5px 0 #c9d3e6, 0 12px 26px rgba(0,0,0,.4), 0 0 0 8px rgba(0,229,255,0); } }
+.lg-g { width: 24px; height: 24px; flex-shrink: 0; }
+.lg-google span { flex: 1; text-align: left; }
+.lg-arrow { font-style: normal; font-size: 18px; color: #4285F4; transition: transform .2s; }
+.lg-google:hover .lg-arrow { transform: translateX(4px); }
+.lg-or { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; font-family: var(--font-th); font-size: 12px; color: #7d8fb8; }
+.lg-or i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(160,190,255,.3), transparent); }
+.lg-guest { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-radius: 16px; cursor: pointer; text-align: left;
+  background: rgba(0,229,255,.06); border: 1px solid rgba(0,229,255,.35); color: #d8f7ff; font-family: var(--font-th); transition: background .2s, transform .15s; }
+.lg-guest:hover { background: rgba(0,229,255,.14); transform: translateY(-2px); }
+.lg-guest-ic { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(0,229,255,.14); flex-shrink: 0; }
+.lg-guest b { display: block; font-size: 15px; } .lg-guest small { display: block; font-size: 12px; color: #8fb6ff; margin-top: 1px; }
+.lg-note { margin-top: 18px; font-family: var(--font-th); font-size: 12px; color: #7d8fb8; }
+@media (prefers-reduced-motion: reduce) { .lg-floor, .lg-fl, .lg-rays, .lg-card::before, .lg-google, .lg-bolt { animation: none !important; } }
+
+/* ================= LOGIN v4: matches home theme ================= */
+#login-screen { background:
+  radial-gradient(ellipse at 50% 30%, rgba(0,40,100,0.8) 0%, transparent 70%),
+  radial-gradient(ellipse at 50% 100%, rgba(100,0,200,0.2) 0%, transparent 60%), var(--dark) !important; overflow: hidden; }
+#login-screen::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle 2px at 10% 20%, rgba(0,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(circle 2px at 90% 15%, rgba(255,215,0,0.4) 0%, transparent 100%),
+    radial-gradient(circle 1px at 20% 80%, rgba(57,255,20,0.3) 0%, transparent 100%),
+    radial-gradient(circle 2px at 75% 70%, rgba(0,150,255,0.4) 0%, transparent 100%),
+    radial-gradient(circle 2px at 35% 45%, rgba(255,215,0,0.3) 0%, transparent 100%),
+    radial-gradient(circle 1px at 62% 30%, rgba(0,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(circle 1px at 50% 95%, rgba(255,100,0,0.3) 0%, transparent 100%);
+  animation: particleDrift 8s ease-in-out infinite alternate; }
+.lx-grid { position: absolute; left: -40%; right: -40%; bottom: -10%; height: 46%; pointer-events: none;
+  background: linear-gradient(rgba(0,229,255,.22) 1px, transparent 1px) 0 0 / 60px 60px, linear-gradient(90deg, rgba(0,229,255,.18) 1px, transparent 1px) 0 0 / 60px 60px;
+  transform: perspective(500px) rotateX(62deg); transform-origin: 50% 0;
+  -webkit-mask: linear-gradient(180deg, transparent, #000 45%); mask: linear-gradient(180deg, transparent, #000 45%); animation: lx-grid 2.4s linear infinite; }
+@keyframes lx-grid { to { background-position: 0 60px, 0 0; } }
+.lx-wrap { position: relative; z-index: 1; width: min(94vw, 640px); display: flex; flex-direction: column; align-items: center; gap: 44px; }
+.lx-wrap .logo-wrap { animation: lx-in .9s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes lx-in { from { opacity: 0; transform: translateY(-40px) scale(.85); } to { opacity: 1; transform: none; } }
+.lx-box { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; animation: gs-fade-in .8s ease both .6s; }
+.lx-head { display: flex; align-items: center; gap: 12px; font-family: var(--font-en); font-size: 13px; letter-spacing: 6px; color: #9fe8ff; text-shadow: 0 0 10px rgba(0,229,255,.7); }
+.lx-head i { width: 7px; height: 7px; background: var(--cyan); transform: rotate(45deg); box-shadow: 0 0 10px var(--cyan); animation: lx-blink 1.2s steps(2) infinite; }
+@keyframes lx-blink { 50% { opacity: .2; } }
+.lx-pill { width: 620px; max-width: 100%; }
+.lx-pill .btn-cyber { flex-direction: row; gap: 14px; }
+.lx-pill .btn-cyber-gold { padding-right: 40px; }
+.lx-pill .btn-cyber-cyan { padding-left: 40px; }
+.lx-t { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.05; }
+.lx-t small { font-family: var(--font-th); font-size: 13px; letter-spacing: 1px; font-weight: 700; opacity: .85; text-transform: none; margin-top: 4px; }
+.lx-g { width: 46px; height: 46px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: 0 3px 0 rgba(120,50,0,.45), 0 0 0 3px rgba(255,255,255,.35); }
+.lx-g .lg-g { width: 26px; height: 26px; }
+.lx-ic { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px;
+  background: rgba(0,40,90,.25); box-shadow: 0 3px 0 rgba(0,30,80,.45), 0 0 0 3px rgba(255,255,255,.35); }
+.lx-pill .btn-cyber-gold { animation: lx-glow 2.2s ease-in-out infinite; }
+@keyframes lx-glow { 50% { filter: brightness(1.1); } }
+.lx-foot { display: flex; align-items: center; gap: 10px; font-family: var(--font-th); font-size: 12px; color: #7d9cc8; letter-spacing: 1px; }
+.lx-foot .deco-line { width: 40px; animation: none; }
+@media (max-width: 680px) {
+  .lx-wrap { gap: 30px; }
+  .lx-pill { height: auto !important; border-radius: 26px !important; display: flex; flex-direction: column; overflow: hidden; }
+  .lx-pill::before, .lx-pill::after { border-radius: 26px !important; }
+  .lx-pill .btn-cyber { position: relative; width: 100%; height: 84px; clip-path: none; font-size: 21px; padding: 0 22px !important; justify-content: flex-start; }
+  .lx-pill .btn-cyber-gold { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), 0 100%); }
+  .lx-pill .btn-cyber-cyan { clip-path: polygon(0 12px, 100% 0, 100% 100%, 0 100%); margin-top: -12px; }
+}
+@media (max-height: 640px) { .lx-wrap { gap: 20px; } .lx-wrap .logo-bolt { font-size: 56px; } .lx-wrap .logo-main { font-size: 54px; } }
+@media (prefers-reduced-motion: reduce) { .lx-grid, #login-screen::before, .lx-pill .btn-cyber-gold { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -6067,41 +6170,26 @@ body:has(:is(#game-player,#game-mc,#bonus-mc,#bonus-player,#final-screen,#lobby,
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%, rgba(0,40,100,0.9) 0%, transparent 70%),radial-gradient(ellipse at 50% 100%, rgba(100,0,200,0.25) 0%, transparent 60%),var(--dark);transition:opacity 0.8s ease,transform 0.8s ease;">
-  <div class="login-card">
-    <div class="login-logo-wrap">
-      <span class="login-bolt">⚡</span>
-      <div class="login-title">FASTQUIZ</div>
-      <div class="login-sub">สปีดลับจับล้าน</div>
+  <div class="lx-grid" aria-hidden="true"></div>
+  <div class="lx-wrap">
+    <div class="logo-wrap">
+      <span class="logo-bolt">⚡</span>
+      <div class="logo-main">FASTQUIZ</div>
+      <div class="logo-sub">สปีดลับจับล้าน</div>
+      <div class="logo-decoration"><div class="deco-line"></div><div class="deco-diamond"></div><div class="deco-line"></div></div>
     </div>
-    <div style="margin-bottom:28px;font-family:var(--font-th);font-size:15px;color:var(--text2);">เข้าสู่ระบบเพื่อบันทึกความคืบหน้าของคุณ</div>
-    <button class="btn-google-3d" onclick="window._signInGoogle()">
-      <svg class="google-logo-3d" viewBox="0 0 48 48">
-        <defs>
-          <filter id="g3d" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-            <feDropShadow dx="0" dy="4" stdDeviation="1" flood-opacity="0.15"/>
-          </filter>
-        </defs>
-        <g filter="url(#g3d)">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          <path fill="none" d="M0 0h48v48H0z"/>
-        </g>
-      </svg>
-      <span>เข้าสู่ระบบด้วย Google</span>
-    </button>
-    <div style="margin-top:20px;font-family:var(--font-th);font-size:12px;color:var(--text2);opacity:0.6;">ข้อมูลของคุณจะถูกเก็บอย่างปลอดภัย</div>
-    <div style="margin-top:14px;display:flex;align-items:center;gap:10px;width:100%;max-width:300px;">
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
-      <div style="font-family:var(--font-th);font-size:12px;color:var(--text2);opacity:0.5;">หรือ</div>
-      <div style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></div>
+    <div class="lx-box">
+      <div class="lx-head"><i></i>PLAYER LOGIN<i></i></div>
+      <div class="home-pill lx-pill">
+        <button class="btn-cyber btn-cyber-gold" onclick="window._signInGoogle()">
+          <span class="lx-g"><svg class="lg-g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span><span class="lx-t">START<small>เข้าสู่ระบบด้วย Google</small></span>
+        </button>
+        <button class="btn-cyber btn-cyber-cyan" onclick="playAnonymous()">
+          <span class="lx-ic">🎮</span><span class="lx-t">GUEST<small>เล่นทันที ไม่บันทึกประวัติ</small></span>
+        </button>
+      </div>
+      <div class="lx-foot"><div class="deco-line"></div>🔒 ใช้ Google เพื่อยืนยันตัวตนเท่านั้น<div class="deco-line"></div></div>
     </div>
-    <button onclick="playAnonymous()" style="margin-top:12px;width:100%;max-width:300px;padding:12px 20px;background:rgba(0,180,255,0.1);border:1px solid rgba(0,180,255,0.35);border-radius:12px;color:rgba(0,200,255,0.9);font-family:var(--font-th);font-size:14px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,180,255,0.2)'" onmouseout="this.style.background='rgba(0,180,255,0.1)'">
-      ⚡ เล่นโดยไม่ต้อง Google login
-    </button>
-    <div style="margin-top:6px;font-family:var(--font-th);font-size:11px;color:var(--text2);opacity:0.45;">(ไม่บันทึกประวัติ — เล่นได้ทันที)</div>
     <!-- แสดง warning เมื่อเปิดจาก file:// -->
     <div id="fileProtocolWarning" style="display:none;margin-top:16px;padding:12px 16px;background:rgba(255,100,0,0.12);border:1px solid rgba(255,150,0,0.5);border-radius:8px;font-family:var(--font-th);font-size:12px;color:#FFB347;line-height:1.7;max-width:320px;text-align:left;">
       ⚠️ <strong>ต้องเปิดผ่าน Web Server</strong><br>
@@ -15603,6 +15691,52 @@ PRICE_BANK.push(...[
 ].map(([title, it]) => ({ title, level: 'ยากมาก (Unseen)', items: it.map(([e, n, q, p]) => ({ e, n, q, p })) })));
 PRICE_BANK.forEach(p => { p.price = p.items.reduce((s, it) => s + it.q * it.p, 0); });
 
+/* ================= v18: brand / model / scope for every price item ================= */
+const PRICE_SPECS = {
+  'มื้อกลางวันสุดคุ้ม': [['ร้านข้าวทั่วไป จานธรรมดา'], ['แก้ว 16 oz ร้านริมทาง'], ['ไข่ไก่เบอร์ 2']],
+  'อุปกรณ์การเรียน': [['ดินสอไม้ 2B'], ['สมุดปกอ่อน 60 แผ่น'], ['พลาสติก 12 นิ้ว'], ['กรรไกรเด็ก 5 นิ้ว']],
+  'ตลาดผลไม้': [['กล้วยน้ำว้า ตลาดสด'], ['ลูกละประมาณ 3 กก.'], ['น้ำดอกไม้ (ลูก)']],
+  'ของหวานยามบ่าย': [['ถ้วยเล็ก ร้านสะดวกซื้อ'], ['โดนัทน้ำตาล ร้านตลาด'], ['ถ้วยใหญ่ เครื่อง 4 อย่าง']],
+  'ปาร์ตี้วันเกิด': [['ช็อกโกแลต ร้านเบเกอรี่'], ['ลูกโป่งยาง 12 นิ้ว'], ['ขวด 1.5 ลิตร'], ['12 นิ้ว ร้านพิซซ่าเชน']],
+  'เที่ยวทะเล 1 วัน': [['แก๊สโซฮอล์ 95'], ['ร่ม + เตียงผ้าใบ ทั้งวัน'], ['กุ้งแม่น้ำไซซ์กลาง'], ['มะพร้าวน้ำหอมเผา']],
+  'จัดโต๊ะทำงาน': [['Logitech ไร้สาย รุ่นเริ่มต้น'], ['Logitech บลูทูธ ขนาดพกพา'], ['โคมไฟ LED ตั้งโต๊ะ'], ['ไม้ฟอกอากาศ กระถาง 4 นิ้ว']],
+  'ตกแต่งห้องนอน': [['เตียง + ที่นอนพ็อกเก็ตสปริง'], ['เก้าอี้ทำงานมีล้อ'], ['ตุ๊กตาขนาด 60 ซม.'], ['นาฬิกาแขวน 12 นิ้ว']],
+  'เปิดร้านกาแฟ': [['เอสเปรสโซ 1 หัวชง (ร้านค้า)'], ['อาราบิก้าไทย คั่วกลาง'], ['นมสดพาสเจอไรซ์'], ['แก้วพลาสติก 16 oz']],
+  'ช้อปปิ้งไอที': [['iPhone 16 (128GB)', 29900], ['MacBook Air M3 13 นิ้ว', 39900], ['AirPods Pro 2'], ['Apple Watch Series 10 GPS', 14900]],
+  'ออกรถคันแรก': [['Toyota Yaris Ativ รุ่นกลาง'], ['ยาง 15 นิ้ว แบรนด์ชั้นนำ'], ['ประกันชั้น 1 รถเก๋ง'], ['พรมยางปูพื้นเข้ารูป']],
+  'งานแต่งเล็กๆ': [['เพชร 30 ตังค์ ตัวเรือนทองคำขาว'], ['เช่าชุดไทย + ชุดราตรี'], ['ภัตตาคาร 10 ที่/โต๊ะ'], ['ช่อกุหลาบเจ้าสาว']],
+  'ชุดเกมมิ่งเกียร์': [['PlayStation 5 Slim (Disc)', 18990], ['DualSense Controller'], ['Samsung 55" 4K UHD'], ['HyperX Cloud II']],
+  'จัดงานบวช': [['บริขาร 8 ครบชุด'], ['โต๊ะจีนจัดเลี้ยง 10 ที่'], ['แตรวงแห่นาค ครึ่งวัน'], ['มาลัยดาวเรือง ขนาดกลาง']],
+  'รับเลี้ยงน้องหมา': [['โกลเด้นรีทรีฟเวอร์ มีใบเพ็ดดีกรี'], ['อาหารเม็ดพรีเมียม 3 กก.'], ['วัคซีนรวม 5 โรค'], ['บ้านพลาสติก ไซซ์ L']],
+  'ทริปญี่ปุ่น 5 วัน (2 คน)': [['BKK–โตเกียว ไป-กลับ'], ['โรงแรมธุรกิจ 3 ดาว ห้องคู่'], ['JR Pass 7 วัน', 11500], ['คอร์สซูชิระดับกลาง']],
+  'รีโนเวตห้องครัว': [['Samsung อินเวอร์เตอร์ 14.9 คิว'], ['เตาอินดักชัน 2 หัว'], ['สเตนเลส 2 หลุม'], ['ตู้บิลต์อิน (ต่อเมตร)']],
+  'ซ่อมบ้านหลังน้ำท่วม': [['ปูนถุง 50 กก.'], ['สีอะคริลิกภายนอก 9 ลิตร'], ['ประตูไม้จริงบานทึบ'], ['ช่างฝีมือ (ต่อวัน)']],
+  'ตกแต่งคอนโดใหม่': [['โซฟาผ้า แบรนด์ห้าง'], ['Sony 65" 4K LED'], ['Daikin อินเวอร์เตอร์ รวมติดตั้ง'], ['ผ้าม่านทึบแสง กว้าง 2 ม.'], ['พรมขนนุ่ม 160×230 ซม.']],
+  'ปาร์ตี้บริษัท 80 คน': [['บุฟเฟต์ปิ้งย่าง (ต่อหัว)'], ['เค้กช็อกโกแลต 3 ปอนด์'], ['เช่าเครื่องเสียง + ไฟ 1 คืน'], ['หม้อทอด / พัดลม / ของใช้']],
+  'เปิดร้านชาไข่มุก': [['เครื่องซีลฝาอัตโนมัติ'], ['ไข่มุกดิบ'], ['ชาไต้หวัน'], ['แก้ว 22 oz'], ['ฟรุกโตส (แกลลอน)']],
+  'งานแต่งงานใหญ่': [['บอลรูมโรงแรม 4 ดาว'], ['โต๊ะจีนโรงแรม 10 ที่'], ['ภาพนิ่ง + วิดีโอ เต็มวัน'], ['ซุ้ม + เวที + โต๊ะ'], ['การ์ดพิมพ์พร้อมซอง']],
+  'สร้างโรงจอดรถ': [['เหล็กกล่อง 4×4 นิ้ว ยาว 6 ม.'], ['เมทัลชีท ยาว 5 ม.'], ['คอนกรีตผสมเสร็จ 240 ksc'], ['ช่างเชื่อม (ต่อวัน)']],
+  'ช้อปเครื่องสำอาง': [['MAC Matte Lipstick', 1100], ['Estée Lauder Double Wear', 2300], ['Chanel Coco Mademoiselle 50ml', 5500], ['เซ็ตเคาน์เตอร์แบรนด์ 3 ชิ้น'], ['Anessa 60ml', 790]],
+  'อุปกรณ์กล้องมือโปร': [['Sony A7 IV'], ['Sony FE 24-70 f/2.8 GM II', 79900], ['Manfrotto คาร์บอน'], ['SanDisk Extreme Pro 128GB', 990], ['Sony NP-FZ100', 2500]],
+  'ทัวร์ยุโรป 10 วัน (2 คน)': [['BKK–ปารีส ไป-กลับ ชั้นประหยัด'], ['โรงแรม 3 ดาวในเมือง (คืน)'], ['Global Pass 7 วัน ใน 1 เดือน'], ['ค่าธรรมเนียมวีซ่าเชงเก้น', 3400], ['พิพิธภัณฑ์ทั่วไป / ลูฟวร์']],
+  'ปลูกทุเรียน 1 ไร่': [['หมอนทอง เสียบยอด'], ['ปุ๋ย 15-15-15 กระสอบ 50 กก.'], ['สปริงเกลอร์ + ปั๊ม ครบชุด'], ['คนงานประจำ (ต่อเดือน)']],
+  'ตั้งบูธงานแฟร์': [['บูธ 3×3 ม. งานแสดงสินค้า 4 วัน'], ['ไวนิล 2×3 ม. + โครง'], ['ขนาด A5 พิมพ์สี่สี'], ['PC (คน-วัน)'], ['พวงกุญแจสกรีนโลโก้']],
+  'ออกบิ๊กไบค์': [['Kawasaki Z900'], ['Shoei / Arai เต็มใบ'], ['Alpinestars มีการ์ด'], ['ประกันชั้น 1 บิ๊กไบค์'], ['หนังแท้ การ์ดข้อนิ้ว']],
+  'สร้างสระว่ายน้ำ': [['ขุด + โครงสร้าง สระ 4×8 ม.'], ['โมเสกแก้ว (ต่อ ตร.ม.)'], ['ปั๊ม + ถังกรองทราย'], ['ไฟ LED ใต้น้ำ 12V']],
+  'ตั้งวงดนตรี': [['Fender Player Stratocaster', 28900], ['Pearl Export ครบชุด'], ['Boss Katana 100W'], ['Roland FP-30X', 24900], ['Shure SM58']],
+  'เรียนมหาวิทยาลัย 4 ปี': [['หลักสูตรนานาชาติ ม.รัฐ (ต่อภาค)'], ['หอนอกใกล้มหาวิทยาลัย'], ['ตำราเรียน (ต่อปี)'], ['สเปกเรียน Core i5 / Ryzen 5']],
+  'บ่อปลาคาร์ป': [['คาร์ปญี่ปุ่นเกรดสวย 8 นิ้ว'], ['ถังกรองบ่อ 5 ช่อง'], ['ปั๊มลมลูกสูบ 60 ลิตร/นาที'], ['อาหารเร่งสี 5 กก.']],
+  'ติดโซลาร์เซลล์บ้าน': [['โมโนคริสตัลไลน์ 550W'], ['ไฮบริด 5 kW'], ['ลิเธียม 5 kWh'], ['ค่าแรง + สายไฟ + ขออนุญาต']],
+  'สต็อกร้านสะดวกซื้อ': [['600 ml แพ็ก 12 ขวด'], ['มาม่าต้มยำกุ้ง ลัง 30 ซอง'], ['มันฝรั่งทอด ถุงเล็ก'], ['ขวดเล็ก 150 ml']],
+  'ของขวัญปีใหม่พนักงาน': [['ของใช้ + ขนม'], ['ไวน์แดงชิลี 750 ml'], ['ตั้งโต๊ะ พิมพ์โลโก้'], ['เซรามิก สกรีนโลโก้']],
+  'วัสดุสร้างบ้าน 2 ชั้น': [['อิฐมอญ'], ['ปูนถุง 50 กก.'], ['DB12 ยาว 10 ม.'], ['แกรนิตโต้ 60×60 ซม.']],
+  'เปิดคลินิกทันตกรรม': [['ยูนิตทำฟันครบชุด'], ['Panoramic X-ray'], ['ชุดตรวจ-อุดฟัน'], ['Autoclave Class B']],
+};
+PRICE_BANK.forEach(pb => {
+  const sp = PRICE_SPECS[pb.title]; if (!sp) return;
+  pb.items.forEach((it, i) => { if (sp[i]) { it.s = sp[i][0]; if (sp[i][1]) it.p = sp[i][1]; } });
+  pb.price = pb.items.reduce((s, it) => s + it.q * it.p, 0);
+});
 const HARD_BONUS = ['ประเทศสมาชิกอาเซียน', 'จังหวัดที่ติดชายแดนเมียนมา', 'จังหวัดที่ติดชายแดนลาว', 'จังหวัดที่ลงท้ายด้วย "บุรี"', 'พยัญชนะไทยอักษรสูง',
   'ธาตุที่เป็นแก๊สที่อุณหภูมิห้อง', 'ธาตุโลหะในตารางธาตุ', 'กระดูกในร่างกายมนุษย์', 'อวัยวะภายในร่างกาย', 'ประเทศในทวีปแอฟริกา', 'ประเทศที่ไม่มีทางออกทะเล',
   'เมืองหลวงในยุโรป', 'เมืองหลวงในเอเชีย', 'เมืองในประเทศญี่ปุ่น', 'ประเทศที่เคยเป็นเจ้าภาพโอลิมปิก', 'กีฬาในโอลิมปิกฤดูหนาว', 'นักฟุตบอลที่เคยได้บัลลงดอร์',
@@ -15636,6 +15770,13 @@ function xgFmt(n) { return Math.round(+n || 0).toLocaleString('th-TH'); }
 function xgEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
 /* ---------- price problem image (SVG) ---------- */
+function svgSpec(s, cw) {
+  const max = Math.floor(cw / 7.2);
+  let lines = [s];
+  if (s.length > max) { const sp = s.lastIndexOf(' ', max); const k = sp > 4 ? sp : max; lines = [s.slice(0, k).trim(), s.slice(k).trim()]; if (lines[1].length > max) lines[1] = lines[1].slice(0, max - 1) + '…'; }
+  const fs = cw < 170 ? 12 : 13;
+  return lines.map((l, i) => `<text x="${cw / 2}" y="${lines.length > 1 ? 201 + i * 13 : 208}" text-anchor="middle" font-size="${fs}" font-weight="600" fill="#8fe6ff" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">${xgEsc(l)}</text>`).join('');
+}
 function priceSVG(pb) {
   const items = pb.items || [];
   const n = items.length, W = 960, H = 540, gap = n > 4 ? 30 : 48, cw = Math.min(190, Math.floor((W - 60 - (n - 1) * gap) / n));
@@ -15646,8 +15787,9 @@ function priceSVG(pb) {
     return `<g transform="translate(${x},120)"><rect width="${cw}" height="260" rx="22" fill="url(#cardg)" stroke="#5fd8ff" stroke-opacity=".55" stroke-width="2"/>
       <rect x="10" y="10" width="${cw - 20}" height="150" rx="16" fill="#0a1433"/>
       <text x="${cw / 2}" y="118" text-anchor="middle" font-size="${cw < 170 ? 78 : 92}" font-family="Noto Color Emoji,Apple Color Emoji,Segoe UI Emoji,sans-serif">${it.e}</text>
-      <text x="${cw / 2}" y="200" text-anchor="middle" font-size="${it.n.length > 12 || cw < 170 ? (it.n.length > 14 ? 16 : 18) : 23}" font-weight="700" fill="#fff" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">${xgEsc(it.n)}</text>
-      <rect x="${cw / 2 - 38}" y="218" width="76" height="30" rx="15" fill="#ffcc1a"/><text x="${cw / 2}" y="240" text-anchor="middle" font-size="20" font-weight="900" fill="#3a1400" font-family="Arial">x${it.q}</text></g>${plus}`;
+      <text x="${cw / 2}" y="${it.s ? 184 : 200}" text-anchor="middle" font-size="${it.n.length > 12 || cw < 170 ? (it.n.length > 14 ? 16 : 18) : 22}" font-weight="700" fill="#fff" font-family="IBM Plex Sans Thai,Tahoma,sans-serif">${xgEsc(it.n)}</text>
+      ${it.s ? svgSpec(it.s, cw) : ''}
+      <rect x="${cw / 2 - 36}" y="226" width="72" height="26" rx="13" fill="#ffcc1a"/><text x="${cw / 2}" y="246" text-anchor="middle" font-size="19" font-weight="900" fill="#3a1400" font-family="Arial">x${it.q}</text></g>${plus}`;
   }).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101d45"/><stop offset="1" stop-color="#050a1c"/></linearGradient>
