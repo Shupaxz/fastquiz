@@ -7403,7 +7403,7 @@ function broadcastEvent(type, data) {
   _broadcastSeq++;
   const seq = ts * 1000 + (_broadcastSeq % 1000);
   const safeData = sanitizeForFirestore(data === undefined ? null : data);
-  const ev = { type, data: safeData, ts, seq };
+  const ev = { type, data: safeData, ts, seq, id: (G.isMC ? 'm' : 'p' + (G.myPlayerIndex ?? '')) + '-' + seq + '-' + Math.random().toString(36).slice(2, 7) };
 
   // ── localStorage fallback (same-browser) ทำเสมอ ──
   try {
@@ -7415,7 +7415,7 @@ function broadcastEvent(type, data) {
 
   if (HIGH_FREQ_EVENTS.has(type)) {
     // ── ความถี่สูง: throttle ~200ms, เขียนทับ lastEvent (ไม่เข้า queue) ──
-    _pendingHighFreq = { type, data: safeData, ts, seq };
+    _pendingHighFreq = { type, data: safeData, ts, seq, id: ev.id };
     const elapsed = Date.now() - _lastHighFreqWrite;
     if (elapsed >= 200) {
       _flushHighFreq();
@@ -7442,8 +7442,9 @@ function broadcastEvent(type, data) {
       if (!snap.exists) return;
       const q = snap.data().eventQueue;
       if (Array.isArray(q) && q.length > 40) {
-        const trimmed = q.slice(-20);
-        _db.collection('rooms').doc(G.roomCode).update({ eventQueue: trimmed }).catch(() => {});
+        // atomic remove of the oldest events only — never overwrites events added meanwhile (e.g. by players)
+        const old = q.slice(0, q.length - 20);
+        _db.collection('rooms').doc(G.roomCode).update({ eventQueue: firebase.firestore.FieldValue.arrayRemove(...old) }).catch(() => {});
       }
     }).catch(() => {});
   }
@@ -7464,6 +7465,11 @@ let _firestoreRoomUnsub = null;
 let _lastFsEventTs = 0;
 let _lastFsEventSeq = 0;
 let _lastHfSeq = 0;
+/* v22: clock-skew-safe event de-dup — events are identified by id, not compared by sender-clock seq */
+const _fsSeen = new Map(); let _fsPrimed = false;
+function _fsKey(ev) { return ev.id || (ev.seq + '|' + ev.type); }
+function _fsSeenHas(ev) { return _fsSeen.has(_fsKey(ev)); }
+function _fsSeenAdd(ev) { if (!ev) return; _fsSeen.set(_fsKey(ev), 1); if (_fsSeen.size > 600) { const it = _fsSeen.keys(); for (let i = 0; i < 200; i++) _fsSeen.delete(it.next().value); } }
 
 function startFirestoreRoomListener(code) {
   if (_firestoreRoomUnsub) { _firestoreRoomUnsub(); _firestoreRoomUnsub = null; }
@@ -7471,7 +7477,7 @@ function startFirestoreRoomListener(code) {
   // baseline: ข้าม event ที่เกิดก่อน listener นี้เริ่ม (กัน replay ของเก่า)
   // ยกเว้นไม่ตั้งสูงเกินไป เพื่อให้ยังรับ game_started/round_cats ที่อาจยิงมาพร้อม ๆ กัน
   const listenStart = Date.now();
-  if (_lastFsEventSeq === 0) _lastFsEventSeq = (listenStart - 3000) * 1000; // เผื่อ 3 วิ
+  if (_lastFsEventSeq === 0) { _lastFsEventSeq = (listenStart - 3000) * 1000; _fsPrimed = false; } // เผื่อ 3 วิ
   _firestoreRoomUnsub = _db.collection('rooms').doc(code).onSnapshot(snap => {
     if (!snap.exists) return;
     const fsRoom = snap.data();
@@ -7503,32 +7509,35 @@ function startFirestoreRoomListener(code) {
 
     // === ROUTE CROSS-DEVICE EVENTS ===
     // 1) queue (discrete events) — process ทุกตัวที่ยังไม่เห็น ตามลำดับ seq
+    const wasPrimed = _fsPrimed;
     if (Array.isArray(fsRoom.eventQueue) && fsRoom.eventQueue.length) {
+      // first snapshot: skip events from before this listener started; afterwards: anything not seen yet is new
       const fresh = fsRoom.eventQueue
-        .filter(ev => ev && ev.seq && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 60000)
+        .filter(ev => ev && ev.seq && !_fsSeenHas(ev) && (wasPrimed || (ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 60000)))
         .sort((a, b) => a.seq - b.seq);
       if (fresh.length) dbg('listener: queue fresh=' + fresh.length + ' [' + fresh.map(e=>e.type).join(',') + '] isMC=' + G.isMC);
       fresh.forEach(ev => {
+        _fsSeenAdd(ev);
         _lastFsEventSeq = Math.max(_lastFsEventSeq, ev.seq);
         if (ev.ts) _lastFsEventTs = Math.max(_lastFsEventTs, ev.ts);
-        routeEvent(ev.type, ev.data);
+        try { routeEvent(ev.type, ev.data); } catch (e) { console.warn('routeEvent error', ev.type, e); dbg('route ' + ev.type + ' ERR: ' + e.message); }
       });
+      if (!wasPrimed) fsRoom.eventQueue.forEach(_fsSeenAdd);
     }
-    // 2) lastEvent (high-freq events เช่น money_update) — track แยกด้วย _lastHfSeq
+    // 2) lastEvent (high-freq events เช่น money_update)
     if (fsRoom.lastEvent && fsRoom.lastEvent.seq) {
       const ev = fsRoom.lastEvent;
-      // process เฉพาะ high-freq ที่ยังไม่เห็น (discrete ถูกจัดการโดย queue แล้ว)
       const isHF = HIGH_FREQ_EVENTS.has(ev.type);
-      if (isHF && ev.seq > _lastHfSeq && (Date.now() - (ev.ts||0)) < 15000) {
-        _lastHfSeq = ev.seq;
-        routeEvent(ev.type, ev.data);
-      } else if (!isHF && ev.seq > _lastFsEventSeq && (Date.now() - (ev.ts||0)) < 30000) {
-        // เผื่อกรณีไม่มี queue (compat เก่า)
-        _lastFsEventSeq = ev.seq;
-        if (ev.ts) _lastFsEventTs = ev.ts;
-        routeEvent(ev.type, ev.data);
+      if (!_fsSeenHas(ev)) {
+        _fsSeenAdd(ev);
+        const okAge = wasPrimed || (Date.now() - (ev.ts||0)) < (isHF ? 15000 : 30000);
+        if (okAge && (isHF || wasPrimed || ev.seq > _lastFsEventSeq)) {
+          if (isHF) _lastHfSeq = ev.seq; else { _lastFsEventSeq = Math.max(_lastFsEventSeq, ev.seq); if (ev.ts) _lastFsEventTs = ev.ts; }
+          try { routeEvent(ev.type, ev.data); } catch (e) { console.warn('routeEvent error', ev.type, e); }
+        }
       }
     }
+    _fsPrimed = true;
   }, err => { console.warn('Firestore room listener error:', err); dbg('listener ERROR: ' + (err.code||err.message)); });
 }
 
